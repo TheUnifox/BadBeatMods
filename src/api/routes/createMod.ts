@@ -1,7 +1,6 @@
-import { UploadedFile } from 'express-fileupload';
 import { Express } from 'express';
 import path from 'node:path';
-import { DatabaseHelper, ContentHash, User, isValidPlatform, ModVisibility } from '../../shared/Database';
+import { DatabaseHelper, ContentHash, isValidPlatform, ModVisibility } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
 import { storage, devmode } from '../../../storage/config.json';
@@ -45,7 +44,6 @@ export class CreateModRoutes {
         });
 
         this.app.post(`/api/mod/:modIdParam/upload`, async (req, res) => {
-            
             let sessionId = req.session.userId;
             let modId = parseInt(req.params.modIdParam);
             let gameVersion = devmode ? JSON.parse(req.body.gameVersion) : req.body.gameVersion;

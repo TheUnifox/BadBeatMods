@@ -1,6 +1,6 @@
 import path from "path";
 import { exit } from "process";
-import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, Sequelize } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Sequelize } from "sequelize";
 import { storage, devmode } from '../../storage/config.json';
 import { Logger } from "./Logger";
 
@@ -26,8 +26,7 @@ export class DatabaseManager {
             Logger.log(`Database Loaded.`);
             new DatabaseHelper(this);
 
-            let user = this.Users.findByPk(1);
-            if (!user) {
+            this.Users.findByPk(1).then((user) => {
                 this.Users.create({
                     username: `TestUser`,
                     discordId: `1`,
@@ -38,7 +37,7 @@ export class DatabaseManager {
                     Logger.error(`Error creating test user: ${error}`);
                     exit(-1);
                 });
-            }
+            });
 
             DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
                 let healthcheckString = (healthcheck[0][0] as any).integrity_check;

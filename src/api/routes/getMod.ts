@@ -1,10 +1,5 @@
-import { UploadedFile } from 'express-fileupload';
 import { Express } from 'express';
-import path from 'node:path';
-import { DatabaseHelper, ContentHash, User, isValidPlatform, ModVisibility } from '../../shared/Database';
-import JSZip from 'jszip';
-import crypto from 'crypto';
-import { storage, devmode } from '../../../storage/config.json';
+import { DatabaseHelper } from '../../shared/Database';
 
 export class GetModRoutes {
     private app: Express;
@@ -15,6 +10,33 @@ export class GetModRoutes {
     }
 
     private async loadRoutes() {
+        this.app.get(`/api/mods`, async (req, res) => {
+            let mods = await DatabaseHelper.database.Mods.findAll();
+            return res.status(200).send({ mods });
+        });
+
+        this.app.get(`/api/hashlookup`, async (req, res) => {
+            let hash = req.query.hash;
+            if (!hash) {
+                return res.status(400).send({ message: `Missing hash.` });
+            }
+
+            let versions = await DatabaseHelper.database.ModVersions.findAll();
+
+            if (!versions) {
+                return res.status(404).send({ message: `Mod not found.` });
+            }
+
+            for (let version of versions) {
+                for (let fileHash of version.contentHashes) {
+                    if (fileHash.hash === hash) {
+                        return res.status(200).send({ mod: version.modId });
+                    }
+                }
+            }
+            return res.status(404).send({ message: `Hash not founds.` });
+        });
+
         this.app.get(`/api/mod/:modIdParam`, async (req, res) => {
             let modId = parseInt(req.params.modIdParam);
             if (!modId) {
