@@ -18,8 +18,12 @@ export class CreateModRoutes {
             let sessionId = req.session.userId;
             let name = req.body.name;
             let description = req.body.description;
+            let infoUrl = req.body.infoUrl;
+            let game = req.body.game;
+            let file = req.files.file;
 
-            if (!name || !description || typeof name !== `string` || typeof description !== `string` || name.length < 1 || description.length < 1) {
+            //#region Request Validation
+            if (!name || !description || infoUrl || typeof name !== `string` || typeof description !== `string` || typeof infoUrl !== `string` || name.length < 1 || description.length < 1) {
                 return res.status(400).send({ message: `Missing name or description.` });
             }
 
@@ -32,11 +36,26 @@ export class CreateModRoutes {
                 return res.status(401).send({ message: `Unauthorized.` });
             }
 
+            if (Array.isArray(file) || file.size > 8 * 1024 * 1024) {
+                return res.status(413).send({ error: `File too large (8MB Max).` });
+            }
+            
+            let isAcceptableImage = (file.mimetype !== `image/png` && file.name.endsWith(`.zip`)) || (file.mimetype !== `image/jpeg` && (file.name.endsWith(`.jpeg`) || file.name.endsWith(`.jpg`)) || (file.mimetype !== `image/webp` && file.name.endsWith(`.webp`)));
+
+            if (!isAcceptableImage) {
+                return res.status(400).send({ error: `Invalid file type.` });
+            }
+            //#endregion
+
             DatabaseHelper.database.Mods.create({
                 name: name,
                 description: description,
-                authorId: sessionId,
+                authorIds: [sessionId],
+                infoUrl: infoUrl,
+                iconFileExtension: path.extname(file.name),
+                game: game,
             }).then((mod) => {
+                file.mv(`${path.resolve(storage.iconsDir)}/${mod.id}${path.extname(file.name)}`);
                 return res.status(200).send({ mod });
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });

@@ -9,6 +9,7 @@ export class DatabaseManager {
     public Users: ModelStatic<User>;
     public ModVersions: ModelStatic<ModVersion>;
     public Mods: ModelStatic<Mod>;
+    public Games: ModelStatic<Game>;
 
     constructor() {
         this.sequelize = new Sequelize(`database`, `user`, `password`, {
@@ -27,16 +28,17 @@ export class DatabaseManager {
             new DatabaseHelper(this);
 
             this.Users.findByPk(1).then((user) => {
-                this.Users.create({
-                    username: `TestUser`,
-                    discordId: `1`,
-                    roles: [`admin`],
-                }).then(() => {
-                    Logger.log(`Test user created.`);
-                }).catch((error) => {
-                    Logger.error(`Error creating test user: ${error}`);
-                    exit(-1);
-                });
+                if (!user) {
+                    this.Users.create({
+                        username: `TestUser`,
+                        discordId: `1`,
+                        roles: [`admin`],
+                    }).then(() => {
+                        Logger.log(`Created test user.`);
+                    }).catch((error) => {
+                        Logger.error(`Error creating test user: ${error}`);
+                    });
+                }
             });
 
             DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
@@ -96,6 +98,37 @@ export class DatabaseManager {
             modelName: `users`,
         });
 
+        this.Games = Game.init({
+            id: {
+                type: DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            versions: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: `[]`,
+                get() {
+                    // @ts-expect-error s(2345)
+                    return JSON.parse(this.getDataValue(`versions`));
+                },
+                set(value: string[]) {
+                    // @ts-expect-error s(2345)
+                    this.setDataValue(`versions`, JSON.stringify(value));
+                },
+            },
+            createdAt: DataTypes.DATE, // just so that typescript isn't angy
+            updatedAt: DataTypes.DATE,
+        }, {
+            sequelize: this.sequelize,
+            modelName: `games`,
+        });
+
         this.Mods = Mod.init({
             id: {
                 type: DataTypes.INTEGER,
@@ -112,9 +145,32 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
-            authorId: {
-                type: DataTypes.INTEGER,
+            authorIds: {
+                type: DataTypes.STRING,
                 allowNull: false,
+                get() {
+                    // @ts-expect-error s(2345)
+                    return JSON.parse(this.getDataValue(`authorIds`));
+                },
+                set(value: number[]) {
+                    // @ts-expect-error s(2345)
+                    this.setDataValue(`authorIds`, JSON.stringify(value));
+                },
+            },
+            game: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            iconFileExtension: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            infoUrl: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
             },
             visibility: {
                 type: DataTypes.STRING,
@@ -220,12 +276,23 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare readonly updatedAt: CreationOptional<Date>;
 }
 
+export class Game extends Model<InferAttributes<Game>, InferCreationAttributes<Game>> {
+    declare readonly id: CreationOptional<number>;
+    declare name: string;
+    declare versions: string[];
+    declare readonly createdAt: CreationOptional<Date>;
+    declare readonly updatedAt: CreationOptional<Date>;
+}
+
 export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod>> {
     declare readonly id: CreationOptional<number>;
     declare name: string;
     declare description: string;
-    declare authorId: number;
+    declare authorIds: number[];
     declare visibility: string;
+    declare game: string;
+    declare iconFileExtension: string;
+    declare infoUrl: string;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 }
@@ -283,5 +350,18 @@ export class DatabaseHelper {
 
     constructor(database: DatabaseManager) {
         DatabaseHelper.database = database;
+    }
+
+    public static isValidPlatform(value: string): value is Platform {
+        return validateEnumValue(value, Platform);
+    }
+    
+    public static isValidVisibility(value: string): value is ModVisibility {
+        return validateEnumValue(value, ModVisibility);
+    }
+
+    public static async isValidGameName(name: string): Promise<boolean> {
+        let game = await DatabaseHelper.database.Games.findOne({ where: { name: name } });
+        return !!game;
     }
 }
