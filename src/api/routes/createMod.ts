@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import path from 'node:path';
-import { DatabaseHelper, ContentHash, isValidPlatform, ModVisibility } from '../../shared/Database';
+import { DatabaseHelper, ContentHash, isValidPlatform, ModVersionVisibility } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
 import { storage, devmode } from '../../../storage/config.json';
@@ -19,7 +19,6 @@ export class CreateModRoutes {
             let name = req.body.name;
             let description = req.body.description;
             let infoUrl = req.body.infoUrl;
-            let game = req.body.game;
             let file = req.files.file;
 
             //#region Request Validation
@@ -53,7 +52,7 @@ export class CreateModRoutes {
                 authorIds: [sessionId],
                 infoUrl: infoUrl,
                 iconFileExtension: path.extname(file.name),
-                game: game,
+                visibility: ModVersionVisibility.Unverified,
             }).then((mod) => {
                 file.mv(`${path.resolve(storage.iconsDir)}/${mod.id}${path.extname(file.name)}`);
                 return res.status(200).send({ mod });
@@ -65,7 +64,7 @@ export class CreateModRoutes {
         this.app.post(`/api/mod/:modIdParam/upload`, async (req, res) => {
             let sessionId = req.session.userId;
             let modId = parseInt(req.params.modIdParam);
-            let gameVersion = devmode ? JSON.parse(req.body.gameVersion) : req.body.gameVersion;
+            let gameVersions = devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
             let modVersion = req.body.modVersion;
             let dependancies = req.body.dependancies;
             let platform = req.body.platform;
@@ -76,7 +75,7 @@ export class CreateModRoutes {
                 return res.status(401).send({ message: `Unauthorized.` });
             }
 
-            if (!modId || !gameVersion || !modVersion || !file || !platform || !Array.isArray(gameVersion) || !isValidPlatform(platform)) {
+            if (!modId || !modVersion || !file || !platform || !isValidPlatform(platform)) {
                 return res.status(400).send({ message: `Missing valid modId, gameVersions, modVersion, platform, or file.` });
             }
 
@@ -92,12 +91,28 @@ export class CreateModRoutes {
 
             if (dependancies && Array.isArray(dependancies)) {
                 for (let dependancy of dependancies) {
+                    if (typeof dependancy !== `number`) {
+                        return res.status(400).send({ message: `Invalid game version. (Reading ${dependancy})` });
+                    }
                     let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
                     if (!dependancyMod) {
-                        return res.status(404).send({ message: `Dependancy mod not found.` });
+                        return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
                     }
                 }
             }
+
+            if (!gameVersions || !Array.isArray(gameVersions)) {
+                for (let version of gameVersions) {
+                    if (typeof version !== `number`) {
+                        return res.status(400).send({ message: `Invalid game version. (Reading ${version})` });
+                    }
+                    let gameVersionDB = await DatabaseHelper.database.Mods.findOne({ where: { id: version } });
+                    if (!gameVersionDB) {
+                        return res.status(404).send({ message: `Game version (${version}) not found.` });
+                    }
+                }
+            }
+
 
             if (Array.isArray(file) || file.size > 50 * 1024 * 1024) {
                 return res.status(413).send({ error: `File too large.` });
@@ -128,8 +143,8 @@ export class CreateModRoutes {
             DatabaseHelper.database.ModVersions.create({
                 modId: modId,
                 authorId: sessionId,
-                visibility: ModVisibility.Unverified,
-                supportedGameVersions: gameVersion,
+                visibility: ModVersionVisibility.Unverified,
+                supportedGameVersionIds: gameVersions,
                 modVersion: modVersion,
                 dependancies: dependancies ? dependancies : [],
                 platform: platform,

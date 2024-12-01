@@ -9,7 +9,7 @@ export class DatabaseManager {
     public Users: ModelStatic<User>;
     public ModVersions: ModelStatic<ModVersion>;
     public Mods: ModelStatic<Mod>;
-    public Games: ModelStatic<Game>;
+    public GameVersions: ModelStatic<GameVersion>;
 
     constructor() {
         this.sequelize = new Sequelize(`database`, `user`, `password`, {
@@ -98,35 +98,27 @@ export class DatabaseManager {
             modelName: `users`,
         });
 
-        this.Games = Game.init({
+        this.GameVersions = GameVersion.init({
             id: {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
                 autoIncrement: true,
             },
-            name: {
+            gameName: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
             },
-            versions: {
+            version: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                defaultValue: `[]`,
-                get() {
-                    // @ts-expect-error s(2345)
-                    return JSON.parse(this.getDataValue(`versions`));
-                },
-                set(value: string[]) {
-                    // @ts-expect-error s(2345)
-                    this.setDataValue(`versions`, JSON.stringify(value));
-                },
+                defaultValue: ``,
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
-            modelName: `games`,
+            modelName: `gameVersions`,
         });
 
         this.Mods = Mod.init({
@@ -156,11 +148,6 @@ export class DatabaseManager {
                     // @ts-expect-error s(2345)
                     this.setDataValue(`authorIds`, JSON.stringify(value));
                 },
-            },
-            game: {
-                type: DataTypes.STRING,
-                allowNull: false,
-                defaultValue: ``,
             },
             iconFileExtension: {
                 type: DataTypes.STRING,
@@ -203,7 +190,7 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
-            supportedGameVersions: {
+            supportedGameVersionIds: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
@@ -276,10 +263,17 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare readonly updatedAt: CreationOptional<Date>;
 }
 
-export class Game extends Model<InferAttributes<Game>, InferCreationAttributes<Game>> {
+export enum UserRoles {
+    Admin = `admin`,
+    Approver = `approver`,
+    Moderator = `moderator`,
+    Banned = `banned`,
+}
+
+export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreationAttributes<GameVersion>> {
     declare readonly id: CreationOptional<number>;
-    declare name: string;
-    declare versions: string[];
+    declare gameName: string;
+    declare version: string; // semver-esc version (e.g. 1.29.1)
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 }
@@ -290,7 +284,6 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare description: string;
     declare authorIds: number[];
     declare visibility: string;
-    declare game: string;
     declare iconFileExtension: string;
     declare infoUrl: string;
     declare readonly createdAt: CreationOptional<Date>;
@@ -302,14 +295,42 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare modId: number;
     declare authorId: number;
     declare modVersion: string;
-    declare supportedGameVersions: string[];
-    declare visibility: ModVisibility;
+    declare supportedGameVersionIds: string[];
+    declare visibility: ModVersionVisibility;
     declare dependancies: number[]; // array of modVersion ids
     declare platform: Platform;
     declare zipHash: string;
     declare contentHashes: ContentHash[];
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
+
+    public async getSupportedGameVersions(): Promise<GameVersion[]> {
+        let gameVersions: GameVersion[] = [];
+        for (let versionId of this.supportedGameVersionIds) {
+            let version = await DatabaseHelper.database.GameVersions.findByPk(versionId);
+            if (version) {
+                gameVersions.push(version);
+            }
+        }
+        return gameVersions;
+    }
+
+    public async toJSONWithGameVersions() {
+        return {
+            id: this.id,
+            modId: this.modId,
+            authorId: this.authorId,
+            modVersion: this.modVersion,
+            supportedGameVersions: await this.getSupportedGameVersions(),
+            visibility: this.visibility,
+            dependancies: this.dependancies,
+            platform: this.platform,
+            zipHash: this.zipHash,
+            contentHashes: this.contentHashes,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
 }
 
 export interface ContentHash {
@@ -323,18 +344,18 @@ export enum Platform {
     Universal = `universalpc`,
 }
 
-export enum ModVisibility {
+export enum ModVersionVisibility {
     Private = `private`,
     Unverified = `unverified`,
-    Public = `public`,
+    Verified = `verified`,
 }
 
 export function isValidPlatform(value: string): value is Platform {
     return validateEnumValue(value, Platform);
 }
 
-export function isValidVisibility(value: string): value is ModVisibility {
-    return validateEnumValue(value, ModVisibility);
+export function isValidVisibility(value: string): value is ModVersionVisibility {
+    return validateEnumValue(value, ModVersionVisibility);
 }
 
 // yoink thankies bstoday & bns
@@ -356,12 +377,15 @@ export class DatabaseHelper {
         return validateEnumValue(value, Platform);
     }
     
-    public static isValidVisibility(value: string): value is ModVisibility {
-        return validateEnumValue(value, ModVisibility);
+    public static isValidModVersionVisibility(value: string): value is ModVersionVisibility {
+        return validateEnumValue(value, ModVersionVisibility);
     }
 
     public static async isValidGameName(name: string): Promise<boolean> {
-        let game = await DatabaseHelper.database.Games.findOne({ where: { name: name } });
-        return !!game;
+        if (!name) {
+            return false;
+        }
+        let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: name } });
+        return !!game; // apperently this is a way to check if an object is null
     }
 }

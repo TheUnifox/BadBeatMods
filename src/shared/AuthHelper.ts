@@ -191,3 +191,36 @@ export interface DiscordUserGuild {
     permissions?: string;
 }
     */
+
+import { DatabaseHelper, User, UserRoles } from "./Database";
+
+
+export async function validateSession(req: any, res: any, role: UserRoles = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User}> {
+    let sessionId = req.session.userId;
+    if (!sessionId) {
+        if (handleRequest) {
+            return res.status(401).send({ message: `Unauthorized.` });
+        } else {
+            return { approved: false, user: null };
+        }
+    }
+    
+    let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
+    if (!user) {
+        if (handleRequest) {
+            return res.status(401).send({ message: `Unauthorized.` });
+        } else {
+            return { approved: false, user: null };
+        }
+    }
+
+    if (user.roles.includes(role)) {
+        return { approved: true, user: user };
+    } else {
+        if (handleRequest) {
+            return res.status(401).send({ message: `Unauthorized.` });
+        } else {
+            return { approved: false, user: null };
+        }
+    }
+}
