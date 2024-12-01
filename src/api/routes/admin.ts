@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, ModVersionVisibility, UserRoles } from '../../shared/Database';
+import { DatabaseHelper, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 
