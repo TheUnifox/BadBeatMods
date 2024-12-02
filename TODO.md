@@ -8,8 +8,8 @@
 - [ ] bsmods api compatibility maybe (for mod assistant) (this is now required)
 
 - [ ] Allow only uploading single dll (autopackage into zip)
-- [ ] Figure out duplicate version detection
+- [x] Figure out duplicate version detection
 - [ ] actually serve mods
 - [ ] add webhooks (make this public????)
 
-- [ ] make beatmods scraper or something
+- [ ] make beatmods scraper or something (needs to happen befoe 29th.)

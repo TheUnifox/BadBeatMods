@@ -1,4 +1,5 @@
-/*import { auth, server } from '../../../storage/config.json';
+import { auth, server, devmode, authBypass } from '../../storage/config.json';
+import { DatabaseHelper, User, UserRoles } from "./Database";
 
 class OAuth2Helper {
     public static async getToken(url:string, code: string, oAuth2Data:{clientId:string, clientSecret:string}, callbackUrl:string): Promise<OAuth2Response | null> {
@@ -48,7 +49,8 @@ export interface OAuth2Response {
     refresh_token?: string,
     scope: string,
 }
-
+/*
+//#region BeatLeader
 export class BeatLeaderAuthHelper extends OAuth2Helper {
     private static readonly callbackUrl = `${server.url}/api/auth/beatleader/callback`;
     
@@ -105,7 +107,9 @@ export interface BeatLeaderMinimalUser {
         playerId: string
     }[]
 }
+//#endregion
 
+//#region BeatSaver
 export class BeatSaverAuthHelper extends OAuth2Helper {
     private static readonly callbackUrl = `${server.url}/api/auth/beatsaver/callback`;
     
@@ -135,7 +139,9 @@ export interface BeatSaverIdentify {
     name: string;
     avatar: string;
 }
-
+//#endregion
+*/
+//#region Discord
 export class DiscordAuthHelper extends OAuth2Helper {
     private static readonly callbackUrl = `${server.url}/api/auth/discord/callback`;
     
@@ -190,9 +196,7 @@ export interface DiscordUserGuild {
     pending?: boolean;
     permissions?: string;
 }
-    */
-
-import { DatabaseHelper, User, UserRoles } from "./Database";
+//#endregion
 
 /*
     Role: if False, no role is required, you just have to be signed in.
@@ -201,6 +205,10 @@ import { DatabaseHelper, User, UserRoles } from "./Database";
 */
 export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User}> {
     let sessionId = req.session.userId;
+    if (devmode && authBypass) {
+        let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
+        return { approved: true, user: user };
+    }
     if (!sessionId) {
         if (handleRequest) {
             return res.status(401).send({ message: `Unauthorized.` });

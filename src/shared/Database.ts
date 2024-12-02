@@ -3,6 +3,8 @@ import { exit } from "process";
 import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Sequelize } from "sequelize";
 import { storage, devmode } from '../../storage/config.json';
 import { Logger } from "./Logger";
+import { satisfies, SemVer } from "semver";
+import e from "express";
 
 export class DatabaseManager {
     public sequelize: Sequelize;
@@ -194,6 +196,13 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
+                get() {
+                    return new SemVer(this.getDataValue(`modVersion`));
+                },
+                set(value: SemVer) {
+                    // @ts-expect-error ts(2345)
+                    this.setDataValue(`modVersion`, value.toString());
+                },
             },
             supportedGameVersionIds: {
                 type: DataTypes.STRING,
@@ -294,14 +303,27 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare infoUrl: string;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+
+    public async getLatestVersion(gameVersion: number): Promise<ModVersion | null> {
+        let versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id } });
+        let latestVersion: ModVersion | null = null;
+        for (let version of versions) {
+            if (version.supportedGameVersionIds.includes(gameVersion)) {
+                if (!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) {
+                    latestVersion = version;
+                }
+            }
+        }
+        return latestVersion;
+    }
 }
 
 export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreationAttributes<ModVersion>> {
     declare readonly id: number;
     declare modId: number;
     declare authorId: number;
-    declare modVersion: string;
-    declare supportedGameVersionIds: string[];
+    declare modVersion: SemVer;
+    declare supportedGameVersionIds: number[];
     declare visibility: Visibility;
     declare dependancies: number[]; // array of modVersion ids
     declare platform: Platform;
@@ -309,6 +331,19 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare contentHashes: ContentHash[];
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
+
+    public static async checkForExistingVersion(modId: number, version: SemVer, gameVersionId: number): Promise<ModVersion | null> {
+        let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: version } });
+        if (!modVersion) {
+            return null;
+        }
+        
+        if (modVersion.supportedGameVersionIds.find((id) => id == gameVersionId)) {
+            return modVersion;
+        } else {
+            return null;
+        }
+    }
 
     public async getSupportedGameVersions(): Promise<GameVersion[]> {
         let gameVersions: GameVersion[] = [];
@@ -319,6 +354,17 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             }
         }
         return gameVersions;
+    }
+
+    public async getDependancies(): Promise<ModVersion[]> {
+        let dependancies: ModVersion[] = [];
+        for (let dependancyId of this.dependancies) {
+            let dependancy = await DatabaseHelper.database.ModVersions.findByPk(dependancyId);
+            if (dependancy) {
+                dependancies.push(dependancy);
+            }
+        }
+        return dependancies;
     }
 
     public async toJSONWithGameVersions() {
@@ -337,6 +383,23 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             updatedAt: this.updatedAt,
         };
     }
+
+    // this function is for when a mod supports a newer version but the dependancy does not. (uses ^x.x.x for comparison)
+    public static async isValidDependancySucessor(originalVersion:ModVersion, newVersion:ModVersion, forVersion: number): Promise<boolean> {
+        let originalGameVersions = await originalVersion.getSupportedGameVersions();
+        let newGameVersions = await newVersion.getSupportedGameVersions();
+
+        if (originalGameVersions.find((version) => version.id == forVersion)) {
+            return false;
+        }
+
+        if (!newGameVersions.find((version) => version.id == forVersion)) {
+            return false;
+        }
+
+        return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.toString()}`);
+    }
+
 }
 
 export interface ContentHash {

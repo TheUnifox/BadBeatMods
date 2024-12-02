@@ -16,7 +16,7 @@ export class CreateModRoutes {
 
     private async loadRoutes() {
         this.app.post(`/api/mod/create`, async (req, res) => {
-            let sessionId = req.session.userId;
+            let session = await validateSession(req, res, true);
             let name = req.body.name;
             let description = req.body.description;
             let infoUrl = req.body.infoUrl;
@@ -25,15 +25,6 @@ export class CreateModRoutes {
             //#region Request Validation
             if (!name || !description || infoUrl || typeof name !== `string` || typeof description !== `string` || typeof infoUrl !== `string` || name.length < 1 || description.length < 1) {
                 return res.status(400).send({ message: `Missing name or description.` });
-            }
-
-            if (!sessionId) {
-                return res.status(401).send({ message: `Unauthorized.` });
-            }
-
-            let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
-            if (!user) {
-                return res.status(401).send({ message: `Unauthorized.` });
             }
 
             if (Array.isArray(file) || file.size > 8 * 1024 * 1024) {
@@ -50,7 +41,7 @@ export class CreateModRoutes {
             DatabaseHelper.database.Mods.create({
                 name: name,
                 description: description,
-                authorIds: [sessionId],
+                authorIds: [session.user.id],
                 infoUrl: infoUrl,
                 iconFileExtension: path.extname(file.name),
                 visibility: Visibility.Unverified,
