@@ -352,6 +352,7 @@ export enum Platform {
 
 export enum Visibility {
     Private = `private`,
+    Removed = `removed`,
     Unverified = `unverified`,
     Verified = `verified`,
 }
