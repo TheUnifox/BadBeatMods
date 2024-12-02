@@ -1,9 +1,10 @@
 import { Express } from 'express';
 import path from 'node:path';
-import { DatabaseHelper, ContentHash, isValidPlatform, ModVersionVisibility } from '../../shared/Database';
+import { DatabaseHelper, ContentHash, Visibility } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
 import { storage, devmode } from '../../../storage/config.json';
+import { validateSession } from 'src/shared/AuthHelper';
 
 export class CreateModRoutes {
     private app: Express;
@@ -39,7 +40,7 @@ export class CreateModRoutes {
                 return res.status(413).send({ error: `File too large (8MB Max).` });
             }
             
-            let isAcceptableImage = (file.mimetype !== `image/png` && file.name.endsWith(`.zip`)) || (file.mimetype !== `image/jpeg` && (file.name.endsWith(`.jpeg`) || file.name.endsWith(`.jpg`)) || (file.mimetype !== `image/webp` && file.name.endsWith(`.webp`)));
+            let isAcceptableImage = (file.mimetype !== `image/png` && file.name.endsWith(`.png`)) || (file.mimetype !== `image/jpeg` && (file.name.endsWith(`.jpeg`) || file.name.endsWith(`.jpg`)) || (file.mimetype !== `image/webp` && file.name.endsWith(`.webp`)));
 
             if (!isAcceptableImage) {
                 return res.status(400).send({ error: `Invalid file type.` });
@@ -52,7 +53,7 @@ export class CreateModRoutes {
                 authorIds: [sessionId],
                 infoUrl: infoUrl,
                 iconFileExtension: path.extname(file.name),
-                visibility: ModVersionVisibility.Unverified,
+                visibility: Visibility.Unverified,
             }).then((mod) => {
                 file.mv(`${path.resolve(storage.iconsDir)}/${mod.id}${path.extname(file.name)}`);
                 return res.status(200).send({ mod });
@@ -62,7 +63,7 @@ export class CreateModRoutes {
         });
 
         this.app.post(`/api/mod/:modIdParam/upload`, async (req, res) => {
-            let sessionId = req.session.userId;
+            let session = await validateSession(req, res, true);
             let modId = parseInt(req.params.modIdParam);
             let gameVersions = devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
             let modVersion = req.body.modVersion;
@@ -71,22 +72,17 @@ export class CreateModRoutes {
 
             let file = req.files.file;
             //#region Request Validation
-            if (!sessionId) {
-                return res.status(401).send({ message: `Unauthorized.` });
-            }
-
-            if (!modId || !modVersion || !file || !platform || !isValidPlatform(platform)) {
+            if (!modId || isNaN(modId) || !modVersion || !file || !platform || !DatabaseHelper.isValidPlatform(platform)) {
                 return res.status(400).send({ message: `Missing valid modId, gameVersions, modVersion, platform, or file.` });
-            }
-
-            let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
-            if (!user) {
-                return res.status(401).send({ message: `Unauthorized.` });
             }
 
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
+            }
+
+            if (!mod.authorIds.includes(session.user.id)) {
+                return res.status(401).send({ message: `You cannot upload to this mod.` });
             }
 
             if (dependancies && Array.isArray(dependancies)) {
@@ -142,8 +138,8 @@ export class CreateModRoutes {
 
             DatabaseHelper.database.ModVersions.create({
                 modId: modId,
-                authorId: sessionId,
-                visibility: ModVersionVisibility.Unverified,
+                authorId: session.user.id,
+                visibility: Visibility.Unverified,
                 supportedGameVersionIds: gameVersions,
                 modVersion: modVersion,
                 dependancies: dependancies ? dependancies : [],

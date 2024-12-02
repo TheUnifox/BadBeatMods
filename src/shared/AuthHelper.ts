@@ -194,8 +194,12 @@ export interface DiscordUserGuild {
 
 import { DatabaseHelper, User, UserRoles } from "./Database";
 
-
-export async function validateSession(req: any, res: any, role: UserRoles = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User}> {
+/*
+    Role: if False, no role is required, you just have to be signed in.
+    If True, the user must not be banned.
+    If a UserRoles, the user must have that role.
+*/
+export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User}> {
     let sessionId = req.session.userId;
     if (!sessionId) {
         if (handleRequest) {
@@ -212,6 +216,20 @@ export async function validateSession(req: any, res: any, role: UserRoles = User
         } else {
             return { approved: false, user: null };
         }
+    }
+
+    if (typeof role === `boolean` && role == true) {
+        if (user.roles.includes(UserRoles.Banned)) {
+            if (handleRequest) {
+                return res.status(401).send({ message: `Unauthorized.` });
+            } else {
+                return { approved: false, user: null };
+            }
+        } else {
+            return { approved: true, user: user };
+        }
+    } else if (typeof role === `boolean` && role == false) {
+        return { approved: true, user: user };
     }
 
     if (user.roles.includes(role)) {

@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, ModVersionVisibility, UserRoles } from '../../shared/Database';
+import { DatabaseHelper, Visibility, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 
@@ -12,10 +12,136 @@ export class UpdateModRoutes {
     }
 
     private async loadRoutes() {
-        this.app.post(`/api/mod/:modIdParam/approve`, async (req, res) => {
+        this.app.patch(`/api/mod/:modIdParam`, async (req, res) => {
+            let session = await validateSession(req, res, true);
+            let modId = parseInt(req.params.modIdParam, 10);
+            let name = req.body.name;
+            let description = req.body.description;
+            let infoUrl = req.body.infoUrl;
+            
+            if (!modId || isNaN(modId)) {
+                return res.status(400).send({ message: `Invalid mod id.` });
+            }
+
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
+            if (!mod) {
+                return res.status(404).send({ message: `Mod not found.` });
+            }
+
+            if (session.user.roles.includes(UserRoles.Admin) || session.user.roles.includes(UserRoles.Moderator) || !mod.authorIds.includes(session.user.id)) {
+                // Admins and moderators can edit any mod, authors can edit their own mods
+            } else {
+                return res.status(401).send({ message: `You cannot edit this mod.` });
+            }
+
+            if (name && typeof name === `string` && name.length > 0) {
+                mod.name = name;
+                mod.visibility = Visibility.Unverified;
+            }
+
+            if (description && typeof description === `string` && description.length > 0) {
+                mod.description = description;
+                mod.visibility = Visibility.Unverified;
+            }
+
+            if (infoUrl && typeof infoUrl === `string` && infoUrl.length > 0) {
+                mod.infoUrl = infoUrl;
+                mod.visibility = Visibility.Unverified;
+            }
+
+            mod.save().then(() => {
+                Logger.log(`Mod ${modId} updated by ${session.user.username}.`);
+                return res.status(200).send({ message: `Mod updated.` });
+            }).catch((error) => {
+                Logger.error(`Error updating mod: ${error}`);
+                return res.status(500).send({ message: `Error updating mod: ${error}` });
+            });
+        });
+
+        this.app.patch(`/api/modversion/:modVersionIdParam`, async (req, res) => {
+            let session = await validateSession(req, res, true);
+            let modVersionId = parseInt(req.params.modVersionIdParam, 10);
+            let gameVersions = req.body.gameVersions;
+            let modSemVerVersion = req.body.modVersion;
+            let dependancies = req.body.dependancies;
+            let platform = req.body.platform;
+
+            if (!modVersionId || isNaN(modVersionId)) {
+                return res.status(400).send({ message: `Missing valid modVersionId or modVersion.` });
+            }
+
+            let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId } });
+            if (!modVersion) {
+                return res.status(404).send({ message: `Mod version not found.` });
+            }
+
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
+            if (!mod) {
+                return res.status(404).send({ message: `Mod not found.` });
+            }
+
+            if (!mod.authorIds.includes(session.user.id)) {
+                return res.status(401).send({ message: `You cannot edit this mod version.` });
+            }
+
+            if (dependancies && Array.isArray(dependancies)) {
+                for (let dependancy of dependancies) {
+                    if (typeof dependancy !== `number`) {
+                        return res.status(400).send({ message: `Invalid dependancy id. (Reading ${dependancy})` });
+                    }
+                    let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
+                    if (!dependancyMod) {
+                        return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
+                    }
+                }
+                modVersion.dependancies = dependancies;
+                modVersion.visibility = Visibility.Unverified;
+            }
+
+            if (gameVersions && Array.isArray(gameVersions)) {
+                for (let version of gameVersions) {
+                    if (typeof version !== `number`) {
+                        return res.status(400).send({ message: `Invalid game version. (Reading ${version})` });
+                    }
+                    let gameVersionDB = await DatabaseHelper.database.GameVersions.findOne({ where: { id: version } });
+                    if (!gameVersionDB) {
+                        return res.status(404).send({ message: `Game version (${version}) not found.` });
+                    }
+                }
+                modVersion.supportedGameVersionIds = gameVersions;
+                modVersion.visibility = Visibility.Unverified;
+            }
+
+            if (modSemVerVersion && typeof modSemVerVersion === `string`) {
+                modVersion.modVersion = modSemVerVersion;
+                modVersion.visibility = Visibility.Unverified;
+            }
+
+            if (platform && DatabaseHelper.isValidPlatform(platform)) {
+                modVersion.platform = platform;
+                modVersion.visibility = Visibility.Unverified;
+            }
+
+            modVersion.save().then(() => {
+                Logger.log(`Mod version ${modVersionId} updated by ${session.user.username}.`);
+                return res.status(200).send({ message: `Mod version updated.` });
+            }).catch((error) => {
+                Logger.error(`Error updating mod version: ${error}`);
+                return res.status(500).send({ message: `Error updating mod version: ${error}` });
+            });
+
+        });
+
+        this.app.post(`/api/mod/:modIdParam/approval`, async (req, res) => {
             let session = await validateSession(req, res, UserRoles.Approver);
-            let modId = parseInt(req.params.modIdParam);
-            if (!modId) {
+            let modId = parseInt(req.params.modIdParam, 10);
+            let status = req.body.status;
+
+            if (!status || !DatabaseHelper.isValidVisibility(status)) {
+                return res.status(400).send({ message: `Missing status.` });
+            }
+
+            if (!modId || isNaN(modId)) {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
 
@@ -28,19 +154,25 @@ export class UpdateModRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
             
-            mod.update({ visibility: ModVersionVisibility.Verified }).then(() => {
-                Logger.log(`Mod ${modId} approved by ${session.user.username}.`);
-                return res.status(200).send({ message: `Mod approved.` });
+            mod.update({ visibility: status }).then(() => {
+                Logger.log(`Mod ${modId} set to status ${status} by ${session.user.username}.`);
+                return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
-                Logger.error(`Error approving mod: ${error}`);
-                return res.status(500).send({ message: `Error approving mod:  ${error}` });
+                Logger.error(`Error ${status} mod: ${error}`);
+                return res.status(500).send({ message: `Error ${status} mod:  ${error}` });
             });
         });
 
-        this.app.post(`/api/modversion/:modVersionIdParam/approve`, async (req, res) => {
+        this.app.post(`/api/modversion/:modVersionIdParam/approval`, async (req, res) => {
             let session = await validateSession(req, res, UserRoles.Approver);
-            let modVersionId = parseInt(req.params.modVersionIdParam);
-            if (!modVersionId) {
+            let modVersionId = parseInt(req.params.modVersionIdParam, 10);
+            let status = req.body.status;
+
+            if (!status || !DatabaseHelper.isValidVisibility(status)) {
+                return res.status(400).send({ message: `Missing status.` });
+            }
+
+            if (!modVersionId || isNaN(modVersionId)) {
                 return res.status(400).send({ message: `Invalid mod version id.` });
             }
 
@@ -49,16 +181,21 @@ export class UpdateModRoutes {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
-            if (modVersion.authorId === session.user.id) {
-                return res.status(401).send({ message: `You cannot approve your own mod.` });
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
+            if (!mod) {
+                return res.status(404).send({ message: `Mod not found.` });
             }
 
-            modVersion.update({ visibility: ModVersionVisibility.Verified }).then(() => {
-                Logger.log(`Mod version ${modVersionId} approved by ${session.user.username}.`);
-                return res.status(200).send({ message: `Mod version approved.` });
+            if (mod.authorIds.includes(session.user.id)) {
+                return res.status(401).send({ message: `You cannot approve your own mod.` });
+            }
+            
+            mod.update({ visibility: status }).then(() => {
+                Logger.log(`Mod ${modVersion.id} set to status ${status} by ${session.user.username}.`);
+                return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
-                Logger.error(`Error approving mod version: ${error}`);
-                return res.status(500).send({ message: `Error approving mod version: ${error}` });
+                Logger.error(`Error ${status} mod: ${error}`);
+                return res.status(500).send({ message: `Error ${status} mod:  ${error}` });
             });
         });
     }

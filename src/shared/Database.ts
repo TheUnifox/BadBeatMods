@@ -137,6 +137,11 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
+            category: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: `other`,
+            },
             authorIds: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -282,8 +287,9 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly id: CreationOptional<number>;
     declare name: string;
     declare description: string;
+    declare category: Categories;
     declare authorIds: number[];
-    declare visibility: string;
+    declare visibility: Visibility;
     declare iconFileExtension: string;
     declare infoUrl: string;
     declare readonly createdAt: CreationOptional<Date>;
@@ -296,7 +302,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare authorId: number;
     declare modVersion: string;
     declare supportedGameVersionIds: string[];
-    declare visibility: ModVersionVisibility;
+    declare visibility: Visibility;
     declare dependancies: number[]; // array of modVersion ids
     declare platform: Platform;
     declare zipHash: string;
@@ -344,18 +350,25 @@ export enum Platform {
     Universal = `universalpc`,
 }
 
-export enum ModVersionVisibility {
+export enum Visibility {
     Private = `private`,
     Unverified = `unverified`,
     Verified = `verified`,
 }
 
-export function isValidPlatform(value: string): value is Platform {
-    return validateEnumValue(value, Platform);
-}
-
-export function isValidVisibility(value: string): value is ModVersionVisibility {
-    return validateEnumValue(value, ModVersionVisibility);
+export enum Categories {
+    Core = `core`,
+    Library = `library`,
+    Cosmetic = `cosmetic`,
+    PracticeTraining = `practice`,
+    Gameplay = `gameplay`,
+    StreamTools = `streamtools`,
+    UIEnchancements = `ui`,
+    Lighting = `lighting`,
+    TweaksTools = `tweaks`,
+    Multiplayer = `multiplayer`,
+    TextChanges = `text`,
+    Other = `other`,
 }
 
 // yoink thankies bstoday & bns
@@ -377,8 +390,8 @@ export class DatabaseHelper {
         return validateEnumValue(value, Platform);
     }
     
-    public static isValidModVersionVisibility(value: string): value is ModVersionVisibility {
-        return validateEnumValue(value, ModVersionVisibility);
+    public static isValidVisibility(value: string): value is Visibility {
+        return validateEnumValue(value, Visibility);
     }
 
     public static async isValidGameName(name: string): Promise<boolean> {
@@ -387,5 +400,13 @@ export class DatabaseHelper {
         }
         let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: name } });
         return !!game; // apperently this is a way to check if an object is null
+    }
+
+    public static async isValidGameVersion(gameName: string, version: string): Promise<number | null> {
+        if (!gameName || !version) {
+            return null;
+        }
+        let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: gameName, version: version } });
+        return game ? game.id : null;
     }
 }
