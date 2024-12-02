@@ -56,5 +56,31 @@ export class GetModRoutes {
             return res.status(404).send({ message: `Hash not founds.` });
         });
 
+        this.app.get(`/api/mod/beatmods`, async (req, res) => {
+            let modArray: Mod[] = [];
+        });
     }
+}
+
+type Mod = {
+    name: string,
+    version: string,
+    gameVersion: string,
+    author: {
+        _id: string,
+        username: string,
+        lastLogin: string,
+    },
+    status: string,
+    description: string,
+    link: string,
+    category: string,
+    required: boolean,
+    downloads: {
+        type: string,
+        url: string,
+        hashMd5: string,
+    },
+    dependencies: Mod | {name: string, _id: string}[],
+    _id: string,
 }
