@@ -103,17 +103,5 @@ process.on(`SIGQUIT`, () => {
     Logger.log(`Received SIGQUIT, exiting.`);
 });
 
-// eslint-disable-next-line quotes
-declare module 'express-session' {
-    export interface Session {
-        userId: number;
-        username: string;
-        avatarUrl: string;
-        csrf: {
-            token: string;
-            expiration: number;
-        };
-    }
-}
 
 console.log(`Setup complete.`);

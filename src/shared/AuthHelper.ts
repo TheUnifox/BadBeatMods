@@ -1,6 +1,19 @@
 import { auth, server, devmode, authBypass } from '../../storage/config.json';
 import { DatabaseHelper, User, UserRoles } from "./Database";
 
+// eslint-disable-next-line quotes
+declare module 'express-session' {
+    export interface Session {
+        userId: number;
+        username: string;
+        avatarUrl: string;
+        csrf: {
+            token: string;
+            expiration: number;
+        };
+    }
+}
+
 class OAuth2Helper {
     public static async getToken(url:string, code: string, oAuth2Data:{clientId:string, clientSecret:string}, callbackUrl:string): Promise<OAuth2Response | null> {
         if (!code || !oAuth2Data.clientId || !oAuth2Data.clientSecret || !callbackUrl || !url) {
@@ -146,7 +159,7 @@ export class DiscordAuthHelper extends OAuth2Helper {
     private static readonly callbackUrl = `${server.url}/api/auth/discord/callback`;
     
     public static getUrl(state:string): string {
-        return `https://discord.com/oauth2/authorize?client_id=${auth.discord.clientId}&response_type=code&scope=guilds.members.read+identify&redirect_uri=${DiscordAuthHelper.callbackUrl}&state=${state}`;
+        return `https://discord.com/oauth2/authorize?client_id=${auth.discord.clientId}&response_type=code&scope=identify&redirect_uri=${DiscordAuthHelper.callbackUrl}&state=${state}`;
     }
 
     public static getToken(code:string): Promise<OAuth2Response> {
