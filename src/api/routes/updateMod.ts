@@ -80,8 +80,10 @@ export class UpdateModRoutes {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
-            if (!mod.authorIds.includes(session.user.id)) {
-                return res.status(401).send({ message: `You cannot edit this mod version.` });
+            if (session.user.roles.includes(UserRoles.Admin) || session.user.roles.includes(UserRoles.Moderator) || !mod.authorIds.includes(session.user.id)) {
+                // Admins and moderators can edit any mod, authors can edit their own mods
+            } else {
+                return res.status(401).send({ message: `You cannot edit this mod.` });
             }
 
             if (dependancies && Array.isArray(dependancies)) {
