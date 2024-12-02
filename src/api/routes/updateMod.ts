@@ -17,7 +17,7 @@ export class UpdateModRoutes {
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;
-            let infoUrl = req.body.infoUrl;
+            let gitUrl = req.body.gitUrl;
             
             if (!modId || isNaN(modId)) {
                 return res.status(400).send({ message: `Invalid mod id.` });
@@ -44,8 +44,8 @@ export class UpdateModRoutes {
                 mod.visibility = Visibility.Unverified;
             }
 
-            if (infoUrl && typeof infoUrl === `string` && infoUrl.length > 0) {
-                mod.infoUrl = infoUrl;
+            if (gitUrl && typeof gitUrl === `string` && gitUrl.length > 0) {
+                mod.gitUrl = gitUrl;
                 mod.visibility = Visibility.Unverified;
             }
 

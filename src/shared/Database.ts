@@ -4,7 +4,6 @@ import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, 
 import { storage, devmode } from '../../storage/config.json';
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
-import e from "express";
 
 export class DatabaseManager {
     public sequelize: Sequelize;
@@ -161,7 +160,7 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
-            infoUrl: {
+            gitUrl: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
@@ -300,7 +299,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare authorIds: number[];
     declare visibility: Visibility;
     declare iconFileExtension: string;
-    declare infoUrl: string;
+    declare gitUrl: string;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 

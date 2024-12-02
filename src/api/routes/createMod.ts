@@ -19,11 +19,11 @@ export class CreateModRoutes {
             let session = await validateSession(req, res, true);
             let name = req.body.name;
             let description = req.body.description;
-            let infoUrl = req.body.infoUrl;
+            let gitUrl = req.body.gitUrl;
             let file = req.files.file;
 
             //#region Request Validation
-            if (!name || !description || infoUrl || typeof name !== `string` || typeof description !== `string` || typeof infoUrl !== `string` || name.length < 1 || description.length < 1) {
+            if (!name || !description || gitUrl || typeof name !== `string` || typeof description !== `string` || typeof gitUrl !== `string` || name.length < 1 || description.length < 1) {
                 return res.status(400).send({ message: `Missing name or description.` });
             }
 
@@ -42,7 +42,7 @@ export class CreateModRoutes {
                 name: name,
                 description: description,
                 authorIds: [session.user.id],
-                infoUrl: infoUrl,
+                gitUrl: gitUrl,
                 iconFileExtension: path.extname(file.name),
                 visibility: Visibility.Unverified,
             }).then((mod) => {

@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper } from '../../shared/Database';
+import { Categories, DatabaseHelper, ModVersion } from '../../shared/Database';
 
 export class GetModRoutes {
     private app: Express;
@@ -57,7 +57,57 @@ export class GetModRoutes {
         });
 
         this.app.get(`/api/mod/beatmods`, async (req, res) => {
+            let version = req.query.version;
+
             let modArray: Mod[] = [];
+
+            if (!version || typeof version !== `string`) {
+                return res.status(400).send({message: `Missing Game Version`});
+            }
+
+            let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: `Beat Saber`, version: version}});
+            if (gameVersion) {
+                return res.status(400).send({message: `No valid game version.`});
+            }
+
+            let mods = await DatabaseHelper.database.Mods.findAll();
+            for (let mod of mods) {
+                let modVersion = await mod.getLatestVersion(gameVersion.id);
+
+                let dependancies = [];
+
+                for (let dependancy of modVersion.dependancies) {
+                    dependancies.push({
+                        _id: dependancy.toString(),
+                        name: dependancy.toString()
+                    })
+                }
+
+                modArray.push({
+                    name: mod.name,
+                    description: mod.description,
+                    version: modVersion.modVersion.toString(),
+                    gameVersion: gameVersion.version,
+                    author: {
+                        _id: modVersion.authorId.toString(),
+                        username: modVersion.authorId.toString(),
+                        lastLogin: `null`
+                    },
+                    status: modVersion.visibility,
+                    link: mod.gitUrl,
+                    category: mod.category,
+                    downloads: [{
+                        type: modVersion.platform,
+                        url: `null`,
+                        hashMd5: modVersion.contentHashes
+                    }],
+                    dependencies: dependancies,
+                    _id: modVersion.id.toString(),
+                    required: (mod.category === Categories.Core),
+                });
+            }
+
+            res.status(200).send(modArray);
         });
     }
 }
@@ -79,8 +129,8 @@ type Mod = {
     downloads: {
         type: string,
         url: string,
-        hashMd5: string,
-    },
+        hashMd5: object,
+    }[],
     dependencies: Mod | {name: string, _id: string}[],
     _id: string,
 }
