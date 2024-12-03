@@ -3,6 +3,8 @@
 - [ ] Make admin endpoints
 - [ ] Make per game permissions (add to User class)
 - [ ] add mod filtering to /api/mods
+- [ ] add github auth, add discord link for dms... bot???
+- [ ] add mod approval queue?? (or other solution for maps turning unverified with anyy changes)
 
 
 - [ ] frontend (maybe)
