@@ -210,6 +210,14 @@ export interface DiscordUserGuild {
     permissions?: string;
 }
 //#endregion
+/*
+export class GitHubAuthHelper extends OAuth2Helper {
+    private static readonly callbackUrl = `${server.url}/api/auth/github/callback`;
+    
+    public static getUrl(state:string): string {
+        return `https://github.com/login/oauth/authorize?client_id=${auth.github.clientId}&response_type=code&scope=user&redirect_uri=${GitHubAuthHelper.callbackUrl}&state=${state}`;
+*/
+
 
 /*
     Role: if False, no role is required, you just have to be signed in.
