@@ -18,3 +18,4 @@
 
 
 - [ ] make beatmods scraper or something (needs to happen befoe 29th.)
+- [ ] fix crash on missing file 
