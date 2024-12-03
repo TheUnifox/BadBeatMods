@@ -2,6 +2,7 @@ import { Express } from 'express';
 import { DatabaseHelper, Visibility, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
+import { SemVer } from 'semver';
 
 export class UpdateModRoutes {
     private app: Express;
@@ -115,7 +116,7 @@ export class UpdateModRoutes {
             }
 
             if (modSemVerVersion && typeof modSemVerVersion === `string`) {
-                modVersion.modVersion = modSemVerVersion;
+                modVersion.modVersion = new SemVer(modSemVerVersion); //fix this
                 modVersion.visibility = Visibility.Unverified;
             }
 
