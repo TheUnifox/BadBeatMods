@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DiscordAuthHelper } from '../../shared/AuthHelper';
+import { DiscordAuthHelper, GitHubAuthHelper, validateSession } from '../../shared/AuthHelper';
 import { HTTPTools } from '../../shared/HTTPTools';
 import { server } from '../../../storage/config.json';
 import { DatabaseHelper } from '../../shared/Database';
@@ -32,7 +32,54 @@ export class AuthRoutes {
             });
         });
 
-        this.app.get(`/api/auth/discord`, (req, res) => {
+        this.app.get(`/api/auth/github`, async (req, res) => {
+            let state = HTTPTools.createRandomString(16);
+            this.validStates.push(state + req.ip);
+            setTimeout(() => {
+                this.validStates = this.validStates.filter((s) => s !== state + req.ip);
+            }, 1000 * 60 * 3);
+
+            return res.redirect(302, GitHubAuthHelper.getUrl(state));
+        });
+
+        this.app.get(`/api/auth/github/callback`, async (req, res) => {
+            const code = req.query[`code`];
+            const state = req.query[`state`];
+
+            if (!code || !state) {
+                return res.status(400).send({ error: `Invalid parameters.` });
+            }
+
+            if (!this.validStates.includes(state + req.ip)) {
+                return res.status(400).send({ error: `Invalid state.` });
+            }
+
+            this.validStates = this.validStates.filter((s) => s !== state + req.ip);
+
+            let token = await GitHubAuthHelper.getToken(code.toString());
+            if (!token) { return res.status(400).send({ error: `Invalid code.` }); }
+            let user = await GitHubAuthHelper.getUser(token.access_token);
+            if (!user) { return res.status(500).send({ error: `Internal server error.` }); }
+
+            let userDb = await DatabaseHelper.database.Users.findOne({ where: { githubId: user.id } });
+            if (!userDb) {
+                userDb = await DatabaseHelper.database.Users.create({
+                    username: user.login,
+                    githubId: user.id.toString(),
+                    roles: [],
+                });
+
+                Logger.log(`User ${user.login} signed up.`, `Auth`);
+            }
+
+            req.session.userId = userDb.id;
+            req.session.username = userDb.username;
+            req.session.save();
+
+        });
+
+        this.app.get(`/api/link/discord`, async (req, res) => {
+            let session = await validateSession(req, res, false);
             let state = HTTPTools.createRandomString(16);
             this.validStates.push(state + req.ip);
             setTimeout(() => {
@@ -42,7 +89,8 @@ export class AuthRoutes {
             return res.redirect(302, DiscordAuthHelper.getUrl(state));
         });
 
-        this.app.get(`/api/auth/discord/callback`, async (req, res) => {
+        this.app.get(`/api/link/discord/callback`, async (req, res) => {
+            let session = await validateSession(req, res, false); // this probably won't work, double check it tho...
             const code = req.query[`code`];
             const state = req.query[`state`];
 
@@ -59,22 +107,17 @@ export class AuthRoutes {
             let user = await DiscordAuthHelper.getUser(token.access_token);
             if (!user) { return res.status(500).send({ error: `Internal server error.` }); }
 
-            let userDb = await DatabaseHelper.database.Users.findOne({ where: { discordId: user.id } });
+            let userDb = await DatabaseHelper.database.Users.findOne({ where: { githubId: session.user.id } });
 
             if (!userDb) {
-                userDb = await DatabaseHelper.database.Users.create({
-                    discordId: user.id,
-                    username: user.username,
-                    roles: []
-                });
+                res.status(400).send({ error: `Discord auth suscessfull, however user is not signed in.` });
+            } else {
+                userDb.discordId = user.id;
+                userDb.save();
             }
 
-            req.session.userId = userDb.id;
-            req.session.username = userDb.username;
-
-            req.session.save();
-            Logger.log(`User ${userDb.username} logged in.`, `Auth`);
-            return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${server.url}/judging" /></head><body style="background-color: black;"><a style="color:white;" href="${server.url}/judging">Click here if you are not redirected...</a></body>`); // i need to double check that this is the correct way to redirect
+            Logger.log(`User ${userDb.username} inked their discord.`, `Auth`);
+            return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${server.url}" /></head><body style="background-color: black;"><a style="color:white;" href="${server.url}">Click here if you are not redirected...</a></body>`); // i need to double check that this is the correct way to redirect
         });
     }
 }

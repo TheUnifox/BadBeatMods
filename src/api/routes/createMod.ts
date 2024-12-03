@@ -20,15 +20,15 @@ export class CreateModRoutes {
             let name = req.body.name;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
-            let file = req.files.file;
+            let file = req.files?.file;
 
             //#region Request Validation
             if (!name || !description || gitUrl || typeof name !== `string` || typeof description !== `string` || typeof gitUrl !== `string` || name.length < 1 || description.length < 1) {
                 return res.status(400).send({ message: `Missing name or description.` });
             }
 
-            if (Array.isArray(file) || file.size > 8 * 1024 * 1024) {
-                return res.status(413).send({ error: `File too large (8MB Max).` });
+            if (!file || Array.isArray(file) || file.size > 8 * 1024 * 1024) {
+                return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
             }
             
             let isAcceptableImage = (file.mimetype !== `image/png` && file.name.endsWith(`.png`)) || (file.mimetype !== `image/jpeg` && (file.name.endsWith(`.jpeg`) || file.name.endsWith(`.jpg`)) || (file.mimetype !== `image/webp` && file.name.endsWith(`.webp`)));
@@ -61,7 +61,7 @@ export class CreateModRoutes {
             let dependancies = req.body.dependancies;
             let platform = req.body.platform;
 
-            let file = req.files.file;
+            let file = req.files?.file;
             //#region Request Validation
             if (!modId || isNaN(modId) || !modVersion || !file || !platform || !DatabaseHelper.isValidPlatform(platform)) {
                 return res.status(400).send({ message: `Missing valid modId, gameVersions, modVersion, platform, or file.` });
@@ -101,8 +101,8 @@ export class CreateModRoutes {
             }
 
 
-            if (Array.isArray(file) || file.size > 50 * 1024 * 1024) {
-                return res.status(413).send({ error: `File too large.` });
+            if (!file || Array.isArray(file) || file.size > 50 * 1024 * 1024) {
+                return res.status(413).send({ error: `File missing or too large.` });
             }
             //#endregion
             let isZip = file.mimetype !== `application/zip` && file.name.endsWith(`.zip`);

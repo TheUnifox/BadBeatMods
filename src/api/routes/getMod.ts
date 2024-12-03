@@ -59,7 +59,7 @@ export class GetModRoutes {
         this.app.get(`/api/mod/beatmods`, async (req, res) => {
             let version = req.query.version;
 
-            let modArray: Mod[] = [];
+            let modArray: BeatModsMod[] = [];
 
             if (!version || typeof version !== `string`) {
                 return res.status(400).send({message: `Missing Game Version`});
@@ -112,7 +112,7 @@ export class GetModRoutes {
     }
 }
 
-type Mod = {
+type BeatModsMod = {
     name: string,
     version: string,
     gameVersion: string,
@@ -131,6 +131,6 @@ type Mod = {
         url: string,
         hashMd5: object,
     }[],
-    dependencies: Mod | {name: string, _id: string}[],
+    dependencies: BeatModsMod | {name: string, _id: string}[],
     _id: string,
 }

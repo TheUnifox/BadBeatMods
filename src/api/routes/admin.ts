@@ -3,7 +3,7 @@ import { DatabaseHelper, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 
-export class UpdateModRoutes {
+export class AdminRoutes {
     private app: Express;
 
     constructor(app: Express) {

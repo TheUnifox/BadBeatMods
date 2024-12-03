@@ -11,6 +11,7 @@ export class DatabaseManager {
     public ModVersions: ModelStatic<ModVersion>;
     public Mods: ModelStatic<Mod>;
     public GameVersions: ModelStatic<GameVersion>;
+    public EditApprovalQueue: ModelStatic<EditApprovalQueue>;
 
     constructor() {
         this.sequelize = new Sequelize(`database`, `user`, `password`, {
@@ -68,11 +69,18 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
                 autoIncrement: true,
+                unique: true,
             },
             username: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
+            },
+            githubId: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+                unique: true,
             },
             discordId: {
                 type: DataTypes.STRING,
@@ -104,6 +112,7 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
                 autoIncrement: true,
+                unique: true,
             },
             gameName: {
                 type: DataTypes.STRING,
@@ -127,6 +136,7 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
                 autoIncrement: true,
+                unique: true,
             },
             name: {
                 type: DataTypes.STRING,
@@ -182,6 +192,7 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
                 autoIncrement: true,
+                unique: true,
             },
             modId: {
                 type: DataTypes.INTEGER,
@@ -270,6 +281,7 @@ export class DatabaseManager {
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
     declare readonly id: CreationOptional<number>;
     declare username: string;
+    declare githubId: string;
     declare discordId: string;
     declare roles: string[];
     declare readonly createdAt: CreationOptional<Date>;
@@ -399,6 +411,50 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.toString()}`);
     }
 
+}
+
+export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `authorId` | `visibility` | `contentHashes` | `zipHash`}>
+export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileExtension` | `visibility` }>
+
+//this is gonna be fun :3
+export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>, InferCreationAttributes<EditApprovalQueue>> {
+    declare readonly id: number;
+    declare objId: number;
+    declare objTableName: `modVersions` | `mods`;
+    declare obj: ModVersionApproval | ModApproval;
+    
+    declare approverId: number;
+    declare approved: boolean;
+    declare readonly createdAt: Date;
+    declare readonly updatedAt: Date;
+
+    public async approve(user: User) {
+        if (this.objTableName == `modVersions` && `modVersion` in this.obj) {
+            let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objId);
+            if (modVersion) {
+                modVersion.modVersion = this.obj.modVersion;
+                modVersion.platform = this.obj.platform;
+                modVersion.supportedGameVersionIds = this.obj.supportedGameVersionIds;
+                modVersion.dependancies = this.obj.dependancies;
+                modVersion.visibility = Visibility.Verified;
+                modVersion.save();
+            }
+        } else if (this.objTableName == `mods` && `name` in this.obj) {
+            let mod = await DatabaseHelper.database.Mods.findByPk(this.objId);
+            if (mod) {
+                mod.name = this.obj.name;
+                mod.description = this.obj.description;
+                mod.category = this.obj.category;
+                mod.gitUrl = this.obj.gitUrl;
+                mod.authorIds = this.obj.authorIds;
+                mod.visibility = Visibility.Verified;
+                mod.save();
+            }
+        }
+        this.approved = true;
+        this.approverId = user.id;
+        this.save();
+    }
 }
 
 export interface ContentHash {
