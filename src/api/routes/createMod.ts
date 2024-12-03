@@ -4,7 +4,7 @@ import { DatabaseHelper, ContentHash, Visibility } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
 import { storage, devmode } from '../../../storage/config.json';
-import { validateSession } from 'src/shared/AuthHelper';
+import { validateSession } from '../../shared/AuthHelper';
 
 export class CreateModRoutes {
     private app: Express;
