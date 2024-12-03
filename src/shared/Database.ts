@@ -431,6 +431,7 @@ export enum Categories {
     TweaksTools = `tweaks`,
     Multiplayer = `multiplayer`,
     TextChanges = `text`,
+    Editor = `editor`,
     Other = `other`,
 }
 
