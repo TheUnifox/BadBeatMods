@@ -30,7 +30,7 @@ export class ImportRoutes {
             const BeatModsAPIData: BeatModsMod[] = await BeatModsResponse.json() as BeatModsMod[];
 
             Logger.log(`Through the mist and fog, a dark shape emerged, a ghostly figure standing in its helm`, `Import`)
-            if (!BeatModsAPIData || Array.isArray(BeatModsAPIData)) {
+            if (!BeatModsAPIData || !Array.isArray(BeatModsAPIData)) {
                 res.status(500).send({ message: `beatmods is borked`});
             }
 
