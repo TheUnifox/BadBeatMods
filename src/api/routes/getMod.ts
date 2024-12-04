@@ -112,7 +112,7 @@ export class GetModRoutes {
     }
 }
 
-type BeatModsMod = {
+export type BeatModsMod = {
     name: string,
     version: string,
     gameVersion: string,
