@@ -165,7 +165,7 @@ export class DatabaseManager {
                     this.setDataValue(`authorIds`, JSON.stringify(value));
                 },
             },
-            iconFileExtension: {
+            iconFileName: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
@@ -231,6 +231,9 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: `private`,
+                validate: {
+                    isIn: [Object.values(Visibility)],
+                }
             },
             platform: {
                 type: DataTypes.STRING,
@@ -310,7 +313,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare category: Categories;
     declare authorIds: number[];
     declare visibility: Visibility;
-    declare iconFileExtension: string;
+    declare iconFileName: string;
     declare gitUrl: string;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
@@ -414,15 +417,16 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 }
 
 export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `authorId` | `visibility` | `contentHashes` | `zipHash`}>
-export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileExtension` | `visibility` }>
+export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileName` | `visibility` }>
 
 //this is gonna be fun :3
 export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>, InferCreationAttributes<EditApprovalQueue>> {
     declare readonly id: number;
+    declare submitterId: number;
     declare objId: number;
     declare objTableName: `modVersions` | `mods`;
     declare obj: ModVersionApproval | ModApproval;
-    
+
     declare approverId: number;
     declare approved: boolean;
     declare readonly createdAt: Date;
@@ -521,6 +525,11 @@ export class DatabaseHelper {
         let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: name } });
         return !!game; // apperently this is a way to check if an object is null
     }
+
+    public static isValidCategory(value: string): value is Categories {
+        return validateEnumValue(value, Categories);
+    }
+
 
     public static async isValidGameVersion(gameName: string, version: string): Promise<number | null> {
         if (!gameName || !version) {
