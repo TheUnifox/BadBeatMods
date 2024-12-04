@@ -14,6 +14,7 @@
 - [ ] add mod filtering to /api/mods
 - [ ] Make mod management endpoints
 - [ ] Make admin endpoints
+- [ ] Move Config management to static class 
 
 ## Low Priority
 - [ ] Make per game permissions (add to User class)
