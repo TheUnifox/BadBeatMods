@@ -129,7 +129,10 @@ export type BeatModsMod = {
     downloads: {
         type: string,
         url: string,
-        hashMd5: object,
+        hashMd5: {
+            hash: string,
+            file: string,
+        }[],
     }[],
     dependencies: BeatModsMod | {name: string, _id: string}[],
     _id: string,
