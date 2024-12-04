@@ -43,10 +43,10 @@ export class CreateModRoutes {
                 description: description,
                 authorIds: [session.user.id],
                 gitUrl: gitUrl,
-                iconFileExtension: path.extname(file.name),
+                iconFileName: `${file.md5}${path.extname(file.name)}`,
                 visibility: Visibility.Unverified,
             }).then((mod) => {
-                file.mv(`${path.resolve(storage.iconsDir)}/${mod.id}${path.extname(file.name)}`);
+                file.mv(`${path.resolve(storage.iconsDir)}/${file.md5}${path.extname(file.name)}`);
                 return res.status(200).send({ mod });
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });
