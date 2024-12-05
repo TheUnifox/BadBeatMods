@@ -4,9 +4,14 @@ import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRole
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
 import { SemVer } from 'semver';
+import crypto from 'crypto';
+import { Config } from 'src/shared/Config';
+import path from 'path';
+import fs from 'fs';
 
 export class ImportRoutes {
     private app: Express;
+    private readonly ENABLE_DOWNLOADS = false;
 
     constructor(app: Express) {
         this.app = app;
@@ -93,6 +98,16 @@ export class ImportRoutes {
                     if (existingVersion) {
                         Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, skipping`, `Import`);
                         continue;
+                    }
+
+                    let filefetch = await fetch(`https://beatmods.com${download.url}`);
+                    let file = await filefetch.blob();
+                    const md5 = crypto.createHash(`md5`);
+                    let arrayBuffer = await file.arrayBuffer();
+                    let result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
+
+                    if (this.ENABLE_DOWNLOADS) {
+                        fs.writeFileSync(`${path.resolve(Config.storage.uploadsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
                     }
 
                     let newVersion = await DatabaseHelper.database.ModVersions.create({

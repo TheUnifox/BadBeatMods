@@ -53,7 +53,7 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            mod.update({ visibility: status }).then(() => {
+            mod.setVisibility(status, session.user).then(() => {
                 Logger.log(`Mod ${modId} set to status ${status} by ${session.user.username}.`);
                 return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
@@ -89,8 +89,8 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            mod.update({ visibility: status }).then(() => {
-                Logger.log(`Mod ${modVersion.id} set to status ${status} by ${session.user.username}.`);
+            modVersion.setVisibility(status, session.user).then(() => {
+                Logger.log(`ModVersion ${modVersion.id} set to status ${status} by ${session.user.username}.`);
                 return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
                 Logger.error(`Error ${status} mod: ${error}`);

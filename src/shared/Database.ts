@@ -327,6 +327,13 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         }
         return latestVersion;
     }
+
+    public async setVisibility(visibility:Visibility, user: User) {
+        this.visibility = visibility;
+        await this.save();
+        Logger.log(`Mod ${this.id} approved by ${user.username}`);
+        return this;
+    }
 }
 
 export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreationAttributes<ModVersion>> {
@@ -342,6 +349,13 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare contentHashes: ContentHash[];
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
+
+    public async setVisibility(visibility:Visibility, user: User) {
+        this.visibility = visibility;
+        await this.save();
+        Logger.log(`ModVersion ${this.id} approved by ${user.username}`);
+        return this;
+    }
 
     public static async checkForExistingVersion(modId: number, version: SemVer, gameVersionId: number): Promise<ModVersion | null> {
         let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: version } });
