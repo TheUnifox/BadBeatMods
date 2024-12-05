@@ -1,12 +1,8 @@
 # TODO
 ## High Priority
-- [x] add github auth, add discord link for dms... bot???
-- [x] add mod approval queue?? (or other solution for maps turning unverified with anyy changes)
-- [ ] bsmods api compatibility maybe (for mod assistant) (this is now required)
-- [x] Figure out duplicate version detection
-- [ ] make beatmods scraper or something (needs to happen befoe 27th to allow 2 days of scraping.)
 - [ ] Double check every POST/PATCH request for duplicate value checking
-- [ ] Handle dependcy resolution in API 
+- [ ] Handle dependency resolution in API 
+- [ ] Update all SemVer checks to use SemVer.raw
 
 ## Medium Priority
 - [ ] actually serve mods
@@ -24,3 +20,9 @@
 ## Outdated & Done
 - [x] Make game agnostic (add property to Mod class)
 - [x] fix crash on missing file 
+
+- [x] add github auth, add discord link for dms... bot???
+- [x] add mod approval queue?? (or other solution for maps turning unverified with anyy changes)
+- [x] bsmods api compatibility maybe (for mod assistant) (this is now required)
+- [x] Figure out duplicate version detection
+- [x] make beatmods scraper or something (needs to happen befoe 27th to allow 2 days of scraping.)

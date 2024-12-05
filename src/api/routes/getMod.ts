@@ -1,5 +1,6 @@
 import { Express } from 'express';
-import { Categories, DatabaseHelper, ModVersion } from '../../shared/Database';
+import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion } from '../../shared/Database';
+import { Logger } from '../../shared/Logger';
 
 export class GetModRoutes {
     private app: Express;
@@ -25,13 +26,14 @@ export class GetModRoutes {
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
-            let versions: any[] = [];
+            let modVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: modId } });
+            let returnVal: any[] = [];
 
-            for (let version of (await DatabaseHelper.database.ModVersions.findAll({ where: { modId: modId } }))) {
-                versions.push(version.toJSONWithGameVersions());
+            for (let version of (modVersions)) {
+                returnVal.push(await version.toJSONWithGameVersions());
             }
 
-            return res.status(200).send({ mod: { info: mod, versions: versions } });
+            return res.status(200).send({ mod: { info: mod, versions: returnVal } });
         });
 
         this.app.get(`/api/hashlookup`, async (req, res) => {
@@ -56,7 +58,7 @@ export class GetModRoutes {
             return res.status(404).send({ message: `Hash not founds.` });
         });
 
-        this.app.get(`/api/mod/beatmods`, async (req, res) => {
+        this.app.get(`/api/beatmods/mod`, async (req, res) => {
             let version = req.query.version;
 
             let modArray: BeatModsMod[] = [];
@@ -66,7 +68,7 @@ export class GetModRoutes {
             }
 
             let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: `Beat Saber`, version: version}});
-            if (gameVersion) {
+            if (!gameVersion) {
                 return res.status(400).send({message: `No valid game version.`});
             }
 
@@ -74,42 +76,7 @@ export class GetModRoutes {
             for (let mod of mods) {
                 let modVersion = await mod.getLatestVersion(gameVersion.id);
 
-                let dependancies = [];
-
-                for (let dependancy of modVersion.dependancies) {
-                    dependancies.push({
-                        _id: dependancy.toString(),
-                        name: dependancy.toString()
-                    })
-                }
-
-                modArray.push({
-                    name: mod.name,
-                    description: mod.description,
-                    version: modVersion.modVersion.raw,
-                    gameVersion: gameVersion.version,
-                    author: {
-                        _id: modVersion.authorId.toString(),
-                        username: modVersion.authorId.toString(),
-                        lastLogin: `null`
-                    },
-                    status: modVersion.visibility,
-                    link: mod.gitUrl,
-                    category: mod.category,
-                    downloads: [{
-                        type: modVersion.platform,
-                        url: `null`,
-                        hashMd5: modVersion.contentHashes.map((hash) => {
-                            return {
-                                hash: hash.hash,
-                                file: hash.path
-                            };
-                        })
-                    }],
-                    dependencies: dependancies,
-                    _id: modVersion.id.toString(),
-                    required: (mod.category === Categories.Core),
-                });
+                modArray.push(await convertToBeatmodsMod(mod, modVersion, gameVersion));
             }
 
             res.status(200).send(modArray);
@@ -141,4 +108,51 @@ export type BeatModsMod = {
     }[],
     dependencies: BeatModsMod[] | {name: string, _id: string}[],
     _id: string,
+}
+
+async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doDependancyResolution:boolean = true): Promise<BeatModsMod> {
+    let dependancies = [];
+    for (let dependancy of modVersion.dependancies) {
+        if (doDependancyResolution) {
+            let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
+            if (dependancyMod) {
+                dependancies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
+            } else {
+                Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); //TODO: Fix this
+            }
+        } else {
+            dependancies.push({
+                _id: dependancy.toString(),
+                name: dependancy.toString()
+            });
+        }
+    }
+
+    return {
+        _id: modVersion.id.toString(),
+        name: mod.name.toString(),
+        version: modVersion.modVersion.raw,
+        gameVersion: gameVersion.version,
+        author: {
+            _id: modVersion.authorId.toString(),
+            username: modVersion.authorId.toString(),
+            lastLogin: new Date().toISOString()
+        },
+        status: modVersion.visibility,
+        description: mod.description,
+        link: mod.gitUrl,
+        category: mod.category,
+        downloads: [{
+            type: modVersion.platform,
+            url: `null`, //tbd
+            hashMd5: modVersion.contentHashes.map((hash) => {
+                return {
+                    hash: hash.hash,
+                    file: hash.path
+                };
+            })
+        }],
+        dependencies: dependancies,
+        required: (mod.category === Categories.Core),
+    };
 }

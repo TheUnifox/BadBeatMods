@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = false;
+    private readonly ENABLE_DOWNLOADS = true;
 
     constructor(app: Express) {
         this.app = app;
@@ -113,12 +113,13 @@ export class ImportRoutes {
                         continue;
                     }
 
+                    let result = `test`;
                     if (this.ENABLE_DOWNLOADS) {
                         let filefetch = await fetch(`https://beatmods.com${download.url}`);
                         let file = await filefetch.blob();
                         const md5 = crypto.createHash(`md5`);
                         let arrayBuffer = await file.arrayBuffer();
-                        let result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
+                        result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
 
                         fs.writeFileSync(`${path.resolve(Config.storage.uploadsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
                     }
@@ -129,7 +130,7 @@ export class ImportRoutes {
                         modVersion: new SemVer(mod.version),
                         supportedGameVersionIds: iamkindapissedoffaboutthisnotworking,
                         authorId: importAuthor.id,
-                        zipHash: `test`, //this will break
+                        zipHash: result, //this will break
                         visibility: status,
                         contentHashes: download.hashMd5.map(hash => { return { path: hash.file, hash: hash.hash };}) as ContentHash[],
                         platform: platform,
