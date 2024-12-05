@@ -1,7 +1,7 @@
 import { Express } from 'express';
-import { validateSession } from 'src/shared/AuthHelper';
-import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRoles, Visibility } from 'src/shared/Database';
-import { Logger } from 'src/shared/Logger';
+import { validateSession } from '../../shared/AuthHelper';
+import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRoles, Visibility } from '../../shared/Database';
+import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
 import { SemVer } from 'semver';
 

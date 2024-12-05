@@ -1,9 +1,9 @@
 import path from "path";
 import { exit } from "process";
 import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Sequelize } from "sequelize";
-import { storage, devmode } from '../../storage/config.json';
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
+import { Config } from "./Config";
 
 export class DatabaseManager {
     public sequelize: Sequelize;
@@ -18,13 +18,13 @@ export class DatabaseManager {
             host: `localhost`,
             dialect: `sqlite`,
             logging: false,
-            storage: path.resolve(storage.database),
+            storage: path.resolve(Config.storage.database),
         });
 
         Logger.log(`Loading Database...`);
         this.loadTables();
         this.sequelize.sync({
-            alter: devmode,
+            alter: Config.devmode,
         }).then(() => {
             Logger.log(`Database Loaded.`);
             new DatabaseHelper(this);
@@ -231,9 +231,6 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: `private`,
-                validate: {
-                    isIn: [Object.values(Visibility)],
-                }
             },
             platform: {
                 type: DataTypes.STRING,

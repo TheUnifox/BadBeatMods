@@ -4,17 +4,18 @@ import MemoryStore from 'memorystore';
 import { HTTPTools } from './shared/HTTPTools';
 import { DatabaseManager } from './shared/Database';
 import path from 'path';
-import { server, devmode, authBypass } from '../storage/config.json';
 import fileUpload from 'express-fileupload';
 import { CreateModRoutes } from './api/routes/createMod';
 import rateLimit from 'express-rate-limit';
 import { Logger } from './shared/Logger';
 import { GetModRoutes } from './api/routes/getMod';
+import { Config } from './shared/Config';
 
 console.log(`Starting setup...`);
+new Config();
 const app = express();
 const memstore = MemoryStore(session);
-const port = server.port;
+const port = Config.server.port;
 new DatabaseManager();
 
 app.use(express.json({ limit: 100000 }));
@@ -31,7 +32,7 @@ app.use(rateLimit({
     skipSuccessfulRequests: true
 }));
 app.use(session({
-    secret: server.sessionSecret,
+    secret: Config.server.sessionSecret,
     name: `session`,
     store: new memstore({
         checkPeriod: 86400000
@@ -47,8 +48,8 @@ app.use(session({
     }
 }));
 app.use((req, res, next) => {
-    if (devmode) {
-        if (authBypass) {
+    if (Config.devmode) {
+        if (Config.authBypass) {
             req.session.userId = 1;
             req.session.username = `TestUser`;
             req.session.avatarUrl = `https://cdn.discordapp.com/avatars/1/1.png`;
@@ -62,6 +63,7 @@ app.use((req, res, next) => {
 
 new CreateModRoutes(app);
 new GetModRoutes(app);
+
 
 app.use(express.static(path.join(__dirname, `../assets/static`), {
     extensions: [`html`],
@@ -84,7 +86,7 @@ app.use(`/mod`, express.static(path.join(__dirname, `../assets/mod`), {
 HTTPTools.handleExpressShenanigans(app);
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`Server listening @ http://localhost:${port}`);
 });
 
 process.on(`exit`, (code) => {

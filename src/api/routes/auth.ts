@@ -1,9 +1,9 @@
 import { Express } from 'express';
 import { DiscordAuthHelper, GitHubAuthHelper, validateSession } from '../../shared/AuthHelper';
 import { HTTPTools } from '../../shared/HTTPTools';
-import { server } from '../../../storage/config.json';
 import { DatabaseHelper } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
+import { Config } from 'src/shared/Config';
 
 export class AuthRoutes {
     private app: Express;
@@ -28,7 +28,7 @@ export class AuthRoutes {
                 if (err) {
                     return res.status(500).send({ error: `Internal server error.` });
                 }
-                return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${server.url}" /></head><body style="background-color: black;"><a style="color:white;" href="${server.url}">Click here if you are not redirected...</a></body>`);
+                return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${Config.server.url}" /></head><body style="background-color: black;"><a style="color:white;" href="${Config.server.url}">Click here if you are not redirected...</a></body>`);
             });
         });
 
@@ -76,6 +76,8 @@ export class AuthRoutes {
             req.session.username = userDb.username;
             req.session.save();
 
+            Logger.log(`User ${userDb.username} logged in.`, `Auth`);
+            return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${Config.server.url}" /></head><body style="background-color: black;"><a style="color:white;" href="${Config.server.url}">Click here if you are not redirected...</a></body>`); // i need to double check that this is the correct way to redirect
         });
 
         this.app.get(`/api/link/discord`, async (req, res) => {
@@ -116,8 +118,8 @@ export class AuthRoutes {
                 userDb.save();
             }
 
-            Logger.log(`User ${userDb.username} inked their discord.`, `Auth`);
-            return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${server.url}" /></head><body style="background-color: black;"><a style="color:white;" href="${server.url}">Click here if you are not redirected...</a></body>`); // i need to double check that this is the correct way to redirect
+            Logger.log(`User ${userDb.username} linked their discord.`, `Auth`);
+            return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${Config.server.url}" /></head><body style="background-color: black;"><a style="color:white;" href="${Config.server.url}">Click here if you are not redirected...</a></body>`); // i need to double check that this is the correct way to redirect
         });
     }
 }

@@ -3,8 +3,8 @@ import path from 'node:path';
 import { DatabaseHelper, ContentHash, Visibility } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
-import { storage, devmode } from '../../../storage/config.json';
 import { validateSession } from '../../shared/AuthHelper';
+import { Config } from 'src/shared/Config';
 
 export class CreateModRoutes {
     private app: Express;
@@ -46,7 +46,7 @@ export class CreateModRoutes {
                 iconFileName: `${file.md5}${path.extname(file.name)}`,
                 visibility: Visibility.Unverified,
             }).then((mod) => {
-                file.mv(`${path.resolve(storage.iconsDir)}/${file.md5}${path.extname(file.name)}`);
+                file.mv(`${path.resolve(Config.storage.iconsDir)}/${file.md5}${path.extname(file.name)}`);
                 return res.status(200).send({ mod });
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });
@@ -56,7 +56,7 @@ export class CreateModRoutes {
         this.app.post(`/api/mod/:modIdParam/upload`, async (req, res) => {
             let session = await validateSession(req, res, true);
             let modId = parseInt(req.params.modIdParam);
-            let gameVersions = devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
+            let gameVersions = Config.devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
             let modVersion = req.body.modVersion;
             let dependancies = req.body.dependancies;
             let platform = req.body.platform;
@@ -125,7 +125,7 @@ export class CreateModRoutes {
                 return res.status(400).send({ error: `File must be a zip archive.` });
             }
 
-            file.mv(`${path.resolve(storage.uploadsDir)}/${file.md5}${path.extname(file.name)}`);
+            file.mv(`${path.resolve(Config.storage.uploadsDir)}/${file.md5}${path.extname(file.name)}`);
 
             DatabaseHelper.database.ModVersions.create({
                 modId: modId,

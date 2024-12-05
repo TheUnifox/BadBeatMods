@@ -5,6 +5,7 @@
     "start": "npm run build && node build/index.js"
   },
   "dependencies": {
+    "discord.js": "^14.16.3",
     "express": "^4.21.1",
     "express-fileupload": "^1.5.1",
     "express-rate-limit": "^7.4.1",

@@ -99,7 +99,12 @@ export class GetModRoutes {
                     downloads: [{
                         type: modVersion.platform,
                         url: `null`,
-                        hashMd5: modVersion.contentHashes
+                        hashMd5: modVersion.contentHashes.map((hash) => {
+                            return {
+                                hash: hash.hash,
+                                file: hash.path
+                            };
+                        })
                     }],
                     dependencies: dependancies,
                     _id: modVersion.id.toString(),

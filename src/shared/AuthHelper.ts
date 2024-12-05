@@ -1,4 +1,4 @@
-import { auth, server, devmode, authBypass } from '../../storage/config.json';
+import { Config } from "./Config";
 import { DatabaseHelper, User, UserRoles } from "./Database";
 
 // eslint-disable-next-line quotes
@@ -157,14 +157,14 @@ export interface BeatSaverIdentify {
 */
 //#region Discord
 export class DiscordAuthHelper extends OAuth2Helper {
-    private static readonly callbackUrl = `${server.url}/api/auth/discord/callback`;
+    private static readonly callbackUrl = `${Config.server.url}/api/auth/discord/callback`;
     
     public static getUrl(state:string): string {
-        return `https://discord.com/oauth2/authorize?client_id=${auth.discord.clientId}&response_type=code&scope=identify&redirect_uri=${DiscordAuthHelper.callbackUrl}&state=${state}`;
+        return `https://discord.com/oauth2/authorize?client_id=${Config.auth.discord.clientId}&response_type=code&scope=identify&redirect_uri=${DiscordAuthHelper.callbackUrl}&state=${state}`;
     }
 
     public static getToken(code:string): Promise<OAuth2Response> {
-        return super.getToken(`https://discord.com/api/v10/oauth2/token`, code, auth.discord, this.callbackUrl);
+        return super.getToken(`https://discord.com/api/v10/oauth2/token`, code, Config.auth.discord, this.callbackUrl);
     }
 
     public static async getUser(token: string): Promise<DiscordIdentify | null> {
@@ -214,14 +214,14 @@ export interface DiscordUserGuild {
 
 //#region GitHub
 export class GitHubAuthHelper extends OAuth2Helper {
-    private static readonly callbackUrl = `${server.url}/api/auth/github/callback`;
+    private static readonly callbackUrl = `${Config.server.url}/api/auth/github/callback`;
     
     public static getUrl(state:string): string {
-        return `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(auth.github.clientId)}&response_type=code&scope=user&redirect_uri=${encodeURIComponent(GitHubAuthHelper.callbackUrl)}&state=${encodeURIComponent(state)}`;
+        return `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(Config.auth.github.clientId)}&response_type=code&scope=user&redirect_uri=${encodeURIComponent(GitHubAuthHelper.callbackUrl)}&state=${encodeURIComponent(state)}`;
     }
 
     public static getToken(code:string): Promise<OAuth2Response> {
-        return super.getToken(`https://github.com/login/oauth/access_token`, code, auth.github, this.callbackUrl);
+        return super.getToken(`https://github.com/login/oauth/access_token`, code, Config.auth.github, this.callbackUrl);
     }
 
     public static async getUser(token: string): Promise<GitHubPublicUser | null> {
@@ -349,7 +349,7 @@ export interface GitHubPublicUser {
 */
 export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User}> {
     let sessionId = req.session.userId;
-    if (devmode && authBypass) {
+    if (Config.devmode && Config.authBypass) {
         let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
         return { approved: true, user: user };
     }
