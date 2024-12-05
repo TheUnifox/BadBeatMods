@@ -78,13 +78,13 @@ export class DatabaseManager {
             },
             githubId: {
                 type: DataTypes.STRING,
-                allowNull: false,
+                allowNull: true,
                 defaultValue: ``,
-                unique: true,
+                unique: true, //SQLite treats all NULL values are different, therefore, a column with a UNIQUE constraint can have multiple NULL values.
             },
             discordId: {
                 type: DataTypes.STRING,
-                allowNull: false,
+                allowNull: true,
                 defaultValue: ``,
             },
             roles: {
@@ -211,7 +211,7 @@ export class DatabaseManager {
                 },
                 set(value: SemVer) {
                     // @ts-expect-error ts(2345)
-                    this.setDataValue(`modVersion`, value.toString());
+                    this.setDataValue(`modVersion`, value.raw);
                 },
             },
             supportedGameVersionIds: {
@@ -220,11 +220,11 @@ export class DatabaseManager {
                 defaultValue: ``,
                 get() {
                     // @ts-expect-error s(2345)
-                    return JSON.parse(this.getDataValue(`supportedGameVersions`));
+                    return JSON.parse(this.getDataValue(`supportedGameVersionIds`));
                 },
-                set(value: string[]) {
+                set(value: number[]) {
                     // @ts-expect-error s(2345)
-                    this.setDataValue(`supportedGameVersions`, JSON.stringify(value));
+                    this.setDataValue(`supportedGameVersionIds`, JSON.stringify(value));
                 },
             },
             visibility: {
@@ -357,17 +357,18 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return this;
     }
 
-    public static async checkForExistingVersion(modId: number, version: SemVer, gameVersionId: number): Promise<ModVersion | null> {
-        let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: version } });
+    public static async checkForExistingVersion(modId: number, version: SemVer, gameVersionId: number, platform: Platform): Promise<ModVersion | null> {
+        let modVersion = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: modId, modVersion: version.raw, platform } });
         if (!modVersion) {
             return null;
         }
         
-        if (modVersion.supportedGameVersionIds.find((id) => id == gameVersionId)) {
-            return modVersion;
-        } else {
-            return null;
+        for (let version of modVersion.sort((a, b) => a.modVersion.compare(b.modVersion))) {
+            if (version.supportedGameVersionIds.includes(gameVersionId)) {
+                return version;
+            }
         }
+        return null;
     }
 
     public async getSupportedGameVersions(): Promise<GameVersion[]> {
@@ -422,7 +423,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             return false;
         }
 
-        return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.toString()}`);
+        return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.raw}`);
     }
 
 }

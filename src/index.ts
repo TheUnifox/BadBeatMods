@@ -10,6 +10,12 @@ import rateLimit from 'express-rate-limit';
 import { Logger } from './shared/Logger';
 import { GetModRoutes } from './api/routes/getMod';
 import { Config } from './shared/Config';
+import { UpdateModRoutes } from './api/routes/updateMod';
+import { AuthRoutes } from './api/routes/auth';
+import { MiscRoutes } from './api/routes/misc';
+import { ImportRoutes } from './api/routes/import';
+import { AdminRoutes } from './api/routes/admin';
+import { ApprovalRoutes } from './api/routes/approval';
 
 console.log(`Starting setup...`);
 new Config();
@@ -63,6 +69,12 @@ app.use((req, res, next) => {
 
 new CreateModRoutes(app);
 new GetModRoutes(app);
+new UpdateModRoutes(app);
+new ApprovalRoutes(app);
+new AuthRoutes(app);
+new ImportRoutes(app);
+new AdminRoutes(app);
+new MiscRoutes(app);
 
 
 app.use(express.static(path.join(__dirname, `../assets/static`), {

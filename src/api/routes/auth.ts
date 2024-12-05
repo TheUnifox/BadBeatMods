@@ -3,7 +3,7 @@ import { DiscordAuthHelper, GitHubAuthHelper, validateSession } from '../../shar
 import { HTTPTools } from '../../shared/HTTPTools';
 import { DatabaseHelper } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
-import { Config } from 'src/shared/Config';
+import { Config } from '../../shared/Config';
 
 export class AuthRoutes {
     private app: Express;

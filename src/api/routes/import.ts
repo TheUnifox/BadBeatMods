@@ -5,9 +5,10 @@ import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
 import { SemVer } from 'semver';
 import crypto from 'crypto';
-import { Config } from 'src/shared/Config';
+import { Config } from '../../shared/Config';
 import path from 'path';
 import fs from 'fs';
+import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
@@ -25,7 +26,7 @@ export class ImportRoutes {
             // oh god oh fuck oh shit
             Logger.log(`Ere Jim, 'ave a seat an' I'll tell you a tale that'll cause your blood to run cold`, `Import`);
 
-            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod`);
+            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod?gameversion=1.39.0&status=approved`);
             Logger.log(`It was a dark and stormy night, three weeks out of Ilfracombe, Bound for the isle of Lundy`, `Import`);
 
             if (BeatModsResponse.status !== 200) {
@@ -68,21 +69,24 @@ export class ImportRoutes {
                 let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
 
                 if (!existingMod) {
-                    await DatabaseHelper.database.Mods.create({
+                    let lowerCaseCatgory = mod.category.toLowerCase();
+                    existingMod = await DatabaseHelper.database.Mods.create({
                         name: mod.name,
                         description: mod.description,
                         authorIds: [importAuthor.id],
-                        category: DatabaseHelper.isValidCategory(mod.category) ? mod.category : Categories.Other,
+                        category: DatabaseHelper.isValidCategory(lowerCaseCatgory) ? lowerCaseCatgory : Categories.Other,
                         visibility: status,
                         iconFileName: `default.png`,
                         gitUrl: mod.link,
                     });
                 }
+
                 if (count % 10 == 0) {
                     Logger.log(`${BeatModsAPIData.length - count} mods on the endpoint left`, `Import`);
                 } else {
                     console.log(`${BeatModsAPIData.length - count} mods on the endpoint left`);
                 }
+
                 for (const download of mod.downloads) {
                     console.log(`Yo ho ho and a bottle of ${mod.name} v${mod.version} from ${download.url}`, `Import`);
                     let platform: Platform;
@@ -94,38 +98,64 @@ export class ImportRoutes {
                     } else if (download.type == `universal`) {
                         platform = Platform.Universal;
                     }
-                    let existingVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { modId: existingMod.id, modVersion: mod.version, platform: platform } });
+
+                    let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { version: mod.gameVersion } });
+                    if (!gameVersion) {
+                        gameVersion = await DatabaseHelper.database.GameVersions.create({
+                            version: mod.gameVersion,
+                            gameName: `Beat Saber`,
+                        });
+                    }
+
+                    let existingVersion = await ModVersion.checkForExistingVersion(existingMod.id, new SemVer(mod.version), gameVersion.id, platform);
                     if (existingVersion) {
                         Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, skipping`, `Import`);
                         continue;
                     }
 
-                    let filefetch = await fetch(`https://beatmods.com${download.url}`);
-                    let file = await filefetch.blob();
-                    const md5 = crypto.createHash(`md5`);
-                    let arrayBuffer = await file.arrayBuffer();
-                    let result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
-
                     if (this.ENABLE_DOWNLOADS) {
+                        let filefetch = await fetch(`https://beatmods.com${download.url}`);
+                        let file = await filefetch.blob();
+                        const md5 = crypto.createHash(`md5`);
+                        let arrayBuffer = await file.arrayBuffer();
+                        let result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
+
                         fs.writeFileSync(`${path.resolve(Config.storage.uploadsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
                     }
 
+                    let iamkindapissedoffaboutthisnotworking = [gameVersion.id];
                     let newVersion = await DatabaseHelper.database.ModVersions.create({
                         modId: existingMod.id,
                         modVersion: new SemVer(mod.version),
-                        supportedGameVersionIds: [],
-                        zipHash: null, //this will break
+                        supportedGameVersionIds: iamkindapissedoffaboutthisnotworking,
+                        authorId: importAuthor.id,
+                        zipHash: `test`, //this will break
                         visibility: status,
                         contentHashes: download.hashMd5.map(hash => { return { path: hash.file, hash: hash.hash };}) as ContentHash[],
                         platform: platform,
                         dependancies: [],
+                    }).catch((err) => {
+                        Logger.error(`Failed to create mod version ${mod.name} v${mod.version}`, `Import`);
+                        console.error(err);
+                        console.log(`its just one of those days`);
+                        exit(1);
                     });
 
-                    dependancyRecord.push({ dependancy: mod.dependencies as BeatModsMod, modVersionId: newVersion.id });
+                    if (mod.dependencies.length >= 1) {
+                        for (const dependancy of mod.dependencies) {
+                            if (`version` in dependancy) {
+                                dependancyRecord.push({ dependancy: dependancy, modVersionId: newVersion.id });
+                            } else {
+                                Logger.warn(`Dependancy ${dependancy.name} for mod ${mod.name} v${mod.version} is not resolved. Recursive dependancy?`, `Import`);
+                            }
+                        }
+                    }
                 }
             }
+            Logger.log(`Send them to the depths`, `Import`);
 
             for (const record of dependancyRecord) {
+                console.log(`Resolving dependancy ${record.dependancy.name} for mod ${record.modVersionId}`, `Import`);
                 let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy.name } });
                 if (!mod) {
                     Logger.warn(`Dependancy ${record.dependancy.name} not found for mod ${record.modVersionId}`, `Import`);
@@ -144,9 +174,12 @@ export class ImportRoutes {
                     continue;
                 }
 
-                modVersion.dependancies.push(dependancyModVersion.id);
+                //you may think its stupid but they force you to do this
+                modVersion.dependancies = [...modVersion.dependancies, dependancyModVersion.id];
                 await modVersion.save();
             }
+
+            Logger.log(`Ah-ha-ha-ha-ha-ha-ha-ha-ha-Oah, where's me rum`, `Import`);
         });
     }
 }

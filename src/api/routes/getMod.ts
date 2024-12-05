@@ -86,7 +86,7 @@ export class GetModRoutes {
                 modArray.push({
                     name: mod.name,
                     description: mod.description,
-                    version: modVersion.modVersion.toString(),
+                    version: modVersion.modVersion.raw,
                     gameVersion: gameVersion.version,
                     author: {
                         _id: modVersion.authorId.toString(),
@@ -139,6 +139,6 @@ export type BeatModsMod = {
             file: string,
         }[],
     }[],
-    dependencies: BeatModsMod | {name: string, _id: string}[],
+    dependencies: BeatModsMod[] | {name: string, _id: string}[],
     _id: string,
 }

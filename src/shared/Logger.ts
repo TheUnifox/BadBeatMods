@@ -3,7 +3,7 @@ import { Config } from "../shared/Config";
 
 export class Logger {
     //private static webhook:WebhookClient = new WebhookClient({id: logging.id, token: logging.token});
-    private static webhook:WebhookClient = new WebhookClient({url: Config.webhooks.loggingUrl});
+    private static webhook:WebhookClient;
     
     public static rawlog(message:any) {
         console.log(message);
@@ -50,11 +50,17 @@ export class Logger {
             .setTimestamp();
 
         if (!Config.webhooks.disableWebhooks) {
+            if (!Logger.webhook) {
+                Logger.webhook = new WebhookClient({url: Config.webhooks.loggingUrl});
+            }
             Logger.webhook.send({embeds: [loggingEmbed], allowedMentions: { users: [`213074932458979330`], roles: []}});
         }
     }
     private static sendWebhookLog(message:any) {
         if (!Config.webhooks.disableWebhooks) {
+            if (!Logger.webhook) {
+                Logger.webhook = new WebhookClient({url: Config.webhooks.loggingUrl});
+            }
             Logger.webhook.send({content: message, allowedMentions: { users: [], roles: []}}).catch(console.error);
         }
     }
