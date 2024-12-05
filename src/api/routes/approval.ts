@@ -201,7 +201,7 @@ export class ApprovalRoutes {
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let gameVersions = req.body.gameVersions;
             let modVersion = req.body.modVersion;
-            let dependancies = req.body.dependancies;
+            let dependencies = req.body.dependencies;
             let platform = req.body.platform;
 
             let modVersionDB = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, visibility: Visibility.Unverified } });
@@ -218,8 +218,8 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            if (dependancies && Array.isArray(dependancies)) {
-                for (let dependancy of dependancies) {
+            if (dependencies && Array.isArray(dependencies)) {
+                for (let dependancy of dependencies) {
                     if (typeof dependancy !== `number`) {
                         return res.status(400).send({ message: `Invalid dependancy. (Reading ${dependancy})` });
                     }
@@ -342,11 +342,11 @@ export class ApprovalRoutes {
                     
                     let gameVersions = req.body.gameVersions;
                     let modVersion = req.body.modVersion;
-                    let dependancies = req.body.dependancies;
+                    let dependencies = req.body.dependencies;
                     let platform = req.body.platform;
 
-                    if (dependancies && Array.isArray(dependancies)) {
-                        for (let dependancy of dependancies) {
+                    if (dependencies && Array.isArray(dependencies)) {
+                        for (let dependancy of dependencies) {
                             if (typeof dependancy !== `number`) {
                                 return res.status(400).send({ message: `Invalid dependancy. (Reading ${dependancy})` });
                             }

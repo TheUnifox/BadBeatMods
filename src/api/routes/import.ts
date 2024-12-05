@@ -3,7 +3,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRoles, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
-import { SemVer } from 'semver';
+import { SemVer, coerce } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = true;
+    private readonly ENABLE_DOWNLOADS = false;
 
     constructor(app: Express) {
         this.app = app;
@@ -26,7 +26,7 @@ export class ImportRoutes {
             // oh god oh fuck oh shit
             Logger.log(`Ere Jim, 'ave a seat an' I'll tell you a tale that'll cause your blood to run cold`, `Import`);
 
-            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod?gameversion=1.39.0&status=approved`);
+            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod`);
             Logger.log(`It was a dark and stormy night, three weeks out of Ilfracombe, Bound for the isle of Lundy`, `Import`);
 
             if (BeatModsResponse.status !== 200) {
@@ -107,7 +107,12 @@ export class ImportRoutes {
                         });
                     }
 
-                    let existingVersion = await ModVersion.checkForExistingVersion(existingMod.id, new SemVer(mod.version), gameVersion.id, platform);
+                    if (!coerce(mod.version)) {
+                        Logger.error(`Failed to parse Semver ${mod.version}`, `Import`);
+                        continue;
+                    }
+
+                    let existingVersion = await ModVersion.checkForExistingVersion(existingMod.id, coerce(mod.version), gameVersion.id, platform);
                     if (existingVersion) {
                         Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, skipping`, `Import`);
                         continue;
@@ -124,17 +129,16 @@ export class ImportRoutes {
                         fs.writeFileSync(`${path.resolve(Config.storage.uploadsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
                     }
 
-                    let iamkindapissedoffaboutthisnotworking = [gameVersion.id];
                     let newVersion = await DatabaseHelper.database.ModVersions.create({
                         modId: existingMod.id,
-                        modVersion: new SemVer(mod.version),
-                        supportedGameVersionIds: iamkindapissedoffaboutthisnotworking,
+                        modVersion: coerce(mod.version),
+                        supportedGameVersionIds: [gameVersion.id],
                         authorId: importAuthor.id,
                         zipHash: result, //this will break
                         visibility: status,
                         contentHashes: download.hashMd5.map(hash => { return { path: hash.file, hash: hash.hash };}) as ContentHash[],
                         platform: platform,
-                        dependancies: [],
+                        dependencies: [],
                     }).catch((err) => {
                         Logger.error(`Failed to create mod version ${mod.name} v${mod.version}`, `Import`);
                         console.error(err);
@@ -176,7 +180,7 @@ export class ImportRoutes {
                 }
 
                 //you may think its stupid but they force you to do this
-                modVersion.dependancies = [...modVersion.dependancies, dependancyModVersion.id];
+                modVersion.dependencies = [...modVersion.dependencies, dependancyModVersion.id];
                 await modVersion.save();
             }
 

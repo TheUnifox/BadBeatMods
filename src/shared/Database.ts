@@ -255,17 +255,17 @@ export class DatabaseManager {
                     this.setDataValue(`contentHashes`, JSON.stringify(value));
                 },
             },
-            dependancies: {
+            dependencies: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
                 get() {
                     // @ts-expect-error s(2345)
-                    return JSON.parse(this.getDataValue(`dependancies`));
+                    return JSON.parse(this.getDataValue(`dependencies`));
                 },
                 set(value: number[]) {
                     // @ts-expect-error s(2345)
-                    this.setDataValue(`dependancies`, JSON.stringify(value));
+                    this.setDataValue(`dependencies`, JSON.stringify(value));
                 }
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
@@ -343,7 +343,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare modVersion: SemVer;
     declare supportedGameVersionIds: number[];
     declare visibility: Visibility;
-    declare dependancies: number[]; // array of modVersion ids
+    declare dependencies: number[]; // array of modVersion ids
     declare platform: Platform;
     declare zipHash: string;
     declare contentHashes: ContentHash[];
@@ -382,15 +382,15 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getDependancies(): Promise<ModVersion[]> {
-        let dependancies: ModVersion[] = [];
-        for (let dependancyId of this.dependancies) {
+    public async getDependencies(): Promise<ModVersion[]> {
+        let dependencies: ModVersion[] = [];
+        for (let dependancyId of this.dependencies) {
             let dependancy = await DatabaseHelper.database.ModVersions.findByPk(dependancyId);
             if (dependancy) {
-                dependancies.push(dependancy);
+                dependencies.push(dependancy);
             }
         }
-        return dependancies;
+        return dependencies;
     }
 
     public async toJSONWithGameVersions() {
@@ -401,7 +401,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             modVersion: this.modVersion,
             supportedGameVersions: await this.getSupportedGameVersions(),
             visibility: this.visibility,
-            dependancies: this.dependancies,
+            dependencies: this.dependencies,
             platform: this.platform,
             zipHash: this.zipHash,
             contentHashes: this.contentHashes,
@@ -451,7 +451,7 @@ export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>,
                 modVersion.modVersion = this.obj.modVersion;
                 modVersion.platform = this.obj.platform;
                 modVersion.supportedGameVersionIds = this.obj.supportedGameVersionIds;
-                modVersion.dependancies = this.obj.dependancies;
+                modVersion.dependencies = this.obj.dependencies;
                 modVersion.visibility = Visibility.Verified;
                 modVersion.save();
             }

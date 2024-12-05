@@ -111,17 +111,17 @@ export type BeatModsMod = {
 }
 
 async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doDependancyResolution:boolean = true): Promise<BeatModsMod> {
-    let dependancies = [];
-    for (let dependancy of modVersion.dependancies) {
+    let dependencies = [];
+    for (let dependancy of modVersion.dependencies) {
         if (doDependancyResolution) {
             let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
             if (dependancyMod) {
-                dependancies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
+                dependencies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
             } else {
-                Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); //TODO: Fix this
+                Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
             }
         } else {
-            dependancies.push({
+            dependencies.push({
                 _id: dependancy.toString(),
                 name: dependancy.toString()
             });
@@ -152,7 +152,7 @@ async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion
                 };
             })
         }],
-        dependencies: dependancies,
+        dependencies: dependencies,
         required: (mod.category === Categories.Core),
     };
 }

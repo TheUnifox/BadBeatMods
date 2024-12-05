@@ -66,7 +66,7 @@ export class UpdateModRoutes {
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let gameVersions = req.body.gameVersions;
             let modSemVerVersion = req.body.modVersion;
-            let dependancies = req.body.dependancies;
+            let dependencies = req.body.dependencies;
             let platform = req.body.platform;
 
             if (!modVersionId || isNaN(modVersionId)) {
@@ -89,8 +89,8 @@ export class UpdateModRoutes {
                 return res.status(401).send({ message: `You cannot edit this mod.` });
             }
 
-            if (dependancies && Array.isArray(dependancies)) {
-                for (let dependancy of dependancies) {
+            if (dependencies && Array.isArray(dependencies)) {
+                for (let dependancy of dependencies) {
                     if (typeof dependancy !== `number`) {
                         return res.status(400).send({ message: `Invalid dependancy id. (Reading ${dependancy})` });
                     }
@@ -99,7 +99,7 @@ export class UpdateModRoutes {
                         return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
                     }
                 }
-                modVersion.dependancies = dependancies;
+                modVersion.dependencies = dependencies;
                 modVersion.visibility = Visibility.Unverified;
             }
 

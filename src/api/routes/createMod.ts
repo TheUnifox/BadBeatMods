@@ -58,7 +58,7 @@ export class CreateModRoutes {
             let modId = parseInt(req.params.modIdParam);
             let gameVersions = Config.devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
             let modVersion = req.body.modVersion;
-            let dependancies = req.body.dependancies;
+            let dependencies = req.body.dependencies;
             let platform = req.body.platform;
 
             let file = req.files?.file;
@@ -76,8 +76,8 @@ export class CreateModRoutes {
                 return res.status(401).send({ message: `You cannot upload to this mod.` });
             }
 
-            if (dependancies && Array.isArray(dependancies)) {
-                for (let dependancy of dependancies) {
+            if (dependencies && Array.isArray(dependencies)) {
+                for (let dependancy of dependencies) {
                     if (typeof dependancy !== `number`) {
                         return res.status(400).send({ message: `Invalid game version. (Reading ${dependancy})` });
                     }
@@ -133,7 +133,7 @@ export class CreateModRoutes {
                 visibility: Visibility.Unverified,
                 supportedGameVersionIds: gameVersions,
                 modVersion: modVersion,
-                dependancies: dependancies ? dependancies : [],
+                dependencies: dependencies ? dependencies : [],
                 platform: platform,
                 contentHashes: hashs,
                 zipHash: file.md5,
