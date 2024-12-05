@@ -112,19 +112,22 @@ export type BeatModsMod = {
 
 async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doDependancyResolution:boolean = true): Promise<BeatModsMod> {
     let dependencies = [];
-    for (let dependancy of modVersion.dependencies) {
-        if (doDependancyResolution) {
-            let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
-            if (dependancyMod) {
-                dependencies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
+
+    if (modVersion.dependencies.length !== 0) {
+        for (let dependancy of modVersion.dependencies) {
+            if (doDependancyResolution) {
+                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
+                if (dependancyMod) {
+                    dependencies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
+                } else {
+                    Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
+                }
             } else {
-                Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
+                dependencies.push({
+                    _id: dependancy.toString(),
+                    name: dependancy.toString()
+                });
             }
-        } else {
-            dependencies.push({
-                _id: dependancy.toString(),
-                name: dependancy.toString()
-            });
         }
     }
 

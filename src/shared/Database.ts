@@ -258,7 +258,7 @@ export class DatabaseManager {
             dependencies: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                defaultValue: ``,
+                defaultValue: `[]`,
                 get() {
                     // @ts-expect-error s(2345)
                     return JSON.parse(this.getDataValue(`dependencies`));
