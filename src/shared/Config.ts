@@ -1,3 +1,4 @@
+import { url } from 'node:inspector';
 import * as cf from '../../storage/config.json';
 
 // This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated.
@@ -12,8 +13,13 @@ const configMapping = {
             clientSecret: cf.auth?.github?.clientSecret,
         }
     },
+    database: {
+        dialect: cf.database.dialect ? cf.database.dialect : `sqlite`,
+        url: cf.database.url ? cf.database.url : `./storage/database.sqlite`,
+        username: cf.database.username ? cf.database.username : `user`,
+        password: cf.database.password ? cf.database.password : `password`,
+    },
     storage: {
-        database : cf.storage.database ? cf.storage.database : `./storage/database.sqlite`,
         uploadsDir :  cf.storage.uploadsDir ? cf.storage.uploadsDir : `./storage/uploads`,
         iconsDir : cf.storage.iconsDir ? cf.storage.iconsDir : `./storage/icons`
     },
@@ -40,8 +46,13 @@ export class Config {
         discord: AuthServiceConfig;
         github: AuthServiceConfig;
     } = configMapping.auth;
+    public static readonly database: {
+        dialect: string;
+        url: string;
+        username: string;
+        password: string;
+    } = configMapping.database;
     public static readonly storage: {
-        database: string;
         uploadsDir: string;
         iconsDir: string;
     } = configMapping.storage;

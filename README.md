@@ -14,17 +14,31 @@ A BeatMods replacement.
             "clientSecret": "supersecret"
         }
     },
-    "storage" : { // you will likely need to create these directories
-        "database" : "./storage/database.sqlite",
+    "database": {
+        "dialect": "sqlite",
+        "url": "./storage/database.sqlite",
+        "username": "user",
+        "password": "password"
+    },
+    "storage" : {
         "uploadsDir" : "./storage/uploads",
         "iconsDir" : "./storage/icons"
     },
-    "devmode" : false, //disable this
-    "authBypass" : false, //disable this
+    "devmode" : true,
+    "authBypass" : true,
     "server" : {
         "port" : 5001,
-        "url" : "http://localhost",
-        "sessionSecret" : "supersecret" //change this
+        "url" : "http://localhost:5001",
+        "sessionSecret" : "supersecret"
+    },
+    "webhooks" : {
+        "disableWebhooks": true,
+        "loggingUrl": "test",
+        "modLogUrl": "test"
+    },
+    "bot" : {
+        "clientId": "123456789012345678",
+        "token" : "supersecret"
     }
 }
 ```

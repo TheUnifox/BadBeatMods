@@ -5,6 +5,10 @@ import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 
+function isValidDialect(dialect: string): dialect is `sqlite` |`postgres` {
+    return [`sqlite`, `postgres`].includes(dialect);
+}
+
 export class DatabaseManager {
     public sequelize: Sequelize;
     public Users: ModelStatic<User>;
@@ -14,17 +18,17 @@ export class DatabaseManager {
     public EditApprovalQueue: ModelStatic<EditApprovalQueue>;
 
     constructor() {
-        this.sequelize = new Sequelize(`database`, `user`, `password`, {
-            host: `localhost`,
-            dialect: `sqlite`,
+        this.sequelize = new Sequelize(`bbm_database`, Config.database.username, Config.database.password, {
+            host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
+            dialect: isValidDialect(Config.database.dialect) ? Config.database.dialect : `sqlite`,
             logging: false,
-            storage: path.resolve(Config.storage.database),
+            storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
 
         Logger.log(`Loading Database...`);
         this.loadTables();
         this.sequelize.sync({
-            alter: Config.devmode,
+            alter: false,
         }).then(() => {
             Logger.log(`Database Loaded.`);
             new DatabaseHelper(this);
@@ -62,6 +66,7 @@ export class DatabaseManager {
             exit(-1);
         });
     }
+    
 
     private loadTables() {
         this.Users = User.init({

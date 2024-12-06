@@ -12,6 +12,10 @@ export class GetModRoutes {
 
     private async loadRoutes() {
         this.app.get(`/api/mods`, async (req, res) => {
+            // #swagger.tags = ['Mod']
+            // #swagger.description = 'Get all mods.'
+            // #swagger.responses[200] = { description: 'Returns all mods.' }
+
             let mods = await DatabaseHelper.database.Mods.findAll();
             return res.status(200).send({ mods });
         });

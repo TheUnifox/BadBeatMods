@@ -1,0 +1,103 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "BadBeatMods API",
+    "description": "Description",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5001",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json",
+    "multipart/form-data",
+    "application/x-www-form-urlencoded"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/mods": {
+      "get": {
+        "tags": [
+          "Mod"
+        ],
+        "description": "Get all mods.",
+        "responses": {
+          "200": {
+            "description": "Returns all mods."
+          }
+        }
+      }
+    },
+    "/api/mod/{modIdParam}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "modIdParam",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/hashlookup": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/beatmods/mod": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "version",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    }
+  }
+}
