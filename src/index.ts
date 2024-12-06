@@ -16,6 +16,8 @@ import { MiscRoutes } from './api/routes/misc';
 import { ImportRoutes } from './api/routes/import';
 import { AdminRoutes } from './api/routes/admin';
 import { ApprovalRoutes } from './api/routes/approval';
+import { Luma } from './discord/classes/Luma';
+import { ActivityType } from 'discord.js';
 
 console.log(`Starting setup...`);
 new Config();
@@ -23,6 +25,13 @@ const app = express();
 const memstore = MemoryStore(session);
 const port = Config.server.port;
 new DatabaseManager();
+
+const luma = new Luma({
+    intents: [],
+    presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}
+});
+luma.login(Config.bot.token);
+
 
 app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10 }));
@@ -32,14 +41,14 @@ app.use(fileUpload({
 }));
 app.use(rateLimit({
     windowMs: 60 * 1000,
-    max: 100,
+    max: 50,
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: true
 }));
 app.use(session({
     secret: Config.server.sessionSecret,
-    name: `session`,
+    name: `bbm_session`,
     store: new memstore({
         checkPeriod: 86400000
     }),

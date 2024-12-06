@@ -28,6 +28,10 @@ const configMapping = {
         disableWebhooks: cf.webhooks?.disableWebhooks ? cf.webhooks.disableWebhooks : false,
         loggingUrl: cf.webhooks?.loggingUrl ? cf.webhooks.loggingUrl : null,
         modLogUrl: cf.webhooks?.modLogUrl ? cf.webhooks.modLogUrl : null,
+    },
+    bot: {
+        clientId: cf.bot.clientId,
+        token: cf.bot.token,
     }
 };
 
@@ -53,6 +57,10 @@ export class Config {
         loggingUrl: string;
         modLogUrl: string;
     } = configMapping.webhooks;
+    public static readonly bot: {
+        clientId: string;
+        token: string;
+    } = configMapping.bot;
 
     constructor() {
         console.log(`Config loaded.`);

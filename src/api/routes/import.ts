@@ -26,7 +26,7 @@ export class ImportRoutes {
             // oh god oh fuck oh shit
             Logger.log(`Ere Jim, 'ave a seat an' I'll tell you a tale that'll cause your blood to run cold`, `Import`);
 
-            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod`);
+            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod?version=1.39.0`);
             Logger.log(`It was a dark and stormy night, three weeks out of Ilfracombe, Bound for the isle of Lundy`, `Import`);
 
             if (BeatModsResponse.status !== 200) {
@@ -81,7 +81,7 @@ export class ImportRoutes {
                     });
                 }
 
-                if (count % 10 == 0) {
+                if (count % 100 == 0) {
                     Logger.log(`${BeatModsAPIData.length - count} mods on the endpoint left`, `Import`);
                 } else {
                     console.log(`${BeatModsAPIData.length - count} mods on the endpoint left`);

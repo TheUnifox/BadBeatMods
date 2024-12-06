@@ -16,6 +16,8 @@
 - [ ] Make per game permissions (add to User class)
 - [ ] frontend (maybe)
 - [ ] Allow only uploading single dll (autopackage into zip)
+- [ ] do more with the discord bot
+- [ ] Download Counts
 
 ## Outdated & Done
 - [x] Make game agnostic (add property to Mod class)
