@@ -2,7 +2,7 @@ import { Express } from 'express';
 import { DatabaseHelper, UserRoles, Visibility } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
-import { SemVer } from 'semver';
+import { coerce } from 'semver';
 
 export class ApprovalRoutes {
     private app: Express;
@@ -246,7 +246,7 @@ export class ApprovalRoutes {
             }
 
             if (modVersion && typeof modVersion === `string`) {
-                modVersionDB.modVersion = new SemVer(modVersion);
+                modVersionDB.modVersion = coerce(modVersion);
             }
 
             if (platform && DatabaseHelper.isValidPlatform(platform)) {
@@ -373,7 +373,7 @@ export class ApprovalRoutes {
                     }
 
                     if (modVersion && typeof modVersion === `string`) {
-                        edit.obj.modVersion = new SemVer(modVersion);
+                        edit.obj.modVersion = coerce(modVersion);
                     }
 
                     if (platform && DatabaseHelper.isValidPlatform(platform)) {

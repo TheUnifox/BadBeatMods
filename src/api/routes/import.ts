@@ -3,7 +3,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRoles, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
-import { SemVer, coerce } from 'semver';
+import { coerce } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';

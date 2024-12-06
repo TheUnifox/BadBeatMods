@@ -2,7 +2,7 @@
 ## High Priority
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [ ] Handle dependency resolution in API 
-- [ ] Update all SemVer checks to use SemVer.raw
+- [x] Update all SemVer checks to use SemVer.raw
 
 ## Medium Priority
 - [ ] actually serve mods

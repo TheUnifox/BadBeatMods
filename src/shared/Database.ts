@@ -453,21 +453,21 @@ export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>,
         if (this.objTableName == `modVersions` && `modVersion` in this.obj) {
             let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objId);
             if (modVersion) {
-                modVersion.modVersion = this.obj.modVersion;
-                modVersion.platform = this.obj.platform;
-                modVersion.supportedGameVersionIds = this.obj.supportedGameVersionIds;
-                modVersion.dependencies = this.obj.dependencies;
+                modVersion.modVersion = this.obj.modVersion || modVersion.modVersion;
+                modVersion.platform = this.obj.platform || modVersion.platform;
+                modVersion.supportedGameVersionIds = this.obj.supportedGameVersionIds || modVersion.supportedGameVersionIds;
+                modVersion.dependencies = this.obj.dependencies || modVersion.dependencies;
                 modVersion.visibility = Visibility.Verified;
                 modVersion.save();
             }
         } else if (this.objTableName == `mods` && `name` in this.obj) {
             let mod = await DatabaseHelper.database.Mods.findByPk(this.objId);
             if (mod) {
-                mod.name = this.obj.name;
-                mod.description = this.obj.description;
-                mod.category = this.obj.category;
-                mod.gitUrl = this.obj.gitUrl;
-                mod.authorIds = this.obj.authorIds;
+                mod.name = this.obj.name || mod.name;
+                mod.description = this.obj.description || mod.description;
+                mod.category = this.obj.category || mod.category;
+                mod.gitUrl = this.obj.gitUrl || mod.gitUrl;
+                mod.authorIds = this.obj.authorIds || mod.authorIds;
                 mod.visibility = Visibility.Verified;
                 mod.save();
             }
