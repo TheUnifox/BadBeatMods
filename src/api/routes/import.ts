@@ -133,6 +133,7 @@ export class ImportRoutes {
                         }
                         for (let d of dependancies) {
                             if (typeof d.dependancy === `string`) {
+                                // resolving the dependency for the dependency
                                 console.log(`Resolving dependancy ${d.dependancy} for mod ${d.modVersionId}`, `Import`);
                             
                                 let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: d.dependancy } });
@@ -140,6 +141,8 @@ export class ImportRoutes {
                                     Logger.warn(`Dependancy ${d.dependancy} not found for mod ${d.modVersionId}`, `Import`);
                                     continue;
                                 }
+
+                                let mV = await DatabaseHelper.database.ModVersions.findByPk(d.modVersionId);
                 
                                 let dmv = await mod.getLatestVersion((await DatabaseHelper.database.GameVersions.findOne({ where: { version: modVersion.supportedGameVersionIds[0], gameName: `Beat Saber` }})).id);
                                 if (!dmv) {
@@ -147,12 +150,12 @@ export class ImportRoutes {
                                     continue;
                                 }
 
-
+                                mV.dependencies = [...mV.dependencies, dmv.id];
+                                mV.save();
                             } else {
                                 Logger.warn(`Stuck in dependancy ${d.dependancy.name} for mod ${d.modVersionId}`, `Import`);
                             }
                         }
-                        
                     }
                 }
 
