@@ -126,9 +126,10 @@ async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion
     if (modVersion.dependencies.length !== 0) {
         for (let dependancy of modVersion.dependencies) {
             if (doResolution) {
-                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
+                let dependancyModVesion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: dependancy } });
+                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancyModVesion.modId } });
                 if (dependancyMod) {
-                    dependencies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
+                    dependencies.push(await convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
                 } else {
                     Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
                 }

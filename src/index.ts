@@ -20,6 +20,7 @@ import { Luma } from './discord/classes/Luma';
 import { ActivityType } from 'discord.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './api/swagger.json';
+import { url } from 'inspector';
 
 console.log(`Starting setup...`);
 new Config();
@@ -88,6 +89,7 @@ new ImportRoutes(app);
 new AdminRoutes(app);
 new MiscRoutes(app);
 
+swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 if (Config.devmode) {
     app.use(express.static(path.join(__dirname, `../assets/static`), {

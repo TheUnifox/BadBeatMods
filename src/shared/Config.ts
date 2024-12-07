@@ -23,8 +23,8 @@ const configMapping = {
         iconsDir : cf.storage.iconsDir ? cf.storage.iconsDir : `./storage/icons`
     },
     server: {
-        port: cf.server.port ? cf.server.port : 3000,
-        url: cf.server.url ? cf.server.url : `http://localhost:3000`,
+        port: cf.server.port ? cf.server.port : 5001,
+        url: cf.server.url ? cf.server.url : `http://localhost:5001`,
         sessionSecret:  cf.server.sessionSecret ? cf.server.sessionSecret : `supersecretkey`
     },
     devmode: cf.devmode ? cf.devmode : false,

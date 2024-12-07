@@ -94,7 +94,7 @@ export class Luma extends Discord.Client {
 
     public registerInteractionEvent() {
         this.on(Discord.Events.InteractionCreate, async interaction => {
-            console.log(interaction);
+            // console.log(interaction);
             if (interaction.isChatInputCommand()) {
                 const command = this.commands.get(interaction.commandName);
                 if (!command) return;
