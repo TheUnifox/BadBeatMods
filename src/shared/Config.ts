@@ -1,4 +1,3 @@
-import { url } from 'node:inspector';
 import * as cf from '../../storage/config.json';
 
 // This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated.

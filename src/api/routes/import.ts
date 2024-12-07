@@ -3,7 +3,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRoles, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
-import { coerce } from 'semver';
+import { coerce, satisfies } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
@@ -21,12 +21,13 @@ export class ImportRoutes {
 
     private async loadRoutes() {
         this.app.post(`/api/beatmods/importAll`, async (req, res) => {
+            // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
             
             // oh god oh fuck oh shit
             Logger.log(`Ere Jim, 'ave a seat an' I'll tell you a tale that'll cause your blood to run cold`, `Import`);
 
-            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod?version=1.39.0`);
+            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod`);
             Logger.log(`It was a dark and stormy night, three weeks out of Ilfracombe, Bound for the isle of Lundy`, `Import`);
 
             if (BeatModsResponse.status !== 200) {
@@ -51,6 +52,9 @@ export class ImportRoutes {
                     githubId: null,
                     roles: []
                 });
+            } else {
+                Logger.warn(`Import author already exists, this is probably bad`, `Import`);
+                res.status(500).send({ message: `Import author already exists, this is probably bad`});
             }
             res.status(200).send({ message: `On the wind, a refrain to strike fear into the heart of any man`});
 
@@ -64,6 +68,7 @@ export class ImportRoutes {
                 if (mod.status == `declined`) {
                     continue;
                 }
+
 
                 let existingMod = await DatabaseHelper.database.Mods.findOne({ where: { name: mod.name } });
                 let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
@@ -93,73 +98,39 @@ export class ImportRoutes {
             Logger.log(`Send them to the depths`, `Import`);
 
             for (const record of dependancyRecord) {
+                if (typeof record.dependancy === `string`) {
+                    Logger.warn(`Dependancy ${record.dependancy} not found for mod ${record.modVersionId}`, `Import`);
+                    continue;
+                }
+                console.log(`Resolving dependancy ${record.dependancy.name} for mod ${record.modVersionId}`, `Import`);
+                let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy.name } });
+                if (!mod) {
+                    Logger.warn(`Dependancy ${record.dependancy.name} not found for mod ${record.modVersionId}`, `Import`);
+                    continue;
+                }
+
                 let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: record.modVersionId } });
                 if (!modVersion) {
                     Logger.warn(`Mod version ${record.modVersionId} not found`, `Import`);
                     continue;
                 }
 
-                let dependancyModVersion: ModVersion;
-                if (typeof record.dependancy === `string`) {
-                    console.log(`Resolving dependancy ${record.dependancy} for mod ${record.modVersionId}`, `Import`);
+                let dependancyModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: mod.id } });
+                if (!Array.isArray(dependancyModVersions)) {
+                    Logger.warn(`Dependancy mod version ${record.dependancy.name} v${record.dependancy.version} not found`, `Import`);
+                    continue;
+                }
                 
-                    let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy } });
-                    if (!mod) {
-                        Logger.warn(`Dependancy ${record.dependancy} not found for mod ${record.modVersionId}`, `Import`);
-                        continue;
-                    }
-
-                    dependancyModVersion = await mod.getLatestVersion((await DatabaseHelper.database.GameVersions.findOne({ where: { version: modVersion.supportedGameVersionIds[0], gameName: `Beat Saber` }})).id);
-                    if (!dependancyModVersion) {
-                        Logger.warn(`Dependancy mod version ${record.dependancy} not found for version ID ${modVersion.supportedGameVersionIds[0]}`, `Import`);
-                        continue;
-                    }
-                } else {
-                    console.log(`Resolving dependancy ${record.dependancy.name} for mod ${record.modVersionId}`, `Import`);
-
-                    let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy.name } });
-                    if (!mod) {
-                        Logger.warn(`Dependancy ${record.dependancy.name} not found for mod ${record.modVersionId}`, `Import`);
-                        continue;
-                    }
-
-                    dependancyModVersion = await ModVersion.checkForExistingVersion(mod.id, coerce(record.dependancy.version), modVersion.supportedGameVersionIds[0], modVersion.platform);
-                    if (!dependancyModVersion) {
-                        Logger.warn(`Dependancy mod version ${record.dependancy.name} v${record.dependancy.version} not found`, `Import`);
-                        let dependancies = await this.downloadBeatModsDownloads(mod.id, importAuthor.id, record.dependancy);
-                        if (!Array.isArray(dependancies)) {
-                            Logger.warn(`Failed to download dependancy ${record.dependancy.name} v${record.dependancy.version}`, `Import`);
-                            continue;
-                        }
-                        for (let d of dependancies) {
-                            if (typeof d.dependancy === `string`) {
-                                // resolving the dependency for the dependency
-                                console.log(`Resolving dependancy ${d.dependancy} for mod ${d.modVersionId}`, `Import`);
-                            
-                                let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: d.dependancy } });
-                                if (!mod) {
-                                    Logger.warn(`Dependancy ${d.dependancy} not found for mod ${d.modVersionId}`, `Import`);
-                                    continue;
-                                }
-
-                                let mV = await DatabaseHelper.database.ModVersions.findByPk(d.modVersionId);
-                
-                                let dmv = await mod.getLatestVersion((await DatabaseHelper.database.GameVersions.findOne({ where: { version: modVersion.supportedGameVersionIds[0], gameName: `Beat Saber` }})).id);
-                                if (!dmv) {
-                                    Logger.warn(`Dependancy mod version ${d.dependancy} not found for version ID ${modVersion.supportedGameVersionIds[0]}`, `Import`);
-                                    continue;
-                                }
-
-                                mV.dependencies = [...mV.dependencies, dmv.id];
-                                mV.save();
-                            } else {
-                                Logger.warn(`Stuck in dependancy ${d.dependancy.name} for mod ${d.modVersionId}`, `Import`);
-                            }
-                        }
-                    }
+                //this is fucking stupid, why is typescript like this
+                let versionToCompare = record.dependancy.version;
+                // not particularly happy with this ig its fine
+                let dependancyModVersion = dependancyModVersions.find((modVersion) => { return satisfies(modVersion.modVersion, `^${versionToCompare}`) && modVersion.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0]); });
+                if (!dependancyModVersion) {
+                    Logger.warn(`No suitable version of dependancy ${record.dependancy.name} v${record.dependancy.version} found for ${record.modVersionId}`, `Import`);
+                    continue;
                 }
 
-                //you may think its stupid but they force you to do this
+                //you may think its stupid but they force you to do this. thanks sequelize
                 modVersion.dependencies = [...modVersion.dependencies, dependancyModVersion.id];
                 await modVersion.save();
             }
@@ -204,7 +175,7 @@ export class ImportRoutes {
                 continue;
             }
     
-            let result = `test`;
+            let result = `DOWNLOAD DISABLED`;
             if (this.ENABLE_DOWNLOADS) {
                 let filefetch = await fetch(`https://beatmods.com${download.url}`);
                 let file = await filefetch.blob();
@@ -234,10 +205,11 @@ export class ImportRoutes {
 
             if (mod.dependencies.length >= 1) {
                 for (const dependancy of mod.dependencies) {
-                    if (`version` in dependancy) {
+                    if (typeof dependancy === `object` && `version` in dependancy) {
                         dependancyRecord.push({ dependancy: dependancy, modVersionId: newVersion.id });
                     } else {
-                        dependancyRecord.push({ dependancy: dependancy.name, modVersionId: newVersion.id });
+
+                        dependancyRecord.push({ dependancy: dependancy, modVersionId: newVersion.id });
                     }
                 }
             }

@@ -14,6 +14,7 @@ export class ApprovalRoutes {
 
     private async loadRoutes() {
         this.app.get(`/api/approval/new`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
 
             let newMods = await DatabaseHelper.database.Mods.findAll({ where: { visibility: `unverified` } });
@@ -23,6 +24,7 @@ export class ApprovalRoutes {
         });
 
         this.app.get(`/api/approval/edits`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
 
             let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: false }});
@@ -32,6 +34,7 @@ export class ApprovalRoutes {
 
         // #region Accept/Reject Approvals
         this.app.post(`/api/approval/mod/:modIdParam`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
             let modId = parseInt(req.params.modIdParam, 10);
             let status = req.body.status;
@@ -63,6 +66,7 @@ export class ApprovalRoutes {
         });
 
         this.app.post(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let status = req.body.status;
@@ -99,6 +103,7 @@ export class ApprovalRoutes {
         });
 
         this.app.post(`/api/approval/edit/:editIdParam`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
             let editId = parseInt(req.params.editIdParam, 10);
             let status = req.body.status;
@@ -155,6 +160,7 @@ export class ApprovalRoutes {
 
         // #region Edit Approvals
         this.app.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
@@ -197,6 +203,7 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let gameVersions = req.body.gameVersions;
@@ -263,6 +270,7 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/edit/:editIdParam`, async (req, res) => {
+            // #swagger.tags = ['Approval']
             let session = await validateSession(req, res, UserRoles.Approver);
             let editId = parseInt(req.params.editIdParam, 10);
             

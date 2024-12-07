@@ -13,6 +13,7 @@ export class AdminRoutes {
 
     private async loadRoutes() {
         this.app.post(`/api/admin/addversion`, async (req, res) => {
+            // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
             let version = req.body.version;
 

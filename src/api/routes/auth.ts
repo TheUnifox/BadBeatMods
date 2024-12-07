@@ -16,6 +16,7 @@ export class AuthRoutes {
 
     private async loadRoutes() {
         this.app.get(`/api/auth`, async (req, res) => {
+            // #swagger.tags = ['Auth']
             if (req.session.userId) {
                 return res.status(200).send({ message: `Hello, ${req.session.username}!`, username: req.session.username, userId: req.session.userId });
             } else {
@@ -24,6 +25,7 @@ export class AuthRoutes {
         });
 
         this.app.get(`/api/auth/logout`, async (req, res) => {
+            // #swagger.tags = ['Auth']
             req.session.destroy((err) => {
                 if (err) {
                     return res.status(500).send({ error: `Internal server error.` });
@@ -33,6 +35,7 @@ export class AuthRoutes {
         });
 
         this.app.get(`/api/auth/github`, async (req, res) => {
+            // #swagger.tags = ['Auth']
             let state = HTTPTools.createRandomString(16);
             this.validStates.push(state + req.ip);
             setTimeout(() => {
@@ -43,6 +46,7 @@ export class AuthRoutes {
         });
 
         this.app.get(`/api/auth/github/callback`, async (req, res) => {
+            // #swagger.tags = ['Auth']
             const code = req.query[`code`];
             const state = req.query[`state`];
 
@@ -81,6 +85,7 @@ export class AuthRoutes {
         });
 
         this.app.get(`/api/link/discord`, async (req, res) => {
+            // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
             let state = HTTPTools.createRandomString(16);
             this.validStates.push(state + req.ip);
@@ -92,6 +97,7 @@ export class AuthRoutes {
         });
 
         this.app.get(`/api/link/discord/callback`, async (req, res) => {
+            // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false); // this probably won't work, double check it tho...
             const code = req.query[`code`];
             const state = req.query[`state`];

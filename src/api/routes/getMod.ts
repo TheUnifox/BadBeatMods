@@ -12,7 +12,7 @@ export class GetModRoutes {
 
     private async loadRoutes() {
         this.app.get(`/api/mods`, async (req, res) => {
-            // #swagger.tags = ['Mod']
+            // #swagger.tags = ['Mods']
             // #swagger.description = 'Get all mods.'
             // #swagger.responses[200] = { description: 'Returns all mods.' }
 
@@ -21,6 +21,7 @@ export class GetModRoutes {
         });
 
         this.app.get(`/api/mod/:modIdParam`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             let modId = parseInt(req.params.modIdParam);
             if (!modId) {
                 return res.status(400).send({ message: `Invalid mod id.` });
@@ -34,13 +35,14 @@ export class GetModRoutes {
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
-                returnVal.push(await version.toJSONWithGameVersions());
+                returnVal.push(await version.toAPIResonse());
             }
 
             return res.status(200).send({ mod: { info: mod, versions: returnVal } });
         });
 
         this.app.get(`/api/hashlookup`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             let hash = req.query.hash;
             if (!hash) {
                 return res.status(400).send({ message: `Missing hash.` });
@@ -63,6 +65,7 @@ export class GetModRoutes {
         });
 
         this.app.get(`/api/beatmods/mod`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             let version = req.query.version;
 
             let modArray: BeatModsMod[] = [];
@@ -96,7 +99,7 @@ export type BeatModsMod = {
         _id: string,
         username: string,
         lastLogin: string,
-    },
+    } | string,
     status: string,
     description: string,
     link: string,
@@ -110,16 +113,16 @@ export type BeatModsMod = {
             file: string,
         }[],
     }[],
-    dependencies: BeatModsMod[] | {name: string, _id: string}[],
+    dependencies: BeatModsMod[] | string[],
     _id: string,
 }
 
-async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doDependancyResolution:boolean = true): Promise<BeatModsMod> {
-    let dependencies = [];
+async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): Promise<BeatModsMod> {
+    let dependencies: (BeatModsMod | string)[] = [];
 
     if (modVersion.dependencies.length !== 0) {
         for (let dependancy of modVersion.dependencies) {
-            if (doDependancyResolution) {
+            if (doResolution) {
                 let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
                 if (dependancyMod) {
                     dependencies.push(await convertToBeatmodsMod(dependancyMod, await dependancyMod.getLatestVersion(gameVersion.id), gameVersion, false));
@@ -127,10 +130,7 @@ async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion
                     Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
                 }
             } else {
-                dependencies.push({
-                    _id: dependancy.toString(),
-                    name: dependancy.toString()
-                });
+                dependencies.push(dependancy.toString());
             }
         }
     }
@@ -140,11 +140,11 @@ async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion
         name: mod.name.toString(),
         version: modVersion.modVersion.raw,
         gameVersion: gameVersion.version,
-        author: {
+        author: doResolution ? {
             _id: modVersion.authorId.toString(),
             username: modVersion.authorId.toString(),
             lastLogin: new Date().toISOString()
-        },
+        } : modVersion.authorId.toString(),
         status: modVersion.visibility,
         description: mod.description,
         link: mod.gitUrl,
@@ -159,7 +159,7 @@ async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion
                 };
             })
         }],
-        dependencies: dependencies,
+        dependencies: doResolution ? dependencies as BeatModsMod[] : dependencies as string[],
         required: (mod.category === Categories.Core),
     };
 }

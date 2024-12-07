@@ -10,7 +10,7 @@ export class Logger {
         this.sendWebhookLog(message);
     }
 
-    public static log(message:any, moduleName?:string) {
+    public static log(message:any, moduleName?:string, sendWebhook:boolean = true) {
         console.log(`[BBM${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`);
         this.sendWebhookLog(`[BNS${moduleName ? ` ${moduleName}` : ``}] ${time(new Date(Date.now()), TimestampStyles.LongTime)} > ${message}`);
     }

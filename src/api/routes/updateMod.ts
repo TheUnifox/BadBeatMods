@@ -14,6 +14,7 @@ export class UpdateModRoutes {
 
     private async loadRoutes() {
         this.app.patch(`/api/mod/:modIdParam`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
@@ -83,6 +84,7 @@ export class UpdateModRoutes {
         });
 
         this.app.patch(`/api/modversion/:modVersionIdParam`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             return res.status(501).send({ message: `Not implemented.` });
         });
             

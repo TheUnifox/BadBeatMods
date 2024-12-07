@@ -16,6 +16,7 @@ export class CreateModRoutes {
 
     private async loadRoutes() {
         this.app.post(`/api/mod/create`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             let name = req.body.name;
             let description = req.body.description;
@@ -23,7 +24,7 @@ export class CreateModRoutes {
             let file = req.files?.file;
 
             //#region Request Validation
-            if (!name || !description || gitUrl || typeof name !== `string` || typeof description !== `string` || typeof gitUrl !== `string` || name.length < 1 || description.length < 1) {
+            if (!name || !description || !gitUrl || typeof name !== `string` || typeof description !== `string` || typeof gitUrl !== `string` || name.length < 1 || description.length < 1) {
                 return res.status(400).send({ message: `Missing name or description.` });
             }
 
@@ -54,6 +55,7 @@ export class CreateModRoutes {
         });
 
         this.app.post(`/api/mod/:modIdParam/upload`, async (req, res) => {
+            // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             let modId = parseInt(req.params.modIdParam);
             let gameVersions = Config.devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;

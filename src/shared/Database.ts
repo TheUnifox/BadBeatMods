@@ -18,6 +18,7 @@ export class DatabaseManager {
     public EditApprovalQueue: ModelStatic<EditApprovalQueue>;
 
     constructor() {
+        Logger.log(`Loading Database...`);
         this.sequelize = new Sequelize(`bbm_database`, Config.database.username, Config.database.password, {
             host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
             dialect: isValidDialect(Config.database.dialect) ? Config.database.dialect : `sqlite`,
@@ -25,7 +26,6 @@ export class DatabaseManager {
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
 
-        Logger.log(`Loading Database...`);
         this.loadTables();
         this.sequelize.sync({
             alter: false,
@@ -36,14 +36,25 @@ export class DatabaseManager {
             this.Users.findByPk(1).then((user) => {
                 if (!user) {
                     this.Users.create({
-                        username: `TestUser`,
+                        username: `ServerAdmin`,
                         discordId: `1`,
                         roles: [`admin`],
+                        githubId: null,
                     }).then(() => {
-                        Logger.log(`Created test user.`);
+                        Logger.log(`Created built in server account.`);
                     }).catch((error) => {
-                        Logger.error(`Error creating test user: ${error}`);
+                        Logger.error(`Error creating built in server account: ${error}`);
                     });
+                } else {
+                    if (!user.roles.includes(`admin`)) {
+                        if (user.username != `ServerAdmin`) {
+                            Logger.warn(`Server account has been tampered with!`);
+                        } else {
+                            user.roles.push(`admin`);
+                            user.save();
+                            Logger.log(`Added admin role to server account.`);
+                        }
+                    }
                 }
             });
 
@@ -404,12 +415,29 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             modId: this.modId,
             authorId: this.authorId,
             modVersion: this.modVersion,
-            supportedGameVersions: await this.getSupportedGameVersions(),
-            visibility: this.visibility,
-            dependencies: this.dependencies,
             platform: this.platform,
             zipHash: this.zipHash,
+            visibility: this.visibility,
+            dependencies: this.dependencies,
             contentHashes: this.contentHashes,
+            supportedGameVersions: await this.getSupportedGameVersions(),
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
+
+    public async toAPIResonse() {
+        return {
+            id: this.id,
+            modId: this.modId,
+            authorId: this.authorId,
+            modVersion: this.modVersion.raw,
+            platform: this.platform,
+            zipHash: this.zipHash,
+            visibility: this.visibility,
+            dependencies: this.dependencies,
+            contentHashes: this.contentHashes,
+            supportedGameVersions: await this.getSupportedGameVersions(),
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
