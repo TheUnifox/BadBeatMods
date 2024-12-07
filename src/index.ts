@@ -88,24 +88,25 @@ new AdminRoutes(app);
 new MiscRoutes(app);
 
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+if (Config.devmode) {
+    app.use(express.static(path.join(__dirname, `../assets/static`), {
+        extensions: [`html`],
+        index: `index.html`,
+        dotfiles: `ignore`
+    }));
 
-app.use(express.static(path.join(__dirname, `../assets/static`), {
-    extensions: [`html`],
-    index: `index.html`,
-    dotfiles: `ignore`
-}));
+    app.use(`/profile`, express.static(path.join(__dirname, `../assets/profile`), {
+        extensions: [`html`],
+        index: `profile.html`,
+        dotfiles: `ignore`
+    }));
 
-app.use(`/profile`, express.static(path.join(__dirname, `../assets/profile`), {
-    extensions: [`html`],
-    index: `profile.html`,
-    dotfiles: `ignore`
-}));
-
-app.use(`/mod`, express.static(path.join(__dirname, `../assets/mod`), {
-    extensions: [`html`],
-    index: `mod.html`,
-    dotfiles: `ignore`
-}));
+    app.use(`/mod`, express.static(path.join(__dirname, `../assets/mod`), {
+        extensions: [`html`],
+        index: `mod.html`,
+        dotfiles: `ignore`
+    }));
+}
 
 HTTPTools.handleExpressShenanigans(app);
 
