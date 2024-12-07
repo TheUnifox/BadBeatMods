@@ -28,15 +28,14 @@ const memstore = MemoryStore(session);
 const port = Config.server.port;
 new DatabaseManager();
 
-//const luma = new Luma({
-//    intents: [],
-//    presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}
-//});
-//luma.login(Config.bot.token);
+const luma = new Luma({
+    intents: [],
+    presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
+luma.login(Config.bot.token);
 
 
 app.use(express.json({ limit: 100000 }));
-app.use(express.urlencoded({limit : 10000, parameterLimit: 10 }));
+app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
 app.use(fileUpload({
     limits: { fileSize: 50 * 1024 * 1024 },
     abortOnLimit: true,
@@ -64,7 +63,7 @@ app.use(session({
         sameSite: `strict`
     }
 }));
-app.enable(`trust proxy`);
+app.set(`trust proxy`, `uniquelocal, loopback`);
 
 app.use((req, res, next) => {
     if (Config.devmode) {

@@ -82,6 +82,9 @@ export class GetModRoutes {
             let mods = await DatabaseHelper.database.Mods.findAll();
             for (let mod of mods) {
                 let modVersion = await mod.getLatestVersion(gameVersion.id);
+                if (!modVersion) {
+                    continue;
+                }
 
                 modArray.push(await convertToBeatmodsMod(mod, modVersion, gameVersion));
             }

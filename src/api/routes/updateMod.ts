@@ -16,6 +16,10 @@ export class UpdateModRoutes {
         this.app.patch(`/api/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
+            if (!session.approved) {
+                return;
+            }
+            
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;

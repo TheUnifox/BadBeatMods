@@ -18,6 +18,10 @@ export class CreateModRoutes {
         this.app.post(`/api/mod/create`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
+            if (!session.approved) {
+                return;
+            }
+
             let name = req.body.name;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
@@ -57,6 +61,10 @@ export class CreateModRoutes {
         this.app.post(`/api/mod/:modIdParam/upload`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
+            if (!session.approved) {
+                return;
+            }
+            
             let modId = parseInt(req.params.modIdParam);
             let gameVersions = Config.devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
             let modVersion = req.body.modVersion;

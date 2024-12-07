@@ -23,6 +23,9 @@ export class ImportRoutes {
         this.app.post(`/api/beatmods/importAll`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
+            if (!session.approved) {
+                return;
+            }
             
             // oh god oh fuck oh shit
             Logger.log(`Ere Jim, 'ave a seat an' I'll tell you a tale that'll cause your blood to run cold`, `Import`);

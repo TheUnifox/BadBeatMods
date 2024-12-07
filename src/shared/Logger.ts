@@ -10,6 +10,10 @@ export class Logger {
         this.sendWebhookLog(message);
     }
 
+    public static debug(message:any, moduleName?:string) {
+        Config.devmode ? console.debug(`[DEBUG${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`) : null;
+    }
+
     public static log(message:any, moduleName?:string, sendWebhook:boolean = true) {
         console.log(`[BBM${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`);
         this.sendWebhookLog(`[BNS${moduleName ? ` ${moduleName}` : ``}] ${time(new Date(Date.now()), TimestampStyles.LongTime)} > ${message}`);
@@ -26,6 +30,10 @@ export class Logger {
     }
 
     //compatibility
+    public debug(message:any, moduleName?:string) {
+        Logger.debug(message, moduleName);
+    }
+
     public log(message:any, moduleName?:string) {
         Logger.log(message, moduleName);
     }

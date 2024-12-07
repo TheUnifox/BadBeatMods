@@ -87,6 +87,10 @@ export class AuthRoutes {
         this.app.get(`/api/link/discord`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
+            if (!session.approved) {
+                return;
+            }
+
             let state = HTTPTools.createRandomString(16);
             this.validStates.push(state + req.ip);
             setTimeout(() => {
@@ -99,6 +103,10 @@ export class AuthRoutes {
         this.app.get(`/api/link/discord/callback`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false); // this probably won't work, double check it tho...
+            if (!session.approved) {
+                return;
+            }
+            
             const code = req.query[`code`];
             const state = req.query[`state`];
 

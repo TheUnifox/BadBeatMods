@@ -347,7 +347,7 @@ export interface GitHubPublicUser {
     If True, the user must not be banned.
     If a UserRoles, the user must have that role.
 */
-export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User}> {
+export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User|null }> {
     let sessionId = req.session.userId;
     if (Config.devmode && Config.authBypass) {
         let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
@@ -355,10 +355,9 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
     }
     if (!sessionId) {
         if (handleRequest) {
-            return res.status(401).send({ message: `Unauthorized.` });
-        } else {
-            return { approved: false, user: null };
+            res.status(401).send({ message: `Unauthorized.` });
         }
+        return { approved: false, user: null };
     }
     
     let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
@@ -373,10 +372,9 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
     if (typeof role === `boolean` && role == true) {
         if (user.roles.includes(UserRoles.Banned)) {
             if (handleRequest) {
-                return res.status(401).send({ message: `Unauthorized.` });
-            } else {
-                return { approved: false, user: null };
+                res.status(401).send({ message: `Unauthorized.` });
             }
+            return { approved: false, user: null };
         } else {
             return { approved: true, user: user };
         }
@@ -388,9 +386,8 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         return { approved: true, user: user };
     } else {
         if (handleRequest) {
-            return res.status(401).send({ message: `Unauthorized.` });
-        } else {
-            return { approved: false, user: null };
+            res.status(401).send({ message: `Unauthorized.` });
         }
+        return { approved: false, user: null };
     }
 }

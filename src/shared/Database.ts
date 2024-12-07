@@ -172,6 +172,7 @@ export class DatabaseManager {
             authorIds: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                defaultValue: `[]`,
                 get() {
                     // @ts-expect-error s(2345)
                     return JSON.parse(this.getDataValue(`authorIds`));
