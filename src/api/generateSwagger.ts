@@ -9,6 +9,7 @@ const doc = {
     basePath: `/`,
     consumes: [`application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`],
     produces: [`application/json`],
+    schemes: [`https`, `http`],
 };
 
 const outputFile = `./swagger.json`;
