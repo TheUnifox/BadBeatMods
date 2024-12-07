@@ -2,10 +2,10 @@
   "swagger": "2.0",
   "info": {
     "title": "BadBeatMods API",
-    "description": "Description",
+    "description": "This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.",
     "version": "1.0.0"
   },
-  "host": "localhost:5001",
+  "host": "bbm.saera.gay",
   "basePath": "/",
   "schemes": [
     "http"

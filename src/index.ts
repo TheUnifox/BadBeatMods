@@ -46,7 +46,7 @@ app.use(rateLimit({
     max: 50,
     statusCode: 429,
     message: `Rate limit exceeded.`,
-    skipSuccessfulRequests: true
+    skipSuccessfulRequests: true,
 }));
 app.use(session({
     secret: Config.server.sessionSecret,
@@ -64,6 +64,8 @@ app.use(session({
         sameSite: `strict`
     }
 }));
+app.enable(`trust proxy`);
+
 app.use((req, res, next) => {
     if (Config.devmode) {
         if (Config.authBypass) {

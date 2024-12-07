@@ -5,7 +5,7 @@ const doc = {
         title: `BadBeatMods API`,
         description: `This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.`,
     },
-    host: `localhost:5001`,
+    host: `bbm.saera.gay`,
     basePath: `/`,
     consumes: [`application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`],
     produces: [`application/json`],
