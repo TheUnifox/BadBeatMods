@@ -19,7 +19,7 @@ const configMapping = {
         password: cf.database.password ? cf.database.password : `password`,
     },
     storage: {
-        uploadsDir :  cf.storage.uploadsDir ? cf.storage.uploadsDir : `./storage/uploads`,
+        modsDir :  cf.storage.modsDir ? cf.storage.modsDir : `./storage/uploads`,
         iconsDir : cf.storage.iconsDir ? cf.storage.iconsDir : `./storage/icons`
     },
     server: {
@@ -52,7 +52,7 @@ export class Config {
         password: string;
     } = configMapping.database;
     public static readonly storage: {
-        uploadsDir: string;
+        modsDir: string;
         iconsDir: string;
     } = configMapping.storage;
     public static readonly server: {

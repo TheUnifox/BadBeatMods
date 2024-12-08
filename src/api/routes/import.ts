@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = false;
+    private readonly ENABLE_DOWNLOADS = true;
 
     constructor(app: Express) {
         this.app = app;
@@ -186,7 +186,7 @@ export class ImportRoutes {
                 let arrayBuffer = await file.arrayBuffer();
                 result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
     
-                fs.writeFileSync(`${path.resolve(Config.storage.uploadsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
+                fs.writeFileSync(`${path.resolve(Config.storage.modsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
             }
     
             let newVersion = await DatabaseHelper.database.ModVersions.create({

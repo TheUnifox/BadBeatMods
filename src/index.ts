@@ -20,7 +20,6 @@ import { Luma } from './discord/classes/Luma';
 import { ActivityType } from 'discord.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './api/swagger.json';
-import { url } from 'inspector';
 
 console.log(`Starting setup...`);
 new Config();
@@ -91,25 +90,36 @@ new MiscRoutes(app);
 
 swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-if (Config.devmode) {
-    app.use(express.static(path.join(__dirname, `../assets/static`), {
-        extensions: [`html`],
-        index: `index.html`,
-        dotfiles: `ignore`
-    }));
 
-    app.use(`/profile`, express.static(path.join(__dirname, `../assets/profile`), {
-        extensions: [`html`],
-        index: `profile.html`,
-        dotfiles: `ignore`
-    }));
+app.get(`/favicon.ico`, (req, res) => {
+    res.sendFile(path.resolve(`./assets/favicon.ico`), {
+        maxAge: 1000 * 60 * 60 * 24 * 1,
+        //immutable: true,
+        lastModified: true,
+    });
+});
 
-    app.use(`/mod`, express.static(path.join(__dirname, `../assets/mod`), {
-        extensions: [`html`],
-        index: `mod.html`,
-        dotfiles: `ignore`
-    }));
-}
+app.get(`/banner.png`, (req, res) => {
+    res.sendFile(path.resolve(`./assets/banner.png`), {
+        maxAge: 1000 * 60 * 60 * 24 * 1,
+        //immutable: true,
+        lastModified: true,
+    });
+});
+
+app.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
+    extensions: [`png`],
+    dotfiles: `ignore`,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+}));
+
+app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
+    extensions: [`zip`],
+    dotfiles: `ignore`,
+    immutable: true,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    lastModified: true,
+}));
 
 HTTPTools.handleExpressShenanigans(app);
 

@@ -98,6 +98,16 @@ export class DatabaseManager {
                 defaultValue: ``,
                 unique: true, //SQLite treats all NULL values are different, therefore, a column with a UNIQUE constraint can have multiple NULL values.
             },
+            avatarUrl: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: `https://github.com/identicons/octocat.png`,
+            },
+            sponsorUrl: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: ``,
+            },
             discordId: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -300,6 +310,8 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare username: string;
     declare githubId: string;
     declare discordId: string;
+    declare avatarUrl: string;
+    declare sponsorUrl: string;
     declare roles: string[];
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
