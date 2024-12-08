@@ -5,7 +5,9 @@
 - [x] Update all SemVer checks to use SemVer.raw
 
 ## Medium Priority
-- [ ] actually serve mods
+- [ ] Make per game permissions (add to User class)
+- [ ] Add game filter to mod endpoints
+- [x] actually serve mods
 - [ ] add webhooks (make this public????)
 - [ ] add mod filtering to /api/mods
 - [ ] Make mod management endpoints
@@ -13,7 +15,6 @@
 - [x] Move Config management to static class 
 
 ## Low Priority
-- [ ] Make per game permissions (add to User class)
 - [ ] frontend (maybe)
 - [ ] Allow only uploading single dll (autopackage into zip)
 - [ ] do more with the discord bot
