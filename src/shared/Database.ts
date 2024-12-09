@@ -95,13 +95,8 @@ export class DatabaseManager {
             githubId: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                defaultValue: ``,
+                defaultValue: null,
                 unique: true, //SQLite treats all NULL values are different, therefore, a column with a UNIQUE constraint can have multiple NULL values.
-            },
-            avatarUrl: {
-                type: DataTypes.STRING,
-                allowNull: true,
-                defaultValue: `https://github.com/identicons/octocat.png`,
             },
             sponsorUrl: {
                 type: DataTypes.STRING,
@@ -111,6 +106,16 @@ export class DatabaseManager {
             discordId: {
                 type: DataTypes.STRING,
                 allowNull: true,
+                defaultValue: ``,
+            },
+            displayName: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            bio: {
+                type: DataTypes.STRING,
+                allowNull: false,
                 defaultValue: ``,
             },
             roles: {
@@ -295,6 +300,11 @@ export class DatabaseManager {
                     this.setDataValue(`dependencies`, JSON.stringify(value));
                 }
             },
+            downloadCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
         }, {
@@ -310,8 +320,9 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare username: string;
     declare githubId: string;
     declare discordId: string;
-    declare avatarUrl: string;
     declare sponsorUrl: string;
+    declare displayName: string;
+    declare bio: string;
     declare roles: string[];
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
@@ -376,6 +387,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare platform: Platform;
     declare zipHash: string;
     declare contentHashes: ContentHash[];
+    declare downloadCount: number;
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 

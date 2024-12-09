@@ -2,7 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import MemoryStore from 'memorystore';
 import { HTTPTools } from './shared/HTTPTools';
-import { DatabaseManager } from './shared/Database';
+import { DatabaseHelper, DatabaseManager } from './shared/Database';
 import path from 'path';
 import fileUpload from 'express-fileupload';
 import { CreateModRoutes } from './api/routes/createMod';
@@ -110,7 +110,10 @@ app.get(`/banner.png`, (req, res) => {
 app.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
     extensions: [`png`],
     dotfiles: `ignore`,
+    immutable: true,
+    index: false,
     maxAge: 1000 * 60 * 60 * 24 * 7,
+    fallthrough: false,
 }));
 
 app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
@@ -118,7 +121,16 @@ app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
     dotfiles: `ignore`,
     immutable: true,
     maxAge: 1000 * 60 * 60 * 24 * 7,
-    lastModified: true,
+    setHeaders: (res, file) => { // this is a hacky workaround to get code to execute when a file is served, but it should work with minimal preformance impact
+        res.set(`Content-Disposition`, `attachment`);
+        let hash = path.basename(file).replace(path.extname(file), ``);
+        DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
+            version.increment(`downloadCount`);
+        }).catch((error) => {
+            Config.devmode ? Logger.warn(`Error incrementing download count: ${error}`) : null;
+        });
+    },
+    fallthrough: false,
 }));
 
 HTTPTools.handleExpressShenanigans(app);
