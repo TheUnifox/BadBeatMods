@@ -19,6 +19,7 @@ If anyone has any questions, comments, or feature requests, please let me (Saera
 ## How are mods done differently?
 > [!NOTE]
 > This section is not complete, and might be inaccurate due to the project still being in active development.
+
 In BadBeatMods, mods are stored in two parts:
 1. `Mod`, responsible for mod metadata (such as name, description, gitUrl, category, etc), and
 2. `ModVersion`, responsible for the zip file itself (such as hashes, dependancies, version, supportedGameVersion, platform, etc)
