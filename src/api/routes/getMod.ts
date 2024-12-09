@@ -70,7 +70,7 @@ export class GetModRoutes {
             // #swagger.tags = ['Mods']
             let version = req.query.version;
 
-            let modArray: Promise<BeatModsMod>[] = [];
+            let modArray: BeatModsMod[] = [];
 
             if (!version || typeof version !== `string`) {
                 return res.status(400).send({message: `Missing Game Version`});
@@ -91,15 +91,11 @@ export class GetModRoutes {
                 modArray.push(this.convertToBeatmodsMod(mod, modVersion, gameVersion));
             }
 
-            Promise.all(modArray).then((modArray) => {
-                return res.status(200).send(modArray);
-            }).catch((err) => {
-                return res.status(500).send({message: `Internal Server Error`});
-            });
+            return res.status(200).send(modArray);
         });
     }
 
-    private async convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): Promise<BeatModsMod> {
+    private convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): BeatModsMod {
         let dependencies: (BeatModsMod | string)[] = [];
     
         if (modVersion.dependencies.length !== 0) {
@@ -108,7 +104,7 @@ export class GetModRoutes {
                     let dependancyModVesion = this.modVersionCache.find((modVersion) => modVersion.id === dependancyId);
                     let dependancyMod = this.modCache.find((mod) => mod.id === dependancyModVesion.modId);
                     if (dependancyMod) {
-                        dependencies.push(await this.convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
+                        dependencies.push(this.convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
                     } else {
                         Logger.warn(`Dependancy ${dependancyId} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
                     }
