@@ -6,7 +6,7 @@ export class GetModRoutes {
     private app: Express;
     private modCache: Mod[] = [];
     private modVersionCache: ModVersion[] = [];
-    private gameVersionCache: GameVersion[] = [];
+    //private gameVersionCache: GameVersion[] = [];
 
     constructor(app: Express) {
         this.app = app;
@@ -15,7 +15,7 @@ export class GetModRoutes {
         setInterval(async () => {
             this.modCache = await DatabaseHelper.database.Mods.findAll();
             this.modVersionCache = await DatabaseHelper.database.ModVersions.findAll();
-            this.gameVersionCache = await DatabaseHelper.database.GameVersions.findAll();
+            //this.gameVersionCache = await DatabaseHelper.database.GameVersions.findAll();
         }, 1000 * 60 * 1);
     }
 
