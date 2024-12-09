@@ -4,10 +4,19 @@ import { Logger } from '../../shared/Logger';
 
 export class GetModRoutes {
     private app: Express;
+    private modCache: Mod[] = [];
+    private modVersionCache: ModVersion[] = [];
+    private gameVersionCache: GameVersion[] = [];
 
     constructor(app: Express) {
         this.app = app;
         this.loadRoutes();
+
+        setInterval(async () => {
+            this.modCache = await DatabaseHelper.database.Mods.findAll();
+            this.modVersionCache = await DatabaseHelper.database.ModVersions.findAll();
+            this.gameVersionCache = await DatabaseHelper.database.GameVersions.findAll();
+        }, 1000 * 60 * 1);
     }
 
     private async loadRoutes() {
@@ -16,8 +25,7 @@ export class GetModRoutes {
             // #swagger.description = 'Get all mods.'
             // #swagger.responses[200] = { description: 'Returns all mods.' }
 
-            let mods = await DatabaseHelper.database.Mods.findAll();
-            return res.status(200).send({ mods });
+            return res.status(200).send({ mods: this.modCache });
         });
 
         this.app.get(`/api/mod/:modIdParam`, async (req, res) => {
@@ -27,11 +35,11 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
 
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
+            let mod = this.modCache.find((mod) => mod.id === modId);
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
-            let modVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: modId } });
+            let modVersions = this.modVersionCache.filter((modVersion) => modVersion.modId === mod.id);
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
@@ -48,13 +56,7 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Missing hash.` });
             }
 
-            let versions = await DatabaseHelper.database.ModVersions.findAll();
-
-            if (!versions) {
-                return res.status(404).send({ message: `Mod not found.` });
-            }
-
-            for (let version of versions) {
+            for (let version of this.modVersionCache) {
                 for (let fileHash of version.contentHashes) {
                     if (fileHash.hash === hash) {
                         return res.status(200).send({ mod: version.modId });
@@ -68,7 +70,7 @@ export class GetModRoutes {
             // #swagger.tags = ['Mods']
             let version = req.query.version;
 
-            let modArray: BeatModsMod[] = [];
+            let modArray: Promise<BeatModsMod>[] = [];
 
             if (!version || typeof version !== `string`) {
                 return res.status(400).send({message: `Missing Game Version`});
@@ -86,11 +88,63 @@ export class GetModRoutes {
                     continue;
                 }
 
-                modArray.push(await convertToBeatmodsMod(mod, modVersion, gameVersion));
+                modArray.push(this.convertToBeatmodsMod(mod, modVersion, gameVersion));
             }
 
-            res.status(200).send(modArray);
+            Promise.all(modArray).then((modArray) => {
+                return res.status(200).send(modArray);
+            }).catch((err) => {
+                return res.status(500).send({message: `Internal Server Error`});
+            });
         });
+    }
+
+    private async convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): Promise<BeatModsMod> {
+        let dependencies: (BeatModsMod | string)[] = [];
+    
+        if (modVersion.dependencies.length !== 0) {
+            for (let dependancyId of modVersion.dependencies) {
+                if (doResolution) {
+                    let dependancyModVesion = this.modVersionCache.find((modVersion) => modVersion.id === dependancyId);
+                    let dependancyMod = this.modCache.find((mod) => mod.id === dependancyModVesion.modId);
+                    if (dependancyMod) {
+                        dependencies.push(await this.convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
+                    } else {
+                        Logger.warn(`Dependancy ${dependancyId} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
+                    }
+                } else {
+                    dependencies.push(dependancyId.toString());
+                }
+            }
+        }
+    
+        return {
+            _id: modVersion.id.toString(),
+            name: mod.name.toString(),
+            version: modVersion.modVersion.raw,
+            gameVersion: gameVersion.version,
+            author: doResolution ? {
+                _id: modVersion.authorId.toString(),
+                username: modVersion.authorId.toString(),
+                lastLogin: new Date().toISOString()
+            } : modVersion.authorId.toString(),
+            status: modVersion.visibility,
+            description: mod.description,
+            link: mod.gitUrl,
+            category: mod.category,
+            downloads: [{
+                type: modVersion.platform,
+                url: `null`, //tbd
+                hashMd5: modVersion.contentHashes.map((hash) => {
+                    return {
+                        hash: hash.hash,
+                        file: hash.path
+                    };
+                })
+            }],
+            dependencies: doResolution ? dependencies as BeatModsMod[] : dependencies as string[],
+            required: (mod.category === Categories.Core),
+        };
     }
 }
 
@@ -118,52 +172,4 @@ export type BeatModsMod = {
     }[],
     dependencies: BeatModsMod[] | string[],
     _id: string,
-}
-
-async function convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): Promise<BeatModsMod> {
-    let dependencies: (BeatModsMod | string)[] = [];
-
-    if (modVersion.dependencies.length !== 0) {
-        for (let dependancy of modVersion.dependencies) {
-            if (doResolution) {
-                let dependancyModVesion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: dependancy } });
-                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancyModVesion.modId } });
-                if (dependancyMod) {
-                    dependencies.push(await convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
-                } else {
-                    Logger.warn(`Dependancy ${dependancy} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
-                }
-            } else {
-                dependencies.push(dependancy.toString());
-            }
-        }
-    }
-
-    return {
-        _id: modVersion.id.toString(),
-        name: mod.name.toString(),
-        version: modVersion.modVersion.raw,
-        gameVersion: gameVersion.version,
-        author: doResolution ? {
-            _id: modVersion.authorId.toString(),
-            username: modVersion.authorId.toString(),
-            lastLogin: new Date().toISOString()
-        } : modVersion.authorId.toString(),
-        status: modVersion.visibility,
-        description: mod.description,
-        link: mod.gitUrl,
-        category: mod.category,
-        downloads: [{
-            type: modVersion.platform,
-            url: `null`, //tbd
-            hashMd5: modVersion.contentHashes.map((hash) => {
-                return {
-                    hash: hash.hash,
-                    file: hash.path
-                };
-            })
-        }],
-        dependencies: doResolution ? dependencies as BeatModsMod[] : dependencies as string[],
-        required: (mod.category === Categories.Core),
-    };
 }
