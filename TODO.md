@@ -2,10 +2,11 @@
 ## Database Changes
 These need to take a priority before deployment due to the potential for a databasse structure change.  
 - [ ] (H) Validate that Approval Workflow is good.
-- [ ] (M) Make per game permissions (add to User class)
+- [x] (M) Make per game permissions (add to User class)
 - [x] (L) Download Counts
 
 ## High Priority
+- [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [ ] Handle dependency resolution in API 
 - [x] Update all SemVer checks to use SemVer.raw

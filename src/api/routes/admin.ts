@@ -17,15 +17,16 @@ export class AdminRoutes {
     private async loadRoutes() {
         this.app.post(`/api/admin/addversion`, async (req, res) => {
             // #swagger.tags = ['Admin']
-            let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
-                return;
-            }
             let version = req.body.version;
             let gameName = req.body.gameName;
 
-            if (!version || !gameName || version.length === 0 || gameName.length === 0) {
+            if (!version || !gameName || version.length === 0 || !DatabaseHelper.isValidGameName(gameName)) {
                 return res.status(400).send({ message: `Missing version.` });
+            }
+
+            let session = await validateSession(req, res, UserRoles.Admin, gameName);
+            if (!session.approved) {
+                return;
             }
 
             let versions = await DatabaseHelper.database.GameVersions.findAll({ where: { version: version, gameName: gameName } });

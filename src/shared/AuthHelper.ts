@@ -1,5 +1,5 @@
 import { Config } from "./Config";
-import { DatabaseHelper, User, UserRoles } from "./Database";
+import { DatabaseHelper, SupportedGames, User, UserRoles } from "./Database";
 
 // eslint-disable-next-line quotes
 declare module 'express-session' {
@@ -347,12 +347,14 @@ export interface GitHubPublicUser {
     If True, the user must not be banned.
     If a UserRoles, the user must have that role.
 */
-export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User|null }> {
+export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, gameName:SupportedGames = null, handleRequest:boolean = true): Promise<{approved: boolean, user: User|null }> {
     let sessionId = req.session.userId;
+    // check for devmode options
     if (Config.devmode && Config.authBypass) {
         let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
         return { approved: true, user: user };
     }
+    // check if signed in
     if (!sessionId) {
         if (handleRequest) {
             res.status(401).send({ message: `Unauthorized.` });
@@ -360,6 +362,7 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         return { approved: false, user: null };
     }
     
+    // check if valid user
     let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
     if (!user) {
         if (handleRequest) {
@@ -369,8 +372,9 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         }
     }
 
+    // check if user is banned
     if (typeof role === `boolean` && role == true) {
-        if (user.roles.includes(UserRoles.Banned)) {
+        if (user.roles.sitewide.includes(UserRoles.Banned) || (gameName && user.roles.perGame[gameName]?.includes(UserRoles.Banned))) {
             if (handleRequest) {
                 res.status(401).send({ message: `Unauthorized.` });
             }
@@ -382,7 +386,8 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         return { approved: true, user: user };
     }
 
-    if (user.roles.includes(role)) {
+    // check if user has role (yes, sitewide overrides perGame roles. hence the name, "sitewide")
+    if (user.roles.sitewide.includes(role) || (gameName && user.roles.perGame[gameName]?.includes(role))) {
         return { approved: true, user: user };
     } else {
         if (handleRequest) {
