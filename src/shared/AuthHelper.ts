@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from "express";
 import { Config } from "./Config";
 import { DatabaseHelper, User, UserRoles } from "./Database";
 
@@ -347,47 +348,43 @@ export interface GitHubPublicUser {
     If True, the user must not be banned.
     If a UserRoles, the user must have that role.
 */
-export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, handleRequest:boolean = true): Promise<{approved: boolean, user: User|null }> {
-    let sessionId = req.session.userId;
-    if (Config.devmode && Config.authBypass) {
-        let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
-        return { approved: true, user: user };
-    }
-    if (!sessionId) {
-        if (handleRequest) {
-            res.status(401).send({ message: `Unauthorized.` });
+export interface UserRequest extends Request {
+    user: User;
+  }
+export async function validateSession(role: UserRoles|boolean = UserRoles.Admin): Promise<any> {
+    return async function(req: UserRequest, res: Response, next: NextFunction) {
+        let sessionId = req.session.userId;
+        req.user = null;
+        if (Config.devmode && Config.authBypass) {
+            req.user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
+            return next();
         }
-        return { approved: false, user: null };
-    }
-    
-    let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
-    if (!user) {
-        if (handleRequest) {
+        if (!sessionId) {
             return res.status(401).send({ message: `Unauthorized.` });
-        } else {
-            return { approved: false, user: null };
         }
-    }
+    
+        let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
+        if (!user) {
+            return res.status(401).send({ message: `Unauthorized.` });
+        }
 
-    if (typeof role === `boolean` && role == true) {
-        if (user.roles.includes(UserRoles.Banned)) {
-            if (handleRequest) {
-                res.status(401).send({ message: `Unauthorized.` });
+        if (typeof role === `boolean` && role == true) {
+            if (user.roles.includes(UserRoles.Banned)) {
+                return res.status(401).send({ message: `Unauthorized.` });
+            } else {
+                req.user = user;
+                return next();
             }
-            return { approved: false, user: null };
-        } else {
-            return { approved: true, user: user };
+        } else if (typeof role === `boolean` && role == false) {
+            req.user = user;
+            return next();
         }
-    } else if (typeof role === `boolean` && role == false) {
-        return { approved: true, user: user };
-    }
 
-    if (user.roles.includes(role)) {
-        return { approved: true, user: user };
-    } else {
-        if (handleRequest) {
-            res.status(401).send({ message: `Unauthorized.` });
+        if (user.roles.includes(role)) {
+            req.user = user;
+            return next();
+        } else {
+            return res.status(401).send({ message: `Unauthorized.` });
         }
-        return { approved: false, user: null };
     }
 }
