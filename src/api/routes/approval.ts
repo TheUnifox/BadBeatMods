@@ -24,10 +24,24 @@ export class ApprovalRoutes {
                 return;
             }
 
-            let newMods = await DatabaseHelper.database.Mods.findAll({ where: { visibility: `unverified` } });
+            let newMods = await DatabaseHelper.database.Mods.findAll({ where: { visibility: `unverified`, gameName: gameName } });
             let newModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { visibility: `unverified` } });
+            if (!newMods || !newModVersions) {
+                return res.status(404).send({ message: `No mods found.` });
+            }
 
-            res.status(200).send({ mods: newMods, modVersions: newModVersions });
+            let modVersions = newModVersions.filter((modVersion) => {
+                for (let gameVersionId of modVersion.supportedGameVersionIds) {
+                    let gV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === gameVersionId);
+                    if (!gV || gV.gameName !== gameName) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            });
+
+            res.status(200).send({ mods: newMods, modVersions: modVersions });
         });
 
         this.app.get(`/api/approval/edits`, async (req, res) => {
@@ -42,6 +56,23 @@ export class ApprovalRoutes {
             }
 
             let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: false }});
+            if (!editQueue) {
+                return res.status(404).send({ message: `No edits found.` });
+            }
+
+            editQueue = editQueue.filter((edit) => {
+                if (`name` in edit.obj) {
+                    return edit.obj.gameName === gameName;
+                } else {
+                    return edit.obj.supportedGameVersionIds.filter((gameVersionId) => {
+                        let gV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === gameVersionId);
+                        if (!gV) {
+                            return false;
+                        }
+                        return gV.gameName === gameName;
+                    }).length > 0;
+                }
+            });
 
             res.status(200).send({ edits: editQueue });
         });
@@ -49,13 +80,12 @@ export class ApprovalRoutes {
         // #region Accept/Reject Approvals
         this.app.post(`/api/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
+            let modId = parseInt(req.params.modIdParam, 10);
+            let status = req.body.status;
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModId(modId));
             if (!session.approved) {
                 return;
             }
-
-            let modId = parseInt(req.params.modIdParam, 10);
-            let status = req.body.status;
 
             if (!status || !DatabaseHelper.isValidVisibility(status)) {
                 return res.status(400).send({ message: `Missing status.` });
@@ -85,13 +115,12 @@ export class ApprovalRoutes {
 
         this.app.post(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
+            let modVersionId = parseInt(req.params.modVersionIdParam, 10);
+            let status = req.body.status;
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId));
             if (!session.approved) {
                 return;
             }
-
-            let modVersionId = parseInt(req.params.modVersionIdParam, 10);
-            let status = req.body.status;
 
             if (!status || !DatabaseHelper.isValidVisibility(status)) {
                 return res.status(400).send({ message: `Missing status.` });
@@ -126,13 +155,12 @@ export class ApprovalRoutes {
 
         this.app.post(`/api/approval/edit/:editIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
+            let editId = parseInt(req.params.editIdParam, 10);
+            let status = req.body.status;
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));
             if (!session.approved) {
                 return;
             }
-
-            let editId = parseInt(req.params.editIdParam, 10);
-            let status = req.body.status;
 
             if (!status || !DatabaseHelper.isValidVisibility(status)) {
                 return res.status(400).send({ message: `Missing status.` });
@@ -187,16 +215,15 @@ export class ApprovalRoutes {
         // #region Edit Approvals
         this.app.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
-            if (!session.approved) {
-                return;
-            }
-
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
             let category = req.body.category;
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModId(modId));
+            if (!session.approved) {
+                return;
+            }
 
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId, visibility: Visibility.Unverified } });
             if (!mod) {
@@ -234,16 +261,15 @@ export class ApprovalRoutes {
 
         this.app.patch(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
-            if (!session.approved) {
-                return;
-            }
-
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let gameVersions = req.body.gameVersions;
             let modVersion = req.body.modVersion;
             let dependencies = req.body.dependencies;
             let platform = req.body.platform;
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId));
+            if (!session.approved) {
+                return;
+            }
 
             let modVersionDB = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, visibility: Visibility.Unverified } });
             if (!modVersionDB) {
@@ -305,12 +331,11 @@ export class ApprovalRoutes {
 
         this.app.patch(`/api/approval/edit/:editIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
+            let editId = parseInt(req.params.editIdParam, 10);
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));
             if (!session.approved) {
                 return;
             }
-            
-            let editId = parseInt(req.params.editIdParam, 10);
             
             let edit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { id: editId, approved: false } });
 

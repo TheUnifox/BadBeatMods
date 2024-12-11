@@ -135,7 +135,7 @@ export class CreateModRoutes {
                 return res.status(400).send({ error: `File must be a zip archive.` });
             }
 
-            file.mv(`${path.resolve(Config.storage.uploadsDir)}/${file.md5}${path.extname(file.name)}`);
+            file.mv(`${path.resolve(Config.storage.modsDir)}/${file.md5}${path.extname(file.name)}`);
 
             DatabaseHelper.database.ModVersions.create({
                 modId: modId,

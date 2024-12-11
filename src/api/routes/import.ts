@@ -22,7 +22,7 @@ export class ImportRoutes {
     private async loadRoutes() {
         this.app.post(`/api/beatmods/importAll`, async (req, res) => {
             // #swagger.tags = ['Admin']
-            let session = await validateSession(req, res, UserRoles.Admin, SupportedGames.BeatSaber);
+            let session = await validateSession(req, res, UserRoles.Admin, null);
             if (!session.approved) {
                 return;
             }

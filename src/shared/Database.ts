@@ -327,6 +327,55 @@ export class DatabaseManager {
             sequelize: this.sequelize,
             modelName: `modVersions`,
         });
+
+        this.EditApprovalQueue = EditApprovalQueue.init({
+            id: {
+                type: DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+                unique: true,
+            },
+            submitterId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            objId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            objTableName: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+            obj: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: `{}`,
+                get() {
+                    // @ts-expect-error s(2345)
+                    return JSON.parse(this.getDataValue(`obj`));
+                },
+                set(value: any) {
+                    // @ts-expect-error s(2345)
+                    this.setDataValue(`obj`, JSON.stringify(value));
+                },
+            },
+            approverId: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: null,
+            },
+            approved: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            createdAt: DataTypes.DATE, // just so that typescript isn't angy
+            updatedAt: DataTypes.DATE,
+        }, {
+            sequelize: this.sequelize,
+            modelName: `editApprovalQueue`,
+        });
     }
 
 }
@@ -600,9 +649,65 @@ function validateEnumValue(value: string | number, enumType: object): boolean {
 
 export class DatabaseHelper {
     public static database: DatabaseManager;
+    public static cache: {
+        gameVersions: GameVersion[],
+        modVersions: ModVersion[],
+        mods: Mod[],
+        users: User[],
+        editApprovalQueue: EditApprovalQueue[],
+    } = {
+            gameVersions: [],
+            modVersions: [],
+            mods: [],
+            users: [],
+            editApprovalQueue: [],
+        };
 
     constructor(database: DatabaseManager) {
         DatabaseHelper.database = database;
+
+        DatabaseHelper.loadCache();
+        setInterval(DatabaseHelper.loadCache, 1000 * 60 * 1);
+    }
+
+    private static async loadCache() {
+        DatabaseHelper.cache.gameVersions = await DatabaseHelper.database.GameVersions.findAll();
+        DatabaseHelper.cache.modVersions = await DatabaseHelper.database.ModVersions.findAll();
+        DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
+        DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
+        DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
+    }
+
+    public static getGameNameFromModId(id: number): SupportedGames | null {
+        let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == id);
+        if (!mod) {
+            return null;
+        }
+        return mod.gameName;
+    }
+
+    public static getGameNameFromModVersionId(id: number): SupportedGames | null {
+        let modVersion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id == id);
+        if (!modVersion) {
+            return null;
+        }
+        let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == modVersion.modId);
+        if (!mod) {
+            return null;
+        }
+        return mod.gameName;
+    }
+
+    public static getGameNameFromEditApprovalQueueId(id: number): SupportedGames | null {
+        let edit = DatabaseHelper.cache.editApprovalQueue.find((edit) => edit.id == id);
+        if (!edit) {
+            return null;
+        }
+        if (edit.objTableName == `mods` && `gameName` in edit.obj) {
+            return edit.obj.gameName;
+        } else if (edit.objTableName == `modVersions`) {
+            return DatabaseHelper.getGameNameFromModVersionId(edit.objId);
+        }
     }
 
     public static isValidPlatform(value: string): value is Platform {

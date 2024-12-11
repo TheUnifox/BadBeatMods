@@ -4,19 +4,10 @@ import { Logger } from '../../shared/Logger';
 
 export class GetModRoutes {
     private app: Express;
-    private modCache: Mod[] = [];
-    private modVersionCache: ModVersion[] = [];
-    //private gameVersionCache: GameVersion[] = [];
 
     constructor(app: Express) {
         this.app = app;
         this.loadRoutes();
-
-        setInterval(async () => {
-            this.modCache = await DatabaseHelper.database.Mods.findAll();
-            this.modVersionCache = await DatabaseHelper.database.ModVersions.findAll();
-            //this.gameVersionCache = await DatabaseHelper.database.GameVersions.findAll();
-        }, 1000 * 60 * 1);
     }
 
     private async loadRoutes() {
@@ -25,7 +16,7 @@ export class GetModRoutes {
             // #swagger.description = 'Get all mods.'
             // #swagger.responses[200] = { description: 'Returns all mods.' }
 
-            return res.status(200).send({ mods: this.modCache });
+            return res.status(200).send({ mods: DatabaseHelper.cache.mods });
         });
 
         this.app.get(`/api/mod/:modIdParam`, async (req, res) => {
@@ -35,11 +26,11 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
 
-            let mod = this.modCache.find((mod) => mod.id === modId);
+            let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modId);
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
-            let modVersions = this.modVersionCache.filter((modVersion) => modVersion.modId === mod.id);
+            let modVersions = DatabaseHelper.cache.modVersions.filter((modVersion) => modVersion.modId === mod.id);
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
@@ -56,7 +47,7 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Missing hash.` });
             }
 
-            for (let version of this.modVersionCache) {
+            for (let version of DatabaseHelper.cache.modVersions) {
                 for (let fileHash of version.contentHashes) {
                     if (fileHash.hash === hash) {
                         return res.status(200).send({ mod: version.modId });
@@ -101,8 +92,8 @@ export class GetModRoutes {
         if (modVersion.dependencies.length !== 0) {
             for (let dependancyId of modVersion.dependencies) {
                 if (doResolution) {
-                    let dependancyModVesion = this.modVersionCache.find((modVersion) => modVersion.id === dependancyId);
-                    let dependancyMod = this.modCache.find((mod) => mod.id === dependancyModVesion.modId);
+                    let dependancyModVesion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === dependancyId);
+                    let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancyModVesion.modId);
                     if (dependancyMod) {
                         dependencies.push(this.convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
                     } else {

@@ -12,7 +12,7 @@ export class MiscRoutes {
     private async loadRoutes() {
         this.app.get(`/api/versions`, async (req, res) => {
             // #swagger.tags = ['Misc']
-            let versions = await DatabaseHelper.database.GameVersions.findAll();
+            let versions = DatabaseHelper.cache.gameVersions;
 
             return res.status(200).send({ versions });
         });

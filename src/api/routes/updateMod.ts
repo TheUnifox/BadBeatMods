@@ -15,17 +15,16 @@ export class UpdateModRoutes {
     private async loadRoutes() {
         this.app.patch(`/api/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
-            let session = await validateSession(req, res, true);
-            if (!session.approved) {
-                return;
-            }
-            
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;
             let category = req.body.category;
             let authorIds = req.body.authorIds;
             let gitUrl = req.body.gitUrl;
+            let session = await validateSession(req, res, true, DatabaseHelper.getGameNameFromModId(modId));
+            if (!session.approved) {
+                return;
+            }
 
             if (!modId || isNaN(modId)) {
                 return res.status(400).send({ message: `Missing valid modId.` });
