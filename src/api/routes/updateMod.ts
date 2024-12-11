@@ -21,6 +21,7 @@ export class UpdateModRoutes {
             let category = req.body.category;
             let authorIds = req.body.authorIds;
             let gitUrl = req.body.gitUrl;
+            let gameName = req.body.gameName;
             let session = await validateSession(req, res, true, DatabaseHelper.getGameNameFromModId(modId));
             if (!session.approved) {
                 return;
@@ -78,6 +79,7 @@ export class UpdateModRoutes {
                 obj: {
                     name: name || mod.name,
                     description: description || mod.description,
+                    gameName: gameName || mod.gameName,
                     gitUrl: gitUrl || mod.gitUrl,
                     authorIds: authorIds || mod.authorIds,
                     category: category || mod.category,
