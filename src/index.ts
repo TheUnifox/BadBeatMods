@@ -2,7 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import MemoryStore from 'memorystore';
 import { HTTPTools } from './shared/HTTPTools';
-import { DatabaseManager } from './shared/Database';
+import { DatabaseHelper, DatabaseManager } from './shared/Database';
 import path from 'path';
 import fileUpload from 'express-fileupload';
 import { CreateModRoutes } from './api/routes/createMod';
@@ -28,18 +28,22 @@ const memstore = MemoryStore(session);
 const port = Config.server.port;
 new DatabaseManager();
 
-const luma = new Luma({
-    intents: [],
-    presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
-luma.login(Config.bot.token);
+if (Config.bot.enabled) {
+    const luma = new Luma({
+        intents: [],
+        presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
+    luma.login(Config.bot.token);
+}
 
-
+// handle parsing request bodies
 app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
 app.use(fileUpload({
     limits: { fileSize: 50 * 1024 * 1024 },
     abortOnLimit: true,
 }));
+
+// rate limiting
 app.use(rateLimit({
     windowMs: 60 * 1000,
     max: 50,
@@ -47,6 +51,8 @@ app.use(rateLimit({
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: true,
 }));
+
+// session handling
 app.use(session({
     secret: Config.server.sessionSecret,
     name: `bbm_session`,
@@ -70,7 +76,7 @@ app.use((req, res, next) => {
         if (Config.authBypass) {
             req.session.userId = 1;
             req.session.username = `TestUser`;
-            req.session.avatarUrl = `https://cdn.discordapp.com/avatars/1/1.png`;
+            req.session.avatarUrl = `${Config.server.url}/favicon.ico`;
         }
         console.log(req.url);
     }
@@ -110,7 +116,10 @@ app.get(`/banner.png`, (req, res) => {
 app.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
     extensions: [`png`],
     dotfiles: `ignore`,
+    immutable: true,
+    index: false,
     maxAge: 1000 * 60 * 60 * 24 * 7,
+    fallthrough: false,
 }));
 
 app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
@@ -118,7 +127,16 @@ app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
     dotfiles: `ignore`,
     immutable: true,
     maxAge: 1000 * 60 * 60 * 24 * 7,
-    lastModified: true,
+    setHeaders: (res, file) => { // this is a hacky workaround to get code to execute when a file is served, but it should work with minimal preformance impact
+        res.set(`Content-Disposition`, `attachment`);
+        let hash = path.basename(file).replace(path.extname(file), ``);
+        DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
+            version.increment(`downloadCount`);
+        }).catch((error) => {
+            Config.devmode ? Logger.warn(`Error incrementing download count: ${error}`) : null;
+        });
+    },
+    fallthrough: false,
 }));
 
 HTTPTools.handleExpressShenanigans(app);

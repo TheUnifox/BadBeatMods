@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Config } from "./Config";
-import { DatabaseHelper, User, UserRoles } from "./Database";
+import { DatabaseHelper, SupportedGames, User, UserRoles } from "./Database";
 
 // eslint-disable-next-line quotes
 declare module 'express-session' {
@@ -351,7 +351,7 @@ export interface GitHubPublicUser {
 export interface UserRequest extends Request {
     user: User;
   }
-export async function validateSession(role: UserRoles|boolean = UserRoles.Admin): Promise<any> {
+export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, gameName:SupportedGames = null, handleRequest:boolean = true): Promise<any> {
     return async function(req: UserRequest, res: Response, next: NextFunction) {
         let sessionId = req.session.userId;
         req.user = null;
@@ -363,13 +363,15 @@ export async function validateSession(role: UserRoles|boolean = UserRoles.Admin)
             return res.status(401).send({ message: `Unauthorized.` });
         }
     
+        // check if valid user
         let user = await DatabaseHelper.database.Users.findOne({ where: { id: sessionId } });
         if (!user) {
             return res.status(401).send({ message: `Unauthorized.` });
         }
 
+        // check if user is banned
         if (typeof role === `boolean` && role == true) {
-            if (user.roles.includes(UserRoles.Banned)) {
+            if (user.roles.sitewide.includes(UserRoles.Banned) || (gameName && user.roles.perGame[gameName]?.includes(UserRoles.Banned))) {
                 return res.status(401).send({ message: `Unauthorized.` });
             } else {
                 req.user = user;
@@ -380,11 +382,12 @@ export async function validateSession(role: UserRoles|boolean = UserRoles.Admin)
             return next();
         }
 
-        if (user.roles.includes(role)) {
+        // check if user has role (yes, sitewide overrides perGame roles. hence the name, "sitewide")
+        if (user.roles.sitewide.includes(role) || (gameName && user.roles.perGame[gameName]?.includes(role))) {
             req.user = user;
             return next();
         } else {
             return res.status(401).send({ message: `Unauthorized.` });
         }
-    }
+    };
 }

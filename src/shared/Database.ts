@@ -5,6 +5,14 @@ import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 
+
+export enum SupportedGames {
+    BeatSaber = `BeatSaber`,
+    // Add games here
+    //Chromapper = `Chromapper`,
+}
+
+
 function isValidDialect(dialect: string): dialect is `sqlite` |`postgres` {
     return [`sqlite`, `postgres`].includes(dialect);
 }
@@ -38,7 +46,10 @@ export class DatabaseManager {
                     this.Users.create({
                         username: `ServerAdmin`,
                         discordId: `1`,
-                        roles: [`admin`],
+                        roles: {
+                            sitewide: [UserRoles.Admin],
+                            perGame: {},
+                        },
                         githubId: null,
                     }).then(() => {
                         Logger.log(`Created built in server account.`);
@@ -46,11 +57,11 @@ export class DatabaseManager {
                         Logger.error(`Error creating built in server account: ${error}`);
                     });
                 } else {
-                    if (!user.roles.includes(`admin`)) {
+                    if (!user.roles.sitewide.includes(UserRoles.Admin)) {
                         if (user.username != `ServerAdmin`) {
                             Logger.warn(`Server account has been tampered with!`);
                         } else {
-                            user.roles.push(`admin`);
+                            user.roles.sitewide = [UserRoles.Admin];
                             user.save();
                             Logger.log(`Added admin role to server account.`);
                         }
@@ -95,13 +106,8 @@ export class DatabaseManager {
             githubId: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                defaultValue: ``,
+                defaultValue: null,
                 unique: true, //SQLite treats all NULL values are different, therefore, a column with a UNIQUE constraint can have multiple NULL values.
-            },
-            avatarUrl: {
-                type: DataTypes.STRING,
-                allowNull: true,
-                defaultValue: `https://github.com/identicons/octocat.png`,
             },
             sponsorUrl: {
                 type: DataTypes.STRING,
@@ -111,6 +117,16 @@ export class DatabaseManager {
             discordId: {
                 type: DataTypes.STRING,
                 allowNull: true,
+                defaultValue: ``,
+            },
+            displayName: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            bio: {
+                type: DataTypes.STRING,
+                allowNull: false,
                 defaultValue: ``,
             },
             roles: {
@@ -173,6 +189,11 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
+            },
+            gameName: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: SupportedGames.BeatSaber,
             },
             category: {
                 type: DataTypes.STRING,
@@ -295,6 +316,11 @@ export class DatabaseManager {
                     this.setDataValue(`dependencies`, JSON.stringify(value));
                 }
             },
+            downloadCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
         }, {
@@ -310,11 +336,19 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare username: string;
     declare githubId: string;
     declare discordId: string;
-    declare avatarUrl: string;
     declare sponsorUrl: string;
-    declare roles: string[];
+    declare displayName: string;
+    declare bio: string;
+    declare roles: UserRolesObject;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+}
+
+export interface UserRolesObject {
+    sitewide: UserRoles[];
+    perGame: {
+        [gameName in SupportedGames]?: UserRoles[];
+    }
 }
 
 export enum UserRoles {
@@ -326,7 +360,7 @@ export enum UserRoles {
 
 export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreationAttributes<GameVersion>> {
     declare readonly id: CreationOptional<number>;
-    declare gameName: string;
+    declare gameName: SupportedGames;
     declare version: string; // semver-esc version (e.g. 1.29.1)
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
@@ -336,6 +370,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly id: CreationOptional<number>;
     declare name: string;
     declare description: string;
+    declare gameName: SupportedGames;
     declare category: Categories;
     declare authorIds: number[];
     declare visibility: Visibility;
@@ -376,6 +411,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare platform: Platform;
     declare zipHash: string;
     declare contentHashes: ContentHash[];
+    declare downloadCount: number;
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 
@@ -538,7 +574,8 @@ export enum Visibility {
 }
 
 export enum Categories {
-    Core = `core`,
+    Core = `core`, // BSIPA, SongCore, etc
+    Essential = `essential`, // Camera2, BeatSaverDownloader, BeatSaverUpdater, etc
     Library = `library`,
     Cosmetic = `cosmetic`,
     PracticeTraining = `practice`,
@@ -576,23 +613,26 @@ export class DatabaseHelper {
         return validateEnumValue(value, Visibility);
     }
 
-    public static async isValidGameName(name: string): Promise<boolean> {
-        if (!name) {
-            return false;
-        }
-        let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: name } });
-        return !!game; // apperently this is a way to check if an object is null
-    }
-
     public static isValidCategory(value: string): value is Categories {
         return validateEnumValue(value, Categories);
     }
 
+    public static isValidGameName(name: string): name is SupportedGames {
+        if (!name) {
+            return false;
+        }
+        return validateEnumValue(name, SupportedGames);
+    }
 
     public static async isValidGameVersion(gameName: string, version: string): Promise<number | null> {
         if (!gameName || !version) {
             return null;
         }
+
+        if (!DatabaseHelper.isValidGameName(gameName)) {
+            return null;
+        }
+
         let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: gameName, version: version } });
         return game ? game.id : null;
     }

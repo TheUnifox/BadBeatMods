@@ -15,7 +15,11 @@ export class ApprovalRoutes {
     private async loadRoutes() {
         this.app.get(`/api/approval/new`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
+            let gameName = req.query.gameName;
+            if (typeof gameName !== `string` || !DatabaseHelper.isValidGameName(gameName)) {
+                return res.status(400).send({ message: `Missing game name.` });
+            }
+            let session = await validateSession(req, res, UserRoles.Approver, gameName);
             if (!session.approved) {
                 return;
             }
@@ -28,7 +32,11 @@ export class ApprovalRoutes {
 
         this.app.get(`/api/approval/edits`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            let session = await validateSession(req, res, UserRoles.Approver);
+            let gameName = req.query.gameName;
+            if (typeof gameName !== `string` || !DatabaseHelper.isValidGameName(gameName)) {
+                return res.status(400).send({ message: `Missing game name.` });
+            }
+            let session = await validateSession(req, res, UserRoles.Approver, gameName);
             if (!session.approved) {
                 return;
             }

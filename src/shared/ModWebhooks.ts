@@ -46,7 +46,7 @@ export async function sendModLog(mod: Mod, targetUser:User, action: `New` | `App
                     description: `${mod.description} `,
                     author: {
                         name: `${targetUser.username} `,
-                        icon_url: targetUser.avatarUrl,
+                        icon_url: `https://github.com/${targetUser.username}.png`,
                     },
                     fields: [
                         {
@@ -78,13 +78,13 @@ export async function sendModLog(mod: Mod, targetUser:User, action: `New` | `App
     }
 }
 
-export async function sendModVersionLog(modVersion: ModVersion, action: `New` | `Approved` | `Rejected`) {
+export async function sendModVersionLog(modVersion: ModVersion, targetUser:User, action: `New` | `Approved` | `Rejected`, modObj?:Mod,) {
     if (!Config.webhooks.disableWebhooks) {
         if (!webhookClient) {
             webhookClient = new WebhookClient({ url: Config.webhooks.modLogUrl });
         }
         let author = await DatabaseHelper.database.Users.findOne({ where: { id: modVersion.authorId } });
-        let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
+        let mod = modObj ? modObj : await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
         let gameVersions = (await modVersion.getSupportedGameVersions()).map((v) => v.version);
 
         let color = 0x00FF00;
@@ -105,7 +105,7 @@ export async function sendModVersionLog(modVersion: ModVersion, action: `New` | 
                     description: `${mod.description} `,
                     author: {
                         name: `${author.username} `,
-                        icon_url: author.avatarUrl,
+                        icon_url: `https://github.com/${author.username}.png`,
                     },
                     fields: [
                         {

@@ -70,7 +70,10 @@ export class AuthRoutes {
                 userDb = await DatabaseHelper.database.Users.create({
                     username: user.login,
                     githubId: user.id.toString(),
-                    roles: [],
+                    roles: {
+                        sitewide: [],
+                        perGame: {},
+                    },
                 });
 
                 Logger.log(`User ${user.login} signed up.`, `Auth`);

@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import { validateSession } from '../../shared/AuthHelper';
-import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, UserRoles, Visibility } from '../../shared/Database';
+import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, SupportedGames, UserRoles, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
 import { coerce, satisfies } from 'semver';
@@ -22,7 +22,7 @@ export class ImportRoutes {
     private async loadRoutes() {
         this.app.post(`/api/beatmods/importAll`, async (req, res) => {
             // #swagger.tags = ['Admin']
-            let session = await validateSession(req, res, UserRoles.Admin);
+            let session = await validateSession(req, res, UserRoles.Admin, SupportedGames.BeatSaber);
             if (!session.approved) {
                 return;
             }
@@ -53,11 +53,14 @@ export class ImportRoutes {
                 importAuthor = await DatabaseHelper.database.Users.create({
                     username: `BeatMods Import`,
                     githubId: null,
-                    roles: []
+                    roles: {
+                        sitewide: [],
+                        perGame: {},
+                    }
                 });
             } else {
                 Logger.warn(`Import author already exists, this is probably bad`, `Import`);
-                res.status(500).send({ message: `Import author already exists, this is probably bad`});
+                return res.status(500).send({ message: `Import author already exists, this is probably bad`});
             }
             res.status(200).send({ message: `On the wind, a refrain to strike fear into the heart of any man`});
 
@@ -163,7 +166,7 @@ export class ImportRoutes {
             if (!gameVersion) {
                 gameVersion = await DatabaseHelper.database.GameVersions.create({
                     version: mod.gameVersion,
-                    gameName: `Beat Saber`,
+                    gameName: SupportedGames.BeatSaber,
                 });
             }
     

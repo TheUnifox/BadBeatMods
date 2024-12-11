@@ -17,17 +17,19 @@ export class AdminRoutes {
     private async loadRoutes() {
         this.app.post(`/api/admin/addversion`, async (req, res) => {
             // #swagger.tags = ['Admin']
-            let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
-                return;
-            }
             let version = req.body.version;
+            let gameName = req.body.gameName;
 
-            if (!version) {
+            if (!version || !gameName || version.length === 0 || !DatabaseHelper.isValidGameName(gameName)) {
                 return res.status(400).send({ message: `Missing version.` });
             }
 
-            let versions = await DatabaseHelper.database.GameVersions.findAll({ where: { version: version } });
+            let session = await validateSession(req, res, UserRoles.Admin, gameName);
+            if (!session.approved) {
+                return;
+            }
+
+            let versions = await DatabaseHelper.database.GameVersions.findAll({ where: { version: version, gameName: gameName } });
             if (versions.length > 0) {
                 return res.status(409).send({ message: `Version already exists.` });
             }
@@ -70,34 +72,41 @@ export class AdminRoutes {
 
         this.app.post(`/api/admin/linkversions`, async (req, res) => {
             // #swagger.tags = ['Admin']
+            // #swagger.summary = 'Mark all versions as compatible with another gameversion.'
+            // #swagger.description = 'Link two versions together.'
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                description: 'The versions to link.',
+                required: true,
+                schema: {
+                    version1: 1,
+                    version2: 2
+                }
+            } */
             let session = await validateSession(req, res, UserRoles.Admin);
             if (!session.approved) {
                 return;
             }
             
+            let versionId1 = parseInt(req.body.version1, 10);
+            let versionId2 = parseInt(req.body.version2, 10);
 
-            let versions = await DatabaseHelper.database.ModVersions.findAll();
-            let errors = [];
-
-            for (let version of versions) {
-                let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: version.modId } });
-                if (!mod) {
-                    errors.push(version.modId);
-                    continue;
-                }
-
-                let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { version: version.gameVersion } });
-                if (!gameVersion) {
-                    errors.push(version.gameVersion);
-                    continue;
-                }
-
-                version.gameVersionId = gameVersion.id;
-                version.save();
+            if (!versionId1 || !versionId2 || isNaN(versionId1) || isNaN(versionId2)) {
+                return res.status(400).send({ message: `Missing version.` });
             }
 
-            if (errors.length > 0) {
-                return res.status(500).send({ message: `Unable to resolve ${errors.length} versions.`, errors });
+            const modVersions = await DatabaseHelper.database.ModVersions.findAll();
+            const version1 = await DatabaseHelper.database.GameVersions.findByPk(versionId1);
+            const version2 = await DatabaseHelper.database.GameVersions.findByPk(versionId2);
+            if (!version1 || !version2) {
+                return res.status(404).send({ message: `Versions not found.` });
+            }
+
+            for (let modVersion of modVersions) {
+                if (modVersion.supportedGameVersionIds.includes(version1.id)) {
+                    modVersion.supportedGameVersionIds = [...modVersion.supportedGameVersionIds, version2.id];
+                }
+                modVersion.save();
             }
 
             return res.status(200).send({ message: `All versions are valid.` });

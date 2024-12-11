@@ -1,11 +1,20 @@
 # TODO
+## Database Changes
+These need to take a priority before deployment due to the potential for a databasse structure change.  
+- [ ] (H) Validate that Approval Workflow is good.
+- [x] (M) Make per game permissions (add to User class)
+- [x] (L) Download Counts
+
 ## High Priority
+- [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [ ] Handle dependency resolution in API 
 - [x] Update all SemVer checks to use SemVer.raw
+- [ ] Model.find is a query to the database. Need to make sure that its not overused, and cached when appropriate.
 
 ## Medium Priority
-- [ ] actually serve mods
+- [ ] Add game filter to mod endpoints
+- [x] actually serve mods
 - [ ] add webhooks (make this public????)
 - [ ] add mod filtering to /api/mods
 - [ ] Make mod management endpoints
@@ -13,11 +22,10 @@
 - [x] Move Config management to static class 
 
 ## Low Priority
-- [ ] Make per game permissions (add to User class)
 - [ ] frontend (maybe)
 - [ ] Allow only uploading single dll (autopackage into zip)
 - [ ] do more with the discord bot
-- [ ] Download Counts
+- [ ] move `validateSession` to middleware???
 
 ## Outdated & Done
 - [x] Make game agnostic (add property to Mod class)

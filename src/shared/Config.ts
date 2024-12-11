@@ -30,11 +30,13 @@ const configMapping = {
     devmode: cf.devmode ? cf.devmode : false,
     authBypass: cf.authBypass ? cf.authBypass : false,
     webhooks: {
-        disableWebhooks: cf.webhooks?.disableWebhooks ? cf.webhooks.disableWebhooks : false,
+        disableWebhooks: cf.webhooks?.disableWebhooks ? cf.webhooks.disableWebhooks : true,
         loggingUrl: cf.webhooks?.loggingUrl ? cf.webhooks.loggingUrl : null,
         modLogUrl: cf.webhooks?.modLogUrl ? cf.webhooks.modLogUrl : null,
+        publicUrl: cf.webhooks?.publicUrl ? cf.webhooks.publicUrl : null,
     },
     bot: {
+        enabled: cf.bot.enabled ? cf.bot.enabled : false,
         clientId: cf.bot.clientId,
         token: cf.bot.token,
     }
@@ -66,8 +68,10 @@ export class Config {
         disableWebhooks: boolean;
         loggingUrl: string;
         modLogUrl: string;
+        publicUrl: string;
     } = configMapping.webhooks;
     public static readonly bot: {
+        enabled: boolean;
         clientId: string;
         token: string;
     } = configMapping.bot;
