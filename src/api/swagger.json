@@ -26,9 +26,24 @@
           "Mods"
         ],
         "description": "Get all mods.",
+        "parameters": [
+          {
+            "name": "gameName",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "gameVersion",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Returns all mods."
+          },
+          "400": {
+            "description": "Bad Request"
           }
         }
       }
@@ -111,6 +126,9 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "501": {
+            "description": "Not Implemented"
           }
         }
       }
@@ -149,7 +167,7 @@
         "description": "",
         "parameters": [
           {
-            "name": "version",
+            "name": "gameVersion",
             "in": "query",
             "type": "string"
           }
@@ -184,6 +202,12 @@
                   "example": "any"
                 },
                 "gitUrl": {
+                  "example": "any"
+                },
+                "category": {
+                  "example": "any"
+                },
+                "gameName": {
                   "example": "any"
                 }
               }
@@ -647,6 +671,9 @@
           },
           "500": {
             "description": "Internal Server Error"
+          },
+          "501": {
+            "description": "Not Implemented"
           }
         }
       }
@@ -744,6 +771,9 @@
           },
           "500": {
             "description": "Internal Server Error"
+          },
+          "501": {
+            "description": "Not Implemented"
           }
         }
       }
@@ -853,6 +883,9 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "501": {
+            "description": "Not Implemented"
           }
         }
       }

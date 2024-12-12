@@ -30,22 +30,38 @@ export class ImportRoutes {
             // oh god oh fuck oh shit
             Logger.log(`Ere Jim, 'ave a seat an' I'll tell you a tale that'll cause your blood to run cold`, `Import`);
 
-            const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod`);
-            Logger.log(`It was a dark and stormy night, three weeks out of Ilfracombe, Bound for the isle of Lundy`, `Import`);
+            const BeatModsVersions = await fetch(`https://versions.beatmods.com/versions.json`);
 
-            if (BeatModsResponse.status !== 200) {
+            if (BeatModsVersions.status !== 200) {
                 return res.status(500).send({ message: `beatmods is dead.`});
             }
+            Logger.log(`It was a dark and stormy night, three weeks out of Ilfracombe, Bound for the isle of Lundy`, `Import`);
+            const BeatModsVersionData: string[] = await BeatModsVersions.json() as string[];
 
-            Logger.log(`Just east of Devil's Slide, late in the middle watch there was a call from the fore-topsail yard`, `Import`);
-            const BeatModsAPIData: BeatModsMod[] = await BeatModsResponse.json() as BeatModsMod[];
-
-            Logger.log(`Through the mist and fog, a dark shape emerged, a ghostly figure standing in its helm`, `Import`);
-            if (!BeatModsAPIData || !Array.isArray(BeatModsAPIData)) {
+            if (!BeatModsVersionData || !Array.isArray(BeatModsVersionData)) {
                 res.status(500).send({ message: `beatmods is borked`});
             }
+            
+            Logger.log(`Just east of Devil's Slide, late in the middle watch there was a call from the fore-topsail yard`, `Import`);
 
-            Logger.log(`Course set, intent clear, it bore down upon us`, `Import`);
+            let AllBeatModsMods: BeatModsMod[] = [];
+            for (let version of BeatModsVersionData) {
+                const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod?gameVersion=${encodeURIComponent(version)}`);
+
+                if (BeatModsResponse.status !== 200) {
+                    return res.status(500).send({ message: `beatmods is dead.`});
+                }
+
+                const BeatModsAPIData: BeatModsMod[] = await BeatModsResponse.json() as BeatModsMod[];
+
+                if (!BeatModsAPIData || !Array.isArray(BeatModsAPIData)) {
+                    return res.status(500).send({ message: `beatmods is borked`});
+                }
+
+                AllBeatModsMods = [...AllBeatModsMods, ...BeatModsAPIData];
+            }
+
+            Logger.log(`Through the mist and fog, a dark shape emerged, a ghostly figure standing in its helm\nCourse set, intent clear, it bore down upon us`, `Import`);
 
             let importAuthor = await DatabaseHelper.database.Users.findOne({ where: { username: `BeatMods Import`, githubId: null } }); // this probably won't work
 
@@ -68,7 +84,7 @@ export class ImportRoutes {
 
             let count = 0;
             let dependancyRecord: { dependancy: BeatModsMod | string, modVersionId: number}[] = [];
-            for (const mod of BeatModsAPIData) {
+            for (const mod of AllBeatModsMods) {
                 count++;
                 
                 if (mod.status == `declined`) {
@@ -93,9 +109,9 @@ export class ImportRoutes {
                 }
 
                 if (count % 100 == 0) {
-                    Logger.log(`${BeatModsAPIData.length - count} mods on the endpoint left`, `Import`);
+                    Logger.log(`${AllBeatModsMods.length - count} mods on the endpoint left`, `Import`);
                 } else {
-                    console.log(`${BeatModsAPIData.length - count} mods on the endpoint left`);
+                    console.log(`${AllBeatModsMods.length - count} mods on the endpoint left`);
                 }
 
                 let dependancies = await this.downloadBeatModsDownloads(existingMod.id, importAuthor.id, mod);
@@ -175,9 +191,10 @@ export class ImportRoutes {
                 continue;
             }
     
-            let existingVersion = await ModVersion.checkForExistingVersion(modId, coerce(mod.version), gameVersion.id, platform);
+            let existingVersion = await ModVersion.checkForExistingVersion(modId, mod.version, platform);
             if (existingVersion) {
-                Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, skipping`, `Import`);
+                Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, marking as compatible and skipping.`, `Import`);
+                existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
                 continue;
             }
     

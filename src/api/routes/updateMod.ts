@@ -3,6 +3,7 @@ import { DatabaseHelper, Visibility, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
+import { HTTPTools } from 'src/shared/HTTPTools';
 
 export class UpdateModRoutes {
     private app: Express;
@@ -15,6 +16,7 @@ export class UpdateModRoutes {
     private async loadRoutes() {
         this.app.patch(`/api/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            return res.status(501).send({ message: `Not implemented.` });
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;

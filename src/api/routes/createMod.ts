@@ -5,6 +5,9 @@ import JSZip from 'jszip';
 import crypto from 'crypto';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
+import { HTTPTools } from 'src/shared/HTTPTools';
+import { Logger } from 'src/shared/Logger';
+import { SemVer } from 'semver';
 
 export class CreateModRoutes {
     private app: Express;
@@ -25,11 +28,13 @@ export class CreateModRoutes {
             let name = req.body.name;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
+            let category = req.body.category;
+            let gameName = req.body.gameName;
             let file = req.files?.file;
 
             //#region Request Validation
-            if (!name || !description || !gitUrl || typeof name !== `string` || typeof description !== `string` || typeof gitUrl !== `string` || name.length < 1 || description.length < 1) {
-                return res.status(400).send({ message: `Missing name or description.` });
+            if (HTTPTools.validateStringParameter(name, 3) == false || HTTPTools.validateStringParameter(description, 3) == false || HTTPTools.validateStringParameter(gitUrl, 3) == false || HTTPTools.validateStringParameter(category, 3) == false || HTTPTools.validateStringParameter(gameName, 3) == false || DatabaseHelper.isValidCategory(category) == false || DatabaseHelper.isValidGameName(gameName) == false) {
+                return res.status(400).send({ message: `Missing and/or Invalid parameters.` });
             }
 
             if (!file || Array.isArray(file) || file.size > 8 * 1024 * 1024) {
@@ -48,6 +53,8 @@ export class CreateModRoutes {
                 description: description,
                 authorIds: [session.user.id],
                 gitUrl: gitUrl,
+                category: category,
+                gameName: gameName,
                 iconFileName: `${file.md5}${path.extname(file.name)}`,
                 visibility: Visibility.Unverified,
             }).then((mod) => {
@@ -65,7 +72,7 @@ export class CreateModRoutes {
                 return;
             }
             
-            let modId = parseInt(req.params.modIdParam);
+            let modId = HTTPTools.parseNumberParameter(req.params.modIdParam);
             let gameVersions = Config.devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
             let modVersion = req.body.modVersion;
             let dependencies = req.body.dependencies;
@@ -73,8 +80,17 @@ export class CreateModRoutes {
 
             let file = req.files?.file;
             //#region Request Validation
-            if (!modId || isNaN(modId) || !modVersion || !file || !platform || !DatabaseHelper.isValidPlatform(platform)) {
-                return res.status(400).send({ message: `Missing valid modId, gameVersions, modVersion, platform, or file.` });
+            if (HTTPTools.validateNumberParameter(modId) == false || HTTPTools.validateStringParameter(modVersion, 3) == false || HTTPTools.validateStringParameter(platform, 3) == false || HTTPTools.validateNumberArrayParameter(gameVersions) == false || HTTPTools.validateNumberArrayParameter(dependencies) == false || DatabaseHelper.isValidPlatform(platform) == false) {
+                return res.status(400).send({ message: `Invalid parameters` });
+            }
+
+            try {
+                modVersion = new SemVer(modVersion);
+                if (!modVersion) {
+                    return res.status(400).send({ message: `Invalid modVersion.` });
+                }
+            } catch (error) {
+                return res.status(400).send({ message: `Invalid modVersion.` });
             }
 
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
@@ -86,27 +102,17 @@ export class CreateModRoutes {
                 return res.status(401).send({ message: `You cannot upload to this mod.` });
             }
 
-            if (dependencies && Array.isArray(dependencies)) {
-                for (let dependancy of dependencies) {
-                    if (typeof dependancy !== `number`) {
-                        return res.status(400).send({ message: `Invalid game version. (Reading ${dependancy})` });
-                    }
-                    let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
-                    if (!dependancyMod) {
-                        return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
-                    }
+            
+            for (let dependancy of dependencies) {
+                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
+                if (!dependancyMod) {
+                    return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
                 }
             }
-
-            if (!gameVersions || !Array.isArray(gameVersions)) {
-                for (let version of gameVersions) {
-                    if (typeof version !== `number`) {
-                        return res.status(400).send({ message: `Invalid game version. (Reading ${version})` });
-                    }
-                    let gameVersionDB = await DatabaseHelper.database.Mods.findOne({ where: { id: version } });
-                    if (!gameVersionDB) {
-                        return res.status(404).send({ message: `Game version (${version}) not found.` });
-                    }
+            for (let version of gameVersions) {
+                let gameVersionDB = await DatabaseHelper.database.Mods.findOne({ where: { id: version } });
+                if (!gameVersionDB) {
+                    return res.status(404).send({ message: `Game version (${version}) not found.` });
                 }
             }
 

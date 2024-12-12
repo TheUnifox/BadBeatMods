@@ -7,18 +7,18 @@ These need to take a priority before deployment due to the potential for a datab
 
 ## High Priority
 - [ ] Fix importer causing MA/BeatMods Endpoint crashing
-- [ ] Require mod versions to never have the same version number (e.g. 1.0.0 and 1.0.0 is not allowed, but 1.0.0 and 1.0.0+1.29.1 is allowed)
+- [x] Require mod versions to never have the same version number (e.g. 1.0.0 and 1.0.0 is not allowed, but 1.0.0 and 1.0.0+1.29.1 is allowed)
 - [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [ ] Handle dependency resolution in API 
 - [x] Update all SemVer checks to use SemVer.raw
-- [ ] Model.find is a query to the database. Need to make sure that its not overused, and cached when appropriate.
+- [x] Model.find is a query to the database. Need to make sure that its not overused, and cached when appropriate.
 
 ## Medium Priority
-- [ ] Add game filter to mod endpoints
+- [x] Add game filter to mod endpoints
 - [x] actually serve mods
 - [ ] add webhooks (make this public????)
-- [ ] add mod filtering to /api/mods
+- [x] add mod filtering to /api/mods
 - [ ] Make mod management endpoints
 - [ ] Make admin endpoints
 - [x] Move Config management to static class 
@@ -27,9 +27,9 @@ These need to take a priority before deployment due to the potential for a datab
 - [ ] frontend (maybe)
 - [ ] Allow only uploading single dll (autopackage into zip)
 - [ ] do more with the discord bot
-- [ ] move `validateSession` to middleware???
 
 ## Outdated & Done
+- [ ] move `validateSession` to middleware???
 - [x] Make game agnostic (add property to Mod class)
 - [x] fix crash on missing file 
 

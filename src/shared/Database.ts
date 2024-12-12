@@ -376,8 +376,39 @@ export class DatabaseManager {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
         });
-    }
 
+        this.ModVersions.beforeCreate((modVersion) => {
+            ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion.raw, modVersion.platform).then((existingVersion) => {
+                if (existingVersion) {
+                    throw new Error(`Version already exists.`);
+                }
+            });
+        });
+
+        this.Mods.beforeCreate((mod) => {
+            Mod.checkForExistingCopy(mod.name).then((existingMod) => {
+                if (existingMod) {
+                    throw new Error(`Mod already exists.`);
+                }
+            });
+        });
+
+        this.ModVersions.beforeUpdate((modVersion) => {
+            ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion.raw, modVersion.platform).then((existingVersion) => {
+                if (existingVersion) {
+                    throw new Error(`Version already exists.`);
+                }
+            });
+        });
+
+        this.Mods.beforeUpdate((mod) => {
+            Mod.checkForExistingCopy(mod.name).then((existingMod) => {
+                if (existingMod) {
+                    throw new Error(`Mod already exists.`);
+                }
+            });
+        });
+    }
 }
 
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
@@ -429,7 +460,10 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly updatedAt: CreationOptional<Date>;
 
     public async getLatestVersion(gameVersion: number): Promise<ModVersion | null> {
-        let versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id } });
+        let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id);
+        if (!versions) {
+            versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id } });
+        }
         let latestVersion: ModVersion | null = null;
         for (let version of versions) {
             if (version.supportedGameVersionIds.includes(gameVersion)) {
@@ -446,6 +480,11 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         await this.save();
         Logger.log(`Mod ${this.id} approved by ${user.username}`);
         return this;
+    }
+
+    public static async checkForExistingCopy(name: string) {
+        let mod = await DatabaseHelper.database.Mods.findOne({ where: { name } });
+        return mod;
     }
 }
 
@@ -471,27 +510,24 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return this;
     }
 
-    public static async checkForExistingVersion(modId: number, version: SemVer, gameVersionId: number, platform: Platform): Promise<ModVersion | null> {
-        let modVersion = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: modId, modVersion: version.raw, platform } });
-        if (!modVersion) {
-            return null;
-        }
-        
-        for (let version of modVersion.sort((a, b) => a.modVersion.compare(b.modVersion))) {
-            if (version.supportedGameVersionIds.includes(gameVersionId)) {
-                return version;
-            }
-        }
-        return null;
+    // this function called to see if a duplicate version already exists in the database. if it does, creation of a new version should be halted.
+    public static async checkForExistingVersion(modId: number, semver: string, platform:Platform): Promise<ModVersion | null> {
+        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId, modVersion: semver, platform, visibility: Visibility.Verified } });
+        return modVersion;
     }
 
     public async getSupportedGameVersions(): Promise<GameVersion[]> {
         let gameVersions: GameVersion[] = [];
         for (let versionId of this.supportedGameVersionIds) {
-            let version = await DatabaseHelper.database.GameVersions.findByPk(versionId);
+            let version = DatabaseHelper.cache.gameVersions.find((version) => version.id == versionId);
+            if (!version) {
+                version = await DatabaseHelper.database.GameVersions.findByPk(versionId);
+            }
+
             if (version) {
                 gameVersions.push(version);
             }
+
         }
         return gameVersions;
     }
@@ -499,7 +535,10 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     public async getDependencies(): Promise<ModVersion[]> {
         let dependencies: ModVersion[] = [];
         for (let dependancyId of this.dependencies) {
-            let dependancy = await DatabaseHelper.database.ModVersions.findByPk(dependancyId);
+            let dependancy = DatabaseHelper.cache.modVersions.find((version) => version.id == dependancyId);
+            if (!dependancy) {
+                dependancy = await DatabaseHelper.database.ModVersions.findByPk(dependancyId);
+            }
             if (dependancy) {
                 dependencies.push(dependancy);
             }

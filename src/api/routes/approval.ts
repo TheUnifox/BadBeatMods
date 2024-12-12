@@ -215,6 +215,7 @@ export class ApprovalRoutes {
         // #region Edit Approvals
         this.app.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            return res.status(501).send({ message: `Not implemented.` });
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;
@@ -260,6 +261,7 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
+            return res.status(501).send({ message: `Not implemented.` });
             // #swagger.tags = ['Approval']
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let gameVersions = req.body.gameVersions;
@@ -330,6 +332,7 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/edit/:editIdParam`, async (req, res) => {
+            return res.status(501).send({ message: `Not implemented.` });
             // #swagger.tags = ['Approval']
             let editId = parseInt(req.params.editIdParam, 10);
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));

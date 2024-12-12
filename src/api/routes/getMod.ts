@@ -1,6 +1,7 @@
 import { Express } from 'express';
 import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, SupportedGames, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
+import { HTTPTools } from 'src/shared/HTTPTools';
 
 export class GetModRoutes {
     private app: Express;
@@ -12,11 +13,31 @@ export class GetModRoutes {
 
     private async loadRoutes() {
         this.app.get(`/api/mods`, async (req, res) => {
+            let gameName = req.query.gameName;
+            let gameVersion = req.query.gameVersion;
+
+            let filteredGameName = (gameName && HTTPTools.validateStringParameter(gameName) && DatabaseHelper.isValidGameName(gameName)) ? gameName : SupportedGames.BeatSaber;
+            let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : `1.39.0`;
+
+            if (gameVersion && HTTPTools.validateStringParameter(gameVersion) && !DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) {
+                return res.status(400).send({ message: `Invalid gameVersion.` });
+            }
+            
             // #swagger.tags = ['Mods']
             // #swagger.description = 'Get all mods.'
             // #swagger.responses[200] = { description: 'Returns all mods.' }
+            let mods:{mod: Mod, latest: ModVersion}[] = [];
+            for (let mod of DatabaseHelper.cache.mods) {
+                if (mod.gameName !== filteredGameName) {
+                    continue;
+                }
+                let latest = await mod.getLatestVersion(DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName)?.id);
+                if (latest) {
+                    mods.push({mod, latest});
+                }
+            }
 
-            return res.status(200).send({ mods: DatabaseHelper.cache.mods });
+            return res.status(200).send({ mods });
         });
 
         this.app.get(`/api/mod/:modIdParam`, async (req, res) => {
