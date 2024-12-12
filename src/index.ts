@@ -154,14 +154,20 @@ process.on(`exit`, (code) => {
 
 process.on(`SIGTERM`, () => {
     Logger.log(`Received SIGTERM, exiting.`);
+    DatabaseHelper.database.sequelize.close();
+    process.exit(0);
 });
 
 process.on(`SIGINT`, () => {
     Logger.log(`Received SIGINT, exiting.`);
+    DatabaseHelper.database.sequelize.close();
+    process.exit(0);
 });
 
 process.on(`SIGQUIT`, () => {
     Logger.log(`Received SIGQUIT, exiting.`);
+    DatabaseHelper.database.sequelize.close();
+    process.exit(0);
 });
 
 
