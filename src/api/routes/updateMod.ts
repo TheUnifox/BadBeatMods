@@ -83,6 +83,7 @@ export class UpdateModRoutes {
                 obj: {
                     name: name || mod.name,
                     description: description || mod.description,
+                    gameName: gameName || mod.gameName,
                     gitUrl: gitUrl || mod.gitUrl,
                     authorIds: authorIds || mod.authorIds,
                     gameName: gameName || mod.gameName,

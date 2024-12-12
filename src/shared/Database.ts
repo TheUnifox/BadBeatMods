@@ -575,6 +575,14 @@ export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>,
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 
+    public isModVersion(): this is EditApprovalQueue & { objTableName: `modVersions`, obj: ModVersionApproval } {
+        return this.objTableName === `modVersions` && `modVersion` in this.obj;
+    }
+
+    public isMod(): this is EditApprovalQueue & { objTableName: `mods`, obj: ModApproval } {
+        return this.objTableName === `mods` && `name` in this.obj;
+    }
+
     public async approve(user: User) {
         if (this.objTableName == `modVersions` && `modVersion` in this.obj) {
             let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objId);
