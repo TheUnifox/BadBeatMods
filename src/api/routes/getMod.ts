@@ -59,7 +59,7 @@ export class GetModRoutes {
 
         this.app.get(`/api/beatmods/mod`, async (req, res) => {
             // #swagger.tags = ['Mods']
-            let version = req.query.version;
+            let version = req.query.gameVersion;
 
             let modArray: BeatModsMod[] = [];
 
