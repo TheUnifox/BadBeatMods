@@ -1,7 +1,7 @@
 import { Express } from 'express';
 import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, SupportedGames, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
-import { HTTPTools } from 'src/shared/HTTPTools';
+import { HTTPTools } from '../../shared/HTTPTools';
 
 export class GetModRoutes {
     private app: Express;

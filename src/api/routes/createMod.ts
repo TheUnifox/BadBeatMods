@@ -5,8 +5,8 @@ import JSZip from 'jszip';
 import crypto from 'crypto';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
-import { HTTPTools } from 'src/shared/HTTPTools';
-import { Logger } from 'src/shared/Logger';
+import { HTTPTools } from '../../shared/HTTPTools';
+import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
 
 export class CreateModRoutes {

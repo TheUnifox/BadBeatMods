@@ -332,7 +332,7 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/edit/:editIdParam`, async (req, res) => {
-            return res.status(501).send({ message: `Not implemented.` });
+            //return res.status(501).send({ message: `Not implemented.` });
             // #swagger.tags = ['Approval']
             let editId = parseInt(req.params.editIdParam, 10);
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));
@@ -374,7 +374,7 @@ export class ApprovalRoutes {
                     let gitUrl = req.body.gitUrl;
                     let category = req.body.category;
                     let authorIds = req.body.authorIds;
-
+                    
                     if (name && typeof name === `string` && name.length > 0) {
                         edit.obj.name = name;
                     }
