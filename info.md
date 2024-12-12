@@ -31,8 +31,8 @@ An example of a prohibited overlap would be:
 - Heck v1.0.0 (hash: bbbb) supports 1.29.1 & 1.29.4
 
 A ModVersion can support multiple versions:
-- BSIPA v4.3.5 (hash: aaaa) supports versions 1.37.1 through 1.39.1
-- NotOutYet v1.0.0 (hash: aaaa) supports versions 0.11.2 through 1.40.0
+- BSIPA v4.3.5 supports versions 1.37.1 through 1.39.1
+- NotOutYet v1.0.0 supports versions 0.11.2 through 1.40.0
 
 Dependancies should be marked for the oldest supported GameVersion that the mod is marked as supporting. ModVersions that have a dependancy on another ModVersion that has not been marked as compatible with the requested versions will attempt to resolve a newer dependancy. It will not mark a version as a valid dependancy sucessor if any of the following is true:
 - The original dependancy version supports the requested GameVersion
