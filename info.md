@@ -21,10 +21,10 @@ I might be missing a few things, but I'm pretty sure this list has all of the ma
 - In order to reduce calls to the database, the server caches all DB tables. It refreshes this cache every 60 seconds.
 
 ## Rules/Goals of a ModVersion
-A ModVersion can (atm) share a version with other versions provided the supported game versions do not overlap.  
+A ModVersion can (atm) share a version with other versions provided the supported game versions do not overlap, and the version string is unique.  
 An example of an allowed overlap would be:
 - Heck v1.0.0 (hash: aaaa) supports 1.29.1
-- Heck v1.0.0 (hash: bbbb) supports 1.39.0
+- Heck v1.0.0+1.39.0 (hash: bbbb) supports 1.39.0
  
 An example of a prohibited overlap would be:
 - Heck v1.0.0 (hash: aaaa) supports 1.29.1
