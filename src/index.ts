@@ -101,7 +101,7 @@ swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https:/
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get(`/favicon.ico`, (req, res) => {
-    res.sendFile(path.resolve(`./assets/favicon.ico`), {
+    res.sendFile(path.resolve(`./assets/favicon.png`), {
         maxAge: 1000 * 60 * 60 * 24 * 1,
         //immutable: true,
         lastModified: true,

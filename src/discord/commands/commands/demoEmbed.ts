@@ -1,10 +1,8 @@
-import { SlashCommandBuilder, EmbedBuilder, InteractionContextType, CommandInteraction } from "discord.js";
+import { SlashCommandBuilder, InteractionContextType, CommandInteraction } from "discord.js";
 import { Command } from "../../classes/Command";
 import { Luma } from "../../classes/Luma";
-import * as os from "os";
-import * as fs from "fs";
-import { sendModLog, sendModVersionLog } from "src/shared/ModWebhooks";
-import { DatabaseHelper } from "src/shared/Database";
+import { sendModLog, sendModVersionLog } from "../../../shared/ModWebhooks";
+import { DatabaseHelper } from "../../../shared/Database";
 let commandData = new SlashCommandBuilder();
 commandData.setName(`embed`)
     .setDescription(`Test embed command.`)

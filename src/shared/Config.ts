@@ -1,6 +1,6 @@
 import * as cf from '../../storage/config.json';
 
-// This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated.
+// This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated, and is available without a refrence to the file itself.
 const configMapping = {
     auth: {
         discord: {
@@ -31,6 +31,7 @@ const configMapping = {
     authBypass: cf.authBypass ? cf.authBypass : false,
     webhooks: {
         disableWebhooks: cf.webhooks?.disableWebhooks ? cf.webhooks.disableWebhooks : true,
+        enablePublicWebhook: cf.webhooks?.enablePublicWebhook ? cf.webhooks.enablePublicWebhook : false,
         loggingUrl: cf.webhooks?.loggingUrl ? cf.webhooks.loggingUrl : null,
         modLogUrl: cf.webhooks?.modLogUrl ? cf.webhooks.modLogUrl : null,
         publicUrl: cf.webhooks?.publicUrl ? cf.webhooks.publicUrl : null,
@@ -66,6 +67,7 @@ export class Config {
     public static readonly authBypass: boolean = configMapping.authBypass;
     public static readonly webhooks: {
         disableWebhooks: boolean;
+        enablePublicWebhook: boolean;
         loggingUrl: string;
         modLogUrl: string;
         publicUrl: string;

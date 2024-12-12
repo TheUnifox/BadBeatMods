@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion } from '../../shared/Database';
+import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, SupportedGames } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 
 export class GetModRoutes {
@@ -67,12 +67,12 @@ export class GetModRoutes {
                 return res.status(400).send({message: `Missing Game Version`});
             }
 
-            let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: `Beat Saber`, version: version}});
+            let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === version && gameVersion.gameName === SupportedGames.BeatSaber);
             if (!gameVersion) {
                 return res.status(400).send({message: `No valid game version.`});
             }
 
-            let mods = await DatabaseHelper.database.Mods.findAll();
+            let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName === SupportedGames.BeatSaber);
             for (let mod of mods) {
                 let modVersion = await mod.getLatestVersion(gameVersion.id);
                 if (!modVersion) {
@@ -104,16 +104,18 @@ export class GetModRoutes {
                 }
             }
         }
-    
+        
+        let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
+
         return {
             _id: modVersion.id.toString(),
             name: mod.name.toString(),
             version: modVersion.modVersion.raw,
             gameVersion: gameVersion.version,
             author: doResolution ? {
-                _id: modVersion.authorId.toString(),
-                username: modVersion.authorId.toString(),
-                lastLogin: new Date().toISOString()
+                _id: author.id.toString(),
+                username: author.username.toString(),
+                lastLogin: author.createdAt.toString(),
             } : modVersion.authorId.toString(),
             status: modVersion.visibility,
             description: mod.description,
@@ -121,7 +123,7 @@ export class GetModRoutes {
             category: mod.category,
             downloads: [{
                 type: modVersion.platform,
-                url: `null`, //tbd
+                url: `/cdn/mod/${modVersion.zipHash}.zip`, //tbd
                 hashMd5: modVersion.contentHashes.map((hash) => {
                     return {
                         hash: hash.hash,

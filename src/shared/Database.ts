@@ -36,7 +36,7 @@ export class DatabaseManager {
 
         this.loadTables();
         this.sequelize.sync({
-            alter: false,
+            alter: Config.devmode,
         }).then(() => {
             Logger.log(`Database Loaded.`);
             new DatabaseHelper(this);

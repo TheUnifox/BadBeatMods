@@ -91,6 +91,9 @@
                 },
                 "gitUrl": {
                   "example": "any"
+                },
+                "gameName": {
+                  "example": "any"
                 }
               }
             }
@@ -378,7 +381,7 @@
       }
     },
     "/api/versions": {
-      "post": {
+      "get": {
         "tags": [
           "Misc"
         ],
@@ -421,6 +424,9 @@
               "properties": {
                 "version": {
                   "example": "any"
+                },
+                "gameName": {
+                  "example": "any"
                 }
               }
             }
@@ -442,15 +448,85 @@
         }
       }
     },
+    "/api/admin/hashCheck": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/admin/linkversions": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Mark all versions as compatible with another gameversion.",
+        "description": "Link two versions together.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "The versions to link.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "version1": {
+                  "type": "number",
+                  "example": 1
+                },
+                "version2": {
+                  "type": "number",
+                  "example": 2
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/approval/new": {
       "get": {
         "tags": [
           "Approval"
         ],
         "description": "",
+        "parameters": [
+          {
+            "name": "gameName",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }
@@ -461,9 +537,22 @@
           "Approval"
         ],
         "description": "",
+        "parameters": [
+          {
+            "name": "gameName",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }

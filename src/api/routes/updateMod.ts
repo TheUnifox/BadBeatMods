@@ -86,7 +86,6 @@ export class UpdateModRoutes {
                     gameName: gameName || mod.gameName,
                     gitUrl: gitUrl || mod.gitUrl,
                     authorIds: authorIds || mod.authorIds,
-                    gameName: gameName || mod.gameName,
                     category: category || mod.category,
                 }
             });
