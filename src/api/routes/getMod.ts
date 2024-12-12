@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, SupportedGames } from '../../shared/Database';
+import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, SupportedGames, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 
 export class GetModRoutes {
@@ -59,7 +59,7 @@ export class GetModRoutes {
 
         this.app.get(`/api/beatmods/mod`, async (req, res) => {
             // #swagger.tags = ['Mods']
-            let version = req.query.gameVersion;
+            let version = req.query.gameVersion || `1.39.0`;
 
             let modArray: BeatModsMod[] = [];
 
@@ -106,6 +106,25 @@ export class GetModRoutes {
         }
         
         let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
+        let status = `private`;
+        switch (modVersion.visibility) {
+            case Visibility.Private:
+                status = `declined`;
+                break;
+            case Visibility.Unverified:
+                status = `pending`;
+                break;
+            case Visibility.Verified:
+                status = `approved`;
+                break;
+            case Visibility.Removed:
+                status = `declined`;
+                break;
+            default:
+                status = `declined`;
+                break;
+        }
+
 
         return {
             _id: modVersion.id.toString(),
@@ -113,14 +132,14 @@ export class GetModRoutes {
             version: modVersion.modVersion.raw,
             gameVersion: gameVersion.version,
             authorId: author.id.toString(),
-            updatedDate: modVersion.updatedAt.toString(),
-            uploadDate: modVersion.createdAt.toString(),
+            updatedDate: modVersion.updatedAt.toUTCString(),
+            uploadedDate: modVersion.createdAt.toUTCString(),
             author: doResolution ? {
                 _id: author.id.toString(),
                 username: author.username.toString(),
                 lastLogin: author.createdAt.toString(),
             } : undefined,
-            status: modVersion.visibility,
+            status: status,
             description: mod.description,
             link: mod.gitUrl,
             category: mod.category,
@@ -150,7 +169,7 @@ export type BeatModsMod = {
         username: string,
         lastLogin: string,
     } | undefined,
-    uploadDate: string,
+    uploadedDate: string,
     updatedDate: string,
     status: string,
     description: string,
