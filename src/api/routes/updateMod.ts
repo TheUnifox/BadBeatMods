@@ -21,7 +21,11 @@ export class UpdateModRoutes {
             let category = req.body.category;
             let authorIds = req.body.authorIds;
             let gitUrl = req.body.gitUrl;
-            let session = await validateSession(req, res, true, DatabaseHelper.getGameNameFromModId(modId));
+            let gameName = req.body.gameName;
+            if (gameName && (typeof gameName !== `string` || DatabaseHelper.isValidGameName(gameName) == false)) {
+                return res.status(400).send({ message: `Invalid gameName.` });
+            }
+            let session = await validateSession(req, res, true, gameName ?? DatabaseHelper.getGameNameFromModId(modId));
             if (!session.approved) {
                 return;
             }
@@ -59,6 +63,7 @@ export class UpdateModRoutes {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
+            // TODO: check per game permissions
             if (session.user.roles.sitewide.includes(UserRoles.Admin) || session.user.roles.sitewide.includes(UserRoles.Moderator) || mod.authorIds.includes(session.user.id)) {
                 // Admins and moderators can edit any mod, authors can edit their own mods
             } else {
@@ -80,6 +85,7 @@ export class UpdateModRoutes {
                     description: description || mod.description,
                     gitUrl: gitUrl || mod.gitUrl,
                     authorIds: authorIds || mod.authorIds,
+                    gameName: gameName || mod.gameName,
                     category: category || mod.category,
                 }
             });
