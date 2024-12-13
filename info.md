@@ -45,6 +45,10 @@ Dependancies should be marked for the oldest supported GameVersion that the mod 
 - The newer dependancy does not support the requested GameVersion
 - The newer dependancy does not satisfy the check [``return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.raw}\`);``](https://github.com/Saeraphinx/badbsmods/blob/63620b2f33d141175088e81c481eb988eb95b82e/src/shared/Database.ts#L557)` (e.g. ^{original version semver}).
 
+## Rules/Goals of a Mod
+A Mod stores all of the metadata for a mod (think name, description, authors, git url, etc).
+
+Mods are required to have unique names. That's it. The name is matched using Sequalize's `Op.eq` (exact).
 
 <!--## How are mods done differently?
 > [!NOTE]
