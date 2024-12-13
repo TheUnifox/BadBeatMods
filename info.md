@@ -21,14 +21,20 @@ I might be missing a few things, but I'm pretty sure this list has all of the ma
 - In order to reduce calls to the database, the server caches all DB tables. It refreshes this cache every 60 seconds.
 
 ## Rules/Goals of a ModVersion
-A ModVersion can (atm) share a version with other versions provided the supported game versions do not overlap, and the version string is unique.  
-An example of an allowed overlap would be:
-- Heck v1.0.0 (hash: aaaa) supports 1.29.1
-- Heck v1.0.0+1.39.0 (hash: bbbb) supports 1.39.0
+A ModVersion can (atm) share a version with other versions provided the version string & platform string (steampc/oculuspc/universalpc) is unique.  
+An example of allowed overlaps would be:
+- Heck v1.0.0 (verified)
+- Heck v1.0.0 (denied)
+- Heck v1.0.0+1.39.0 (unverified)
+- Heck v1.0.0+1.40.0 (verified)
  
 An example of a prohibited overlap would be:
-- Heck v1.0.0 (hash: aaaa) supports 1.29.1
-- Heck v1.0.0 (hash: bbbb) supports 1.29.1 & 1.29.4
+- Heck v1.0.0 (verified)
+- Heck v1.0.0 (verified)
+
+also prohibited is:
+- Heck v1.0.0 (verified)
+- Heck v1.0.0 (unverified)
 
 A ModVersion can support multiple versions:
 - BSIPA v4.3.5 supports versions 1.37.1 through 1.39.1
@@ -39,6 +45,10 @@ Dependancies should be marked for the oldest supported GameVersion that the mod 
 - The newer dependancy does not support the requested GameVersion
 - The newer dependancy does not satisfy the check [``return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.raw}\`);``](https://github.com/Saeraphinx/badbsmods/blob/63620b2f33d141175088e81c481eb988eb95b82e/src/shared/Database.ts#L557)` (e.g. ^{original version semver}).
 
+## Rules/Goals of a Mod
+A Mod stores all of the metadata for a mod (think name, description, authors, git url, etc).
+
+Mods are required to have unique names. That's it. The name is matched using Sequalize's `Op.eq` (exact).
 
 <!--## How are mods done differently?
 > [!NOTE]
