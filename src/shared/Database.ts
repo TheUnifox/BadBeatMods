@@ -1,6 +1,6 @@
 import path from "path";
 import { exit } from "process";
-import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Sequelize } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, Sequelize } from "sequelize";
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
@@ -396,7 +396,7 @@ export class DatabaseManager {
         this.ModVersions.beforeUpdate(async (modVersion) => {
             await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
                 if (existingVersion) {
-                    if (existingVersion.id != modVersion.id) {
+                    if (existingVersion.id != modVersion.id && modVersion.visibility == Visibility.Verified) {
                         throw new Error(`Edit would cause a duplicate version.`);
                     }
                 }
@@ -440,12 +440,21 @@ export enum UserRoles {
     Banned = `banned`,
 }
 
+export type APIGameVersion = InferAttributes<GameVersion, { omit: `createdAt` | `updatedAt` }>;
 export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreationAttributes<GameVersion>> {
     declare readonly id: CreationOptional<number>;
     declare gameName: SupportedGames;
     declare version: string; // semver-esc version (e.g. 1.29.1)
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+
+    public toAPIResponse() {
+        return {
+            id: this.id,
+            gameName: this.gameName,
+            version: this.version,
+        };
+    }
 }
 
 export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod>> {
@@ -512,24 +521,24 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
     public async setVisibility(visibility:Visibility, user: User) {
         this.visibility = visibility;
-        await this.save();
+        await this.save(); // this will error if the version already exists, so it should be checked.
         Logger.log(`ModVersion ${this.id} approved by ${user.username}`);
         return this;
     }
 
     // this function called to see if a duplicate version already exists in the database. if it does, creation of a new version should be halted.
     public static async checkForExistingVersion(modId: number, semver: SemVer, platform:Platform): Promise<ModVersion | null> {
-        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId, modVersion: semver.raw, platform, visibility: Visibility.Verified } });
+        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{visibility: Visibility.Verified}, {visibility: Visibility.Unverified}] } });
         return modVersion;
     }
 
     public static async countExistingVersions(modId: number, semver: SemVer, platform:Platform): Promise<number> {
-        let count = DatabaseHelper.database.ModVersions.count({ where: { modId, modVersion: semver.raw, platform, visibility: Visibility.Verified } });
+        let count = DatabaseHelper.database.ModVersions.count({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{visibility: Visibility.Verified}, {visibility: Visibility.Unverified}] } });
         return count;
     }
 
-    public async getSupportedGameVersions(): Promise<GameVersion[]> {
-        let gameVersions: GameVersion[] = [];
+    public async getSupportedGameVersions(): Promise<APIGameVersion[]> {
+        let gameVersions: APIGameVersion[] = [];
         for (let versionId of this.supportedGameVersionIds) {
             let version = DatabaseHelper.cache.gameVersions.find((version) => version.id == versionId);
             if (!version) {
@@ -537,7 +546,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             }
 
             if (version) {
-                gameVersions.push(version);
+                gameVersions.push(version.toAPIResponse());
             }
 
         }

@@ -3,7 +3,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, SupportedGames, UserRoles, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
-import { coerce, satisfies } from 'semver';
+import { coerce, satisfies, SemVer, valid } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = true;
+    private readonly ENABLE_DOWNLOADS = false;
 
     constructor(app: Express) {
         this.app = app;
@@ -59,7 +59,8 @@ export class ImportRoutes {
                     return res.status(500).send({ message: `beatmods is borked`});
                 }
 
-                AllBeatModsMods = [...AllBeatModsMods, ...BeatModsAPIData];
+                // turns out you can just do this to reverse the order of the array so that oldest versions are first
+                AllBeatModsMods = [...BeatModsAPIData, ...AllBeatModsMods, ];
             }
 
             Logger.log(`Through the mist and fog, a dark shape emerged, a ghostly figure standing in its helm\nCourse set, intent clear, it bore down upon us`, `Import`);
@@ -91,7 +92,6 @@ export class ImportRoutes {
                 if (mod.status == `declined`) {
                     continue;
                 }
-
 
                 let existingMod = await DatabaseHelper.database.Mods.findOne({ where: { name: mod.name } });
                 let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
@@ -156,7 +156,7 @@ export class ImportRoutes {
                 }
 
                 let dependancies = await this.downloadBeatModsDownloads(existingMod.id, importAuthor.id, mod);
-                dependancyRecord = [...dependancyRecord, ...dependancies];
+                dependancyRecord.push(...dependancies);
             }
             Logger.log(`Send them to the depths`, `Import`);
 
@@ -166,28 +166,34 @@ export class ImportRoutes {
                     continue;
                 }
                 console.log(`Resolving dependancy ${record.dependancy.name} for mod ${record.modVersionId}`, `Import`);
+                // dependancy mod
                 let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy.name } });
                 if (!mod) {
                     Logger.warn(`Dependancy ${record.dependancy.name} not found for mod ${record.modVersionId}`, `Import`);
                     continue;
                 }
 
-                let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: record.modVersionId } });
-                if (!modVersion) {
-                    Logger.warn(`Mod version ${record.modVersionId} not found`, `Import`);
-                    continue;
-                }
-
+                //dependancy mod versions
                 let dependancyModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: mod.id } });
                 if (!Array.isArray(dependancyModVersions)) {
                     Logger.warn(`Dependancy mod version ${record.dependancy.name} v${record.dependancy.version} not found`, `Import`);
+                    continue;
+                }
+
+                //dependant modVerison
+                let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: record.modVersionId } });
+                if (!modVersion) {
+                    Logger.warn(`Mod version ${record.modVersionId} not found`, `Import`);
                     continue;
                 }
                 
                 //this is fucking stupid, why is typescript like this
                 let versionToCompare = record.dependancy.version;
                 // not particularly happy with this ig its fine
-                let dependancyModVersion = dependancyModVersions.find((modVersion) => { return satisfies(modVersion.modVersion, `^${versionToCompare}`) && modVersion.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0]); });
+                let dependancyModVersion = dependancyModVersions.find((modVersion) => {
+                    return satisfies(modVersion.modVersion, `^${versionToCompare}`) &&
+                    modVersion.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0]);
+                });
                 if (!dependancyModVersion) {
                     Logger.warn(`No suitable version of dependancy ${record.dependancy.name} v${record.dependancy.version} found for ${record.modVersionId}`, `Import`);
                     continue;
@@ -227,16 +233,29 @@ export class ImportRoutes {
                 });
             }
     
-            if (!coerce(mod.version)) {
+            if (!coerce(mod.version, { includePrerelease: true })) {
                 Logger.error(`Failed to parse Semver ${mod.version}`, `Import`);
                 continue;
             }
     
-            let existingVersion = await ModVersion.checkForExistingVersion(modId, coerce(mod.version), platform);
+            let existingVersion = await ModVersion.checkForExistingVersion(modId, coerce(mod.version, { includePrerelease: true }), platform);
             if (existingVersion) {
-                Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, marking as compatible and skipping.`, `Import`);
-                existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
-                continue;
+                let doesHashMatch = download.hashMd5.every((hash) => existingVersion.contentHashes.some((contentHash) => contentHash.hash == hash.hash));
+                if ((mod.status == `approved` || mod.status == `inactive`) && doesHashMatch) {
+                    Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as compatible and skipping.`, `Import`);
+                    existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
+                    await existingVersion.save();
+                    continue;
+                } else {
+                    if (doesHashMatch) {
+                        Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the db but has unapproved status. marked compatible. Status: ${mod.status}, gV: ${mod.gameVersion}`, `Import`);
+                        existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
+                        await existingVersion.save();
+                        continue;
+                    }
+                    Logger.warn(`Mod ${mod.name} v${mod.version} already exists in db but has different hashes. Status: ${mod.status}, gV: ${mod.gameVersion}`, `Import`);
+                    continue;
+                }
             }
     
             let result = `DOWNLOAD DISABLED`;
@@ -254,7 +273,7 @@ export class ImportRoutes {
     
             let newVersion = await DatabaseHelper.database.ModVersions.create({
                 modId: modId,
-                modVersion: coerce(mod.version),
+                modVersion: coerce(mod.version, {includePrerelease: true}),
                 supportedGameVersionIds: [gameVersion.id],
                 authorId: authorId,
                 zipHash: result, //this will break

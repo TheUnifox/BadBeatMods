@@ -26,14 +26,14 @@ export class GetModRoutes {
             // #swagger.tags = ['Mods']
             // #swagger.description = 'Get all mods.'
             // #swagger.responses[200] = { description: 'Returns all mods.' }
-            let mods:{mod: Mod, latest: ModVersion}[] = [];
+            let mods:{mod: Mod, latest: any}[] = [];
             for (let mod of DatabaseHelper.cache.mods) {
                 if (mod.gameName !== filteredGameName) {
                     continue;
                 }
                 let latest = await mod.getLatestVersion(DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName)?.id);
                 if (latest) {
-                    mods.push({mod, latest});
+                    mods.push({mod: mod, latest: await latest.toAPIResonse()});
                 }
             }
 

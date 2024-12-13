@@ -315,7 +315,7 @@ export class ApprovalRoutes {
             }
 
             if (modVersion && typeof modVersion === `string`) {
-                modVersionDB.modVersion = coerce(modVersion);
+                modVersionDB.modVersion = coerce(modVersion, { includePrerelease: true });
             }
 
             if (platform && DatabaseHelper.isValidPlatform(platform)) {
@@ -447,7 +447,7 @@ export class ApprovalRoutes {
                     }
 
                     if (modVersion && typeof modVersion === `string`) {
-                        edit.obj.modVersion = coerce(modVersion);
+                        edit.obj.modVersion = coerce(modVersion, { includePrerelease: true });
                     }
 
                     if (platform && DatabaseHelper.isValidPlatform(platform)) {
