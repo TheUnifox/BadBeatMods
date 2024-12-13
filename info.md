@@ -13,11 +13,11 @@ I might be missing a few things, but I'm pretty sure this list has all of the ma
 - Mods do NOT need to be reuploaded for new game versions (assuming nothing breaks in the mod, or the mod doesn't need a dependancy bump/fixes).
 - Mods MUST have an icon (A default one is available if an icon is not specified).
 - Mod metadata is updatable without a reupload.
-- Aliases from BeatMods do not exist.
+- Game version aliases from BeatMods do not exist.
 - Accounts are made using GitHub OAuth2. You are able to link your Discord account for contact only.
-- Users can have profiles (see `User` in the Database)
+- Users can have profiles (see `User` in the Database).
 - The `required` field from BeatMods is not present. It has been replaced with the "core" and "essentials" library.
-- Old BeatMods endpoint now requires the `gameVersion` parameter (it will assume latest if not provided).
+- Old BeatMods endpoint now requires the `gameVersion` parameter (it will assume the game's default version if not provided).
 - In order to reduce calls to the database, the server caches all DB tables. It refreshes this cache every 60 seconds.
 
 ## Rules/Goals of a ModVersion
