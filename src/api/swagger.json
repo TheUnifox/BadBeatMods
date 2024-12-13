@@ -3,10 +3,32 @@
   "info": {
     "title": "BadBeatMods API",
     "description": "This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.",
-    "version": "1.0.0"
+    "version": "0.0.1"
   },
   "host": "bbm.saera.gay",
   "basePath": "/",
+  "tags": [
+    {
+      "name": "Mods",
+      "description": "Mod related endpoints"
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication related endpoints"
+    },
+    {
+      "name": "Misc",
+      "description": "Miscellaneous endpoints"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin related endpoints"
+    },
+    {
+      "name": "Approval",
+      "description": "Approval related endpoints"
+    }
+  ],
   "schemes": [
     "https",
     "http"
@@ -25,17 +47,20 @@
         "tags": [
           "Mods"
         ],
-        "description": "Get all mods.",
+        "summary": "Get all mods for a specified version.",
+        "description": "Get all mods.<br><br>If gameName is not provided, it will default to Beat Saber.\\nIf gameVersion is not provided, it will default to whatever is set as the lastest version for the selected game.",
         "parameters": [
           {
             "name": "gameName",
-            "in": "query",
-            "type": "string"
+            "description": "The game name.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "gameVersion",
-            "in": "query",
-            "type": "string"
+            "description": "The game version (ex. '1.29.1', '1.40.0').",
+            "type": "string",
+            "in": "query"
           }
         ],
         "responses": {
@@ -43,34 +68,36 @@
             "description": "Returns all mods."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Invalid gameVersion."
           }
         }
       }
     },
-    "/api/mod/{modIdParam}": {
+    "/api/mods/{modIdParam}": {
       "get": {
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Get a specific mod by ID.",
+        "description": "Get a specific mod by ID. This will also return every version of the mod.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number",
+            "description": "The mod ID."
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Returns the mod."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Invalid mod id."
           },
           "404": {
-            "description": "Not Found"
+            "description": "Mod not found."
           }
         }
       },
@@ -138,23 +165,26 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Show a mod that has a file with the specified hash.",
+        "description": "Show a mod that has a file with the specified hash. This is useful for finding the mod that a file belongs to.",
         "parameters": [
           {
             "name": "hash",
-            "in": "query",
-            "type": "string"
+            "description": "The hash to look up.",
+            "type": "string",
+            "required": true,
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Returns the mod."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing hash."
           },
           "404": {
-            "description": "Not Found"
+            "description": "Hash not found."
           }
         }
       }
@@ -164,25 +194,28 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Legacy BeatMods API endpoint.",
+        "description": "Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.",
         "parameters": [
           {
             "name": "gameVersion",
-            "in": "query",
-            "type": "string"
+            "description": "The game version as a string (ex. '1.29.1', '1.40.0').",
+            "type": "string",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Returns all mods."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing Game Version."
           }
-        }
+        },
+        "deprecated": true
       }
     },
-    "/api/mod/create": {
+    "/api/mods/create": {
       "post": {
         "tags": [
           "Mods"
@@ -230,7 +263,7 @@
         }
       }
     },
-    "/api/mod/{modIdParam}/upload": {
+    "/api/mods/{modIdParam}/upload": {
       "post": {
         "tags": [
           "Mods"
@@ -883,9 +916,6 @@
           },
           "404": {
             "description": "Not Found"
-          },
-          "501": {
-            "description": "Not Implemented"
           }
         }
       }

@@ -13,26 +13,40 @@ export class GetModRoutes {
 
     private async loadRoutes() {
         this.app.get(`/api/mods`, async (req, res) => {
+            // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Get all mods for a specified version.'
+            // #swagger.description = 'Get all mods.<br><br>If gameName is not provided, it will default to Beat Saber.<br>If gameVersion is not provided, it will default to whatever is set as the lastest version for the selected game.'
+            // #swagger.responses[200] = { description: 'Returns all mods.' }
+            // #swagger.responses[400] = { description: 'Invalid gameVersion.' }
+            // #swagger.parameters['gameName'] = { description: 'The game name.', type: 'string' }
+            // #swagger.parameters['gameVersion'] = { description: 'The game version (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
             let gameName = req.query.gameName;
             let gameVersion = req.query.gameVersion;
 
             let filteredGameName = (gameName && HTTPTools.validateStringParameter(gameName) && DatabaseHelper.isValidGameName(gameName)) ? gameName : SupportedGames.BeatSaber;
-            let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : `1.39.0`;
+            let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : GameVersion.getDefaultVersion(filteredGameName);
 
             if (gameVersion && HTTPTools.validateStringParameter(gameVersion) && !DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) {
                 return res.status(400).send({ message: `Invalid gameVersion.` });
             }
             
-            // #swagger.tags = ['Mods']
-            // #swagger.description = 'Get all mods.'
-            // #swagger.responses[200] = { description: 'Returns all mods.' }
             let mods:{mod: Mod, latest: any}[] = [];
             for (let mod of DatabaseHelper.cache.mods) {
                 if (mod.gameName !== filteredGameName) {
                     continue;
                 }
+
+                // if the mod isn't verified or unverified, don't show it
+                if (mod.visibility != Visibility.Unverified && mod.visibility != Visibility.Verified) {
+                    continue;
+                }
+
                 let latest = await mod.getLatestVersion(DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName)?.id);
                 if (latest) {
+                    // if the modVersion isn't verified or unverified, don't show it
+                    if (latest.visibility != Visibility.Unverified && latest.visibility != Visibility.Verified) {
+                        continue;
+                    }
                     mods.push({mod: mod, latest: await latest.toAPIResonse()});
                 }
             }
@@ -40,8 +54,14 @@ export class GetModRoutes {
             return res.status(200).send({ mods });
         });
 
-        this.app.get(`/api/mod/:modIdParam`, async (req, res) => {
+        this.app.get(`/api/mods/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Get a specific mod by ID.'
+            // #swagger.description = 'Get a specific mod by ID. This will also return every version of the mod.'
+            // #swagger.responses[200] = { description: 'Returns the mod.' }
+            // #swagger.responses[400] = { description: 'Invalid mod id.' }
+            // #swagger.responses[404] = { description: 'Mod not found.' }
+            // #swagger.parameters['modIdParam'] = { in: 'path', description: 'The mod ID.', type: 'number', required: true }
             let modId = parseInt(req.params.modIdParam);
             if (!modId) {
                 return res.status(400).send({ message: `Invalid mod id.` });
@@ -51,10 +71,17 @@ export class GetModRoutes {
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
+
+            if (mod.visibility != Visibility.Unverified && mod.visibility != Visibility.Verified) {
+                return res.status(404).send({ message: `Mod not found.` });
+            }
             let modVersions = DatabaseHelper.cache.modVersions.filter((modVersion) => modVersion.modId === mod.id);
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
+                if (version.visibility != Visibility.Unverified && version.visibility != Visibility.Verified) {
+                    continue;
+                }
                 returnVal.push(await version.toAPIResonse());
             }
 
@@ -63,12 +90,21 @@ export class GetModRoutes {
 
         this.app.get(`/api/hashlookup`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Show a mod that has a file with the specified hash.'
+            // #swagger.description = 'Show a mod that has a file with the specified hash. This is useful for finding the mod that a file belongs to.'
+            // #swagger.responses[200] = { description: 'Returns the mod.' }
+            // #swagger.responses[400] = { description: 'Missing hash.' }
+            // #swagger.responses[404] = { description: 'Hash not found.' }
+            // #swagger.parameters['hash'] = { description: 'The hash to look up.', type: 'string', required: true }
             let hash = req.query.hash;
             if (!hash) {
                 return res.status(400).send({ message: `Missing hash.` });
             }
 
             for (let version of DatabaseHelper.cache.modVersions) {
+                if (version.zipHash === hash) {
+                    return res.status(200).send({ mod: version.modId });
+                }
                 for (let fileHash of version.contentHashes) {
                     if (fileHash.hash === hash) {
                         return res.status(200).send({ mod: version.modId });
@@ -80,7 +116,15 @@ export class GetModRoutes {
 
         this.app.get(`/api/beatmods/mod`, async (req, res) => {
             // #swagger.tags = ['Mods']
-            let version = req.query.gameVersion || `1.39.0`;
+            // #swagger.summary = 'Legacy BeatMods API endpoint.'
+            // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.'
+            // #swagger.responses[200] = { description: 'Returns all mods.' }
+            // #swagger.responses[400] = { description: 'Missing Game Version.' }
+            // #swagger.parameters['gameVersion'] = { description: 'The game version as a string (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
+            // #swagger.parameters['status'] = { description: 'The statuses to return. Available statuses are: \`approved\` & \`pending\`', type: 'string' }
+            // #swagger.deprecated = true
+            let version = req.query.gameVersion || GameVersion.getDefaultVersion(SupportedGames.BeatSaber);
+            let status = req.query.status || `approved`;
 
             let modArray: BeatModsMod[] = [];
 
@@ -95,8 +139,14 @@ export class GetModRoutes {
 
             let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName === SupportedGames.BeatSaber);
             for (let mod of mods) {
+                if (mod.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified && status !== `approved`)) {
+                    continue;
+                }
                 let modVersion = await mod.getLatestVersion(gameVersion.id);
                 if (!modVersion) {
+                    continue;
+                }
+                if (modVersion.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified && status !== `approved`)) {
                     continue;
                 }
 

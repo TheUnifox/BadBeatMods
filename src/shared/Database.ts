@@ -89,7 +89,7 @@ export class DatabaseManager {
         });
     }
     
-
+    // #region LoadTables
     private loadTables() {
         this.Users = User.init({
             id: {
@@ -165,6 +165,11 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
+            },
+            defaultVersion: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
@@ -376,7 +381,9 @@ export class DatabaseManager {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
         });
+        // #endregion
 
+        // #region Hooks
         this.ModVersions.beforeCreate(async (modVersion) => {
             await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
                 if (existingVersion) {
@@ -406,13 +413,25 @@ export class DatabaseManager {
         this.Mods.beforeUpdate(async (mod) => {
             await Mod.checkForExistingMod(mod.name).then((existingMod) => {
                 if (existingMod) {
-                    throw new Error(`Mod already exists.`);
+                    if (existingMod.id != mod.id) {
+                        throw new Error(`Mod already exists.`);
+                    }
+                }
+            });
+        });
+
+        // this is just to make sure that there is always a default version for a game, as otherwise a bunch of endpoints won't know what to do.
+        this.GameVersions.beforeCreate(async (gameVersion) => {
+            await GameVersion.findOne({ where: { gameName: gameVersion.gameName, defaultVersion: false }}).then((existingVersion) => {
+                if (!existingVersion) {
+                    gameVersion.defaultVersion = true;
                 }
             });
         });
     }
+    // #endregion
 }
-
+// #region User
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
     declare readonly id: CreationOptional<number>;
     declare username: string;
@@ -439,12 +458,14 @@ export enum UserRoles {
     Moderator = `moderator`,
     Banned = `banned`,
 }
-
+// #endregion
+// #region GameVersion
 export type APIGameVersion = InferAttributes<GameVersion, { omit: `createdAt` | `updatedAt` }>;
 export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreationAttributes<GameVersion>> {
     declare readonly id: CreationOptional<number>;
     declare gameName: SupportedGames;
     declare version: string; // semver-esc version (e.g. 1.29.1)
+    declare defaultVersion: boolean;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
@@ -453,10 +474,20 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
             id: this.id,
             gameName: this.gameName,
             version: this.version,
+            defaultVersion: this.defaultVersion,
         };
     }
-}
 
+    public static async getDefaultVersion(gameName: SupportedGames): Promise<string | null> {
+        let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion);
+        if (!version) {
+            version = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+        }
+        return version.version;
+    }
+}
+// #endregion
+// #region Mod
 export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod>> {
     declare readonly id: CreationOptional<number>;
     declare name: string;
@@ -503,7 +534,8 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         return count;
     }
 }
-
+// #endregion
+// #region ModVersion
 export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreationAttributes<ModVersion>> {
     declare readonly id: number;
     declare modId: number;
@@ -618,7 +650,8 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     }
 
 }
-
+// #endregion
+// #region EditApprovalQueue
 export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `authorId` | `visibility` | `contentHashes` | `zipHash`}>
 export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileName` | `visibility` }>
 
@@ -671,7 +704,8 @@ export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>,
         this.save();
     }
 }
-
+// #endregion
+// #region Interfaces/Enums
 export interface ContentHash {
     path: string;
     hash: string;
@@ -706,6 +740,7 @@ export enum Categories {
     Editor = `editor`,
     Other = `other`,
 }
+// #endregion
 
 // yoink thankies bstoday & bns
 function validateEnumValue(value: string | number, enumType: object): boolean {
@@ -714,7 +749,7 @@ function validateEnumValue(value: string | number, enumType: object): boolean {
     }
     return false;
 }
-
+// #region DatabaseHelper
 export class DatabaseHelper {
     public static database: DatabaseManager;
     public static cache: {
@@ -810,3 +845,4 @@ export class DatabaseHelper {
         return game ? game.id : null;
     }
 }
+// #endregion
