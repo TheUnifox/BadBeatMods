@@ -46,6 +46,7 @@ export class ImportRoutes {
 
             let AllBeatModsMods: BeatModsMod[] = [];
             for (let version of BeatModsVersionData) {
+                console.log(`Fetching mods for version ${version}`);
                 const BeatModsResponse = await fetch(`https://beatmods.com/api/v1/mod?gameVersion=${encodeURIComponent(version)}`);
 
                 if (BeatModsResponse.status !== 200) {
@@ -96,12 +97,52 @@ export class ImportRoutes {
                 let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
 
                 if (!existingMod) {
-                    let lowerCaseCatgory = mod.category.toLowerCase();
+                    let category = Categories.Other;
+
+                    switch (mod.category) {
+                        case `Core`:
+                            category = mod.required ? Categories.Core : Categories.Essential;
+                            break;
+                        case `Cosmetic`:
+                            category = Categories.Cosmetic;
+                            break;
+                        case `Gameplay`:
+                            category = Categories.Gameplay;
+                            break;
+                        case `Practice / Training`:
+                            category = Categories.PracticeTraining;
+                            break;
+                        case `Stream Tools`:
+                            category = Categories.StreamTools;
+                            break;
+                        case `Libraries`:
+                            category = Categories.Library;
+                            break;
+                        case `UI Enhancements`:
+                            category = Categories.UIEnhancements;
+                            break;
+                        case `Tweaks / Tools`:
+                            category = Categories.TweaksTools;
+                            break;
+                        case `Lighting`:
+                            category = Categories.Lighting;
+                            break;
+                        case `Multiplayer`:
+                            category = Categories.Multiplayer;
+                            break;
+                        case `Text Changes`:
+                            category = Categories.TextChanges;
+                            break;
+                        default:
+                            category = Categories.Other;
+                            break;
+                    }
+
                     existingMod = await DatabaseHelper.database.Mods.create({
                         name: mod.name,
                         description: mod.description,
                         authorIds: [importAuthor.id],
-                        category: DatabaseHelper.isValidCategory(lowerCaseCatgory) ? lowerCaseCatgory : Categories.Other,
+                        category: category,
                         visibility: status,
                         iconFileName: `default.png`,
                         gitUrl: mod.link,
@@ -191,7 +232,7 @@ export class ImportRoutes {
                 continue;
             }
     
-            let existingVersion = await ModVersion.checkForExistingVersion(modId, mod.version, platform);
+            let existingVersion = await ModVersion.checkForExistingVersion(modId, coerce(mod.version), platform);
             if (existingVersion) {
                 Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the database, marking as compatible and skipping.`, `Import`);
                 existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
@@ -205,8 +246,10 @@ export class ImportRoutes {
                 const md5 = crypto.createHash(`md5`);
                 let arrayBuffer = await file.arrayBuffer();
                 result = md5.update(new Uint8Array(arrayBuffer)).digest(`hex`);
-    
-                fs.writeFileSync(`${path.resolve(Config.storage.modsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
+                
+                if (!fs.existsSync(`${path.resolve(Config.storage.modsDir)}/${result}.zip`)) {
+                    fs.writeFileSync(`${path.resolve(Config.storage.modsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
+                }
             }
     
             let newVersion = await DatabaseHelper.database.ModVersions.create({
