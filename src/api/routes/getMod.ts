@@ -139,14 +139,17 @@ export class GetModRoutes {
 
             let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName === SupportedGames.BeatSaber);
             for (let mod of mods) {
-                if (mod.visibility !== Visibility.Verified && (mod.visibility === Visibility.Unverified || status !== `approved`)) {
+                //if (mod.id === 194) {
+                //    console.log(mod);
+                //}
+                if (mod.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified || status === `approved`)) {
                     continue;
                 }
                 let modVersion = await mod.getLatestVersion(gameVersion.id);
                 if (!modVersion) {
                     continue;
                 }
-                if (modVersion.visibility !== Visibility.Verified && (modVersion.visibility === Visibility.Unverified || status !== `approved`)) {
+                if (modVersion.visibility !== Visibility.Verified && (modVersion.visibility !== Visibility.Unverified || status === `approved`)) {
                     continue;
                 }
 
