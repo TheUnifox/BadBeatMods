@@ -123,13 +123,13 @@ export class GetModRoutes {
             // #swagger.parameters['gameVersion'] = { description: 'The game version as a string (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
             // #swagger.parameters['status'] = { description: 'The statuses to return. Available statuses are: \`approved\` & \`pending\`', type: 'string' }
             // #swagger.deprecated = true
-            let version = req.query.gameVersion || GameVersion.getDefaultVersion(SupportedGames.BeatSaber);
+            let version = req.query.gameVersion;
             let status = req.query.status || `approved`;
 
             let modArray: BeatModsMod[] = [];
 
             if (!version || typeof version !== `string`) {
-                return res.status(400).send({message: `Missing Game Version`});
+                version = await GameVersion.getDefaultVersion(SupportedGames.BeatSaber);
             }
 
             let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === version && gameVersion.gameName === SupportedGames.BeatSaber);
