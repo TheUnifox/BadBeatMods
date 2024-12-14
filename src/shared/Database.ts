@@ -422,7 +422,7 @@ export class DatabaseManager {
 
         // this is just to make sure that there is always a default version for a game, as otherwise a bunch of endpoints won't know what to do.
         this.GameVersions.beforeCreate(async (gameVersion) => {
-            await GameVersion.findOne({ where: { gameName: gameVersion.gameName, defaultVersion: false }}).then((existingVersion) => {
+            await GameVersion.findOne({ where: { gameName: gameVersion.gameName, defaultVersion: true }}).then((existingVersion) => {
                 if (!existingVersion) {
                     gameVersion.defaultVersion = true;
                 }
@@ -479,11 +479,19 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
     }
 
     public static async getDefaultVersion(gameName: SupportedGames): Promise<string | null> {
-        let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion);
+        let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion == true);
         if (!version) {
             version = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
         }
         return version.version;
+    }
+
+    public static async getDefaultVersionObject(gameName: SupportedGames): Promise<GameVersion | null> {
+        let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion == true);
+        if (!version) {
+            version = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+        }
+        return version;
     }
 }
 // #endregion
@@ -585,15 +593,24 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getDependencies(): Promise<ModVersion[]> {
+    public async getDependencies(gameVersionId: number): Promise<ModVersion[]> {
         let dependencies: ModVersion[] = [];
         for (let dependancyId of this.dependencies) {
             let dependancy = DatabaseHelper.cache.modVersions.find((version) => version.id == dependancyId);
             if (!dependancy) {
                 dependancy = await DatabaseHelper.database.ModVersions.findByPk(dependancyId);
             }
+
             if (dependancy) {
-                dependencies.push(dependancy);
+                let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == dependancy?.modId);
+                let latest = await mod.getLatestVersion(gameVersionId);
+                if (latest && await ModVersion.isValidDependancySucessor(latest, dependancy, gameVersionId)) {
+                    dependencies.push(latest);
+                } else {
+                    dependencies.push(dependancy);
+                }
+            } else {
+                Config.devmode ? Logger.warn(`ModVersion ${dependancyId} not found in cache or database.`) : null;
             }
         }
         return dependencies;
@@ -635,12 +652,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
     // this function is for when a mod supports a newer version but the dependancy does not. (uses ^x.x.x for comparison)
     public static async isValidDependancySucessor(originalVersion:ModVersion, newVersion:ModVersion, forVersion: number): Promise<boolean> {
-        let originalGameVersions = await originalVersion.getSupportedGameVersions();
         let newGameVersions = await newVersion.getSupportedGameVersions();
-
-        if (originalGameVersions.find((version) => version.id == forVersion)) {
-            return false;
-        }
 
         if (!newGameVersions.find((version) => version.id == forVersion)) {
             return false;
@@ -769,16 +781,36 @@ export class DatabaseHelper {
     constructor(database: DatabaseManager) {
         DatabaseHelper.database = database;
 
-        DatabaseHelper.loadCache();
-        setInterval(DatabaseHelper.loadCache, 1000 * 60 * 1);
+        DatabaseHelper.refreshAllCaches();
+        setInterval(DatabaseHelper.refreshAllCaches, 1000 * 60 * 1);
     }
 
-    private static async loadCache() {
+    public static async refreshAllCaches() {
         DatabaseHelper.cache.gameVersions = await DatabaseHelper.database.GameVersions.findAll();
         DatabaseHelper.cache.modVersions = await DatabaseHelper.database.ModVersions.findAll();
         DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
         DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
         DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
+    }
+
+    public static async refreshCache(tableName: `gameVersions` | `modVersions` | `mods` | `users` | `editApprovalQueue`) {
+        switch (tableName) {
+            case `gameVersions`:
+                DatabaseHelper.cache.gameVersions = await DatabaseHelper.database.GameVersions.findAll();
+                break;
+            case `modVersions`:
+                DatabaseHelper.cache.modVersions = await DatabaseHelper.database.ModVersions.findAll();
+                break;
+            case `mods`:
+                DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
+                break;
+            case `users`:
+                DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
+                break;
+            case `editApprovalQueue`:
+                DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
+                break;
+        }
     }
 
     public static getGameNameFromModId(id: number): SupportedGames | null {

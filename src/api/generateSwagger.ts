@@ -26,7 +26,7 @@ const routes = [
     `./routes/createMod.ts`,
     `./routes/updateMod.ts`,
     `./routes/auth.ts`,
-    `./routes/misc.ts`,
+    `./routes/versions.ts`,
     `./routes/import.ts`,
     `./routes/admin.ts`,
     `./routes/approval.ts`,

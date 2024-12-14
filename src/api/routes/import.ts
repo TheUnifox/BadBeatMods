@@ -205,6 +205,7 @@ export class ImportRoutes {
             }
 
             Logger.log(`Ah-ha-ha-ha-ha-ha-ha-ha-ha-Oah, where's me rum`, `Import`);
+            DatabaseHelper.refreshAllCaches();
         });
     }
 
@@ -241,7 +242,7 @@ export class ImportRoutes {
             let existingVersion = await ModVersion.checkForExistingVersion(modId, coerce(mod.version, { includePrerelease: true }), platform);
             if (existingVersion) {
                 let doesHashMatch = download.hashMd5.every((hash) => existingVersion.contentHashes.some((contentHash) => contentHash.hash == hash.hash));
-                if ((mod.status == `approved` || mod.status == `inactive`) && doesHashMatch) {
+                if (status == Visibility.Verified && doesHashMatch) {
                     Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as compatible and skipping.`, `Import`);
                     existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
                     await existingVersion.save();

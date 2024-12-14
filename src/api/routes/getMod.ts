@@ -24,7 +24,7 @@ export class GetModRoutes {
             let gameVersion = req.query.gameVersion;
 
             let filteredGameName = (gameName && HTTPTools.validateStringParameter(gameName) && DatabaseHelper.isValidGameName(gameName)) ? gameName : SupportedGames.BeatSaber;
-            let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : GameVersion.getDefaultVersion(filteredGameName);
+            let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : await GameVersion.getDefaultVersion(filteredGameName);
 
             if (gameVersion && HTTPTools.validateStringParameter(gameVersion) && !DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) {
                 return res.status(400).send({ message: `Invalid gameVersion.` });
@@ -139,39 +139,38 @@ export class GetModRoutes {
 
             let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName === SupportedGames.BeatSaber);
             for (let mod of mods) {
-                if (mod.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified && status !== `approved`)) {
+                if (mod.visibility !== Visibility.Verified && (mod.visibility === Visibility.Unverified || status !== `approved`)) {
                     continue;
                 }
                 let modVersion = await mod.getLatestVersion(gameVersion.id);
                 if (!modVersion) {
                     continue;
                 }
-                if (modVersion.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified && status !== `approved`)) {
+                if (modVersion.visibility !== Visibility.Verified && (modVersion.visibility === Visibility.Unverified || status !== `approved`)) {
                     continue;
                 }
 
-                modArray.push(this.convertToBeatmodsMod(mod, modVersion, gameVersion));
+                modArray.push(await this.convertToBeatmodsMod(mod, modVersion, gameVersion));
             }
 
             return res.status(200).send(modArray);
         });
     }
 
-    private convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): BeatModsMod {
+    private async convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): Promise<BeatModsMod> {
         let dependencies: (BeatModsMod | string)[] = [];
     
         if (modVersion.dependencies.length !== 0) {
-            for (let dependancyId of modVersion.dependencies) {
+            for (let dependancy of (await modVersion.getDependencies(gameVersion.id))) {
                 if (doResolution) {
-                    let dependancyModVesion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === dependancyId);
-                    let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancyModVesion.modId);
+                    let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancy.modId);
                     if (dependancyMod) {
-                        dependencies.push(this.convertToBeatmodsMod(dependancyMod, dependancyModVesion, gameVersion, false));
+                        dependencies.push(await this.convertToBeatmodsMod(dependancyMod, dependancy, gameVersion, false));
                     } else {
-                        Logger.warn(`Dependancy ${dependancyId} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
+                        Logger.warn(`Dependancy ${dependancy.id} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
                     }
                 } else {
-                    dependencies.push(dependancyId.toString());
+                    dependencies.push(dependancy.id.toString());
                 }
             }
         }

@@ -12,7 +12,7 @@ import { GetModRoutes } from './api/routes/getMod';
 import { Config } from './shared/Config';
 import { UpdateModRoutes } from './api/routes/updateMod';
 import { AuthRoutes } from './api/routes/auth';
-import { MiscRoutes } from './api/routes/misc';
+import { VersionsRoutes } from './api/routes/versions';
 import { ImportRoutes } from './api/routes/import';
 import { AdminRoutes } from './api/routes/admin';
 import { ApprovalRoutes } from './api/routes/approval';
@@ -95,7 +95,7 @@ new ApprovalRoutes(app);
 new AuthRoutes(app);
 new ImportRoutes(app);
 new AdminRoutes(app);
-new MiscRoutes(app);
+new VersionsRoutes(app);
 
 swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));

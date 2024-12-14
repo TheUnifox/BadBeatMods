@@ -48,7 +48,7 @@
           "Mods"
         ],
         "summary": "Get all mods for a specified version.",
-        "description": "Get all mods.<br><br>If gameName is not provided, it will default to Beat Saber.\\nIf gameVersion is not provided, it will default to whatever is set as the lastest version for the selected game.",
+        "description": "Get all mods.<br><br>If gameName is not provided, it will default to Beat Saber.<br>If gameVersion is not provided, it will default to whatever is set as the lastest version for the selected game.",
         "parameters": [
           {
             "name": "gameName",
@@ -200,6 +200,12 @@
           {
             "name": "gameVersion",
             "description": "The game version as a string (ex. '1.29.1', '1.40.0').",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "status",
+            "description": "The statuses to return. Available statuses are: 'approved' & 'pending'",
             "type": "string",
             "in": "query"
           }
@@ -440,9 +446,29 @@
     "/api/versions": {
       "get": {
         "tags": [
-          "Misc"
+          "Versions"
         ],
         "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/versions/default": {
+      "get": {
+        "tags": [
+          "Versions"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "gameName",
+            "in": "query",
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
