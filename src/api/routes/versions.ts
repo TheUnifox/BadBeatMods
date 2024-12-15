@@ -15,7 +15,14 @@ export class VersionsRoutes {
     private async loadRoutes() {
         this.app.get(`/api/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            let versions = DatabaseHelper.cache.gameVersions;
+            let gameName = req.query.gameName && HTTPTools.validateStringParameter(req.query.gameName) && DatabaseHelper.isValidGameName(req.query.gameName) ? req.query.gameName : undefined;
+            
+            let versions;
+            if (gameName) {
+                versions = DatabaseHelper.cache.gameVersions.filter(v => v.gameName === gameName);
+            } else {
+                versions = DatabaseHelper.cache.gameVersions;
+            }
 
             return res.status(200).send({ versions });
         });

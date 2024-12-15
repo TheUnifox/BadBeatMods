@@ -20,6 +20,7 @@ import { Luma } from './discord/classes/Luma';
 import { ActivityType } from 'discord.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './api/swagger.json';
+import { BeatModsRoutes } from './api/routes/beatmods';
 
 console.log(`Starting setup...`);
 new Config();
@@ -88,6 +89,7 @@ app.use((req, res, next) => {
 
 //app.use(`/api`, Validator.runValidator);
 
+new BeatModsRoutes(app);
 new CreateModRoutes(app);
 new GetModRoutes(app);
 new UpdateModRoutes(app);
@@ -146,6 +148,9 @@ HTTPTools.handleExpressShenanigans(app);
 
 app.listen(port, () => {
     console.log(`Server listening @ http://localhost:${port}`);
+    Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
+    Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
+    Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
 });
 
 process.on(`exit`, (code) => {

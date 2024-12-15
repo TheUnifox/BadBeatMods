@@ -384,28 +384,12 @@ export class DatabaseManager {
         // #endregion
 
         // #region Hooks
-        this.ModVersions.beforeCreate(async (modVersion) => {
-            await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
-                if (existingVersion) {
-                    throw new Error(`Version already exists.`);
-                }
-            });
-        });
+        
 
         this.Mods.beforeCreate(async (mod) => {
             await Mod.checkForExistingMod(mod.name).then((existingMod) => {
                 if (existingMod) {
                     throw new Error(`Mod already exists.`);
-                }
-            });
-        });
-
-        this.ModVersions.beforeUpdate(async (modVersion) => {
-            await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
-                if (existingVersion) {
-                    if (existingVersion.id != modVersion.id && modVersion.visibility == Visibility.Verified) {
-                        throw new Error(`Edit would cause a duplicate version.`);
-                    }
                 }
             });
         });
@@ -418,6 +402,32 @@ export class DatabaseManager {
                     }
                 }
             });
+        });
+
+        this.ModVersions.beforeCreate(async (modVersion) => {
+            await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
+                if (existingVersion) {
+                    throw new Error(`Version already exists.`);
+                }
+            });
+
+            if (modVersion.supportedGameVersionIds.length == 0) {
+                throw new Error(`ModVersion must support at least one game version.`);
+            }
+        });
+
+        this.ModVersions.beforeUpdate(async (modVersion) => {
+            await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
+                if (existingVersion) {
+                    if (existingVersion.id != modVersion.id && modVersion.visibility == Visibility.Verified) {
+                        throw new Error(`Edit would cause a duplicate version.`);
+                    }
+                }
+            });
+
+            if (modVersion.supportedGameVersionIds.length == 0) {
+                throw new Error(`ModVersion must support at least one game version.`);
+            }
         });
 
         // this is just to make sure that there is always a default version for a game, as otherwise a bunch of endpoints won't know what to do.
@@ -509,10 +519,10 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
-    public async getLatestVersion(gameVersion: number, onlyApproved = false): Promise<ModVersion | null> {
-        let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id);
+    public async getLatestVersion(gameVersion: number, platform:Platform = Platform.Universal, onlyApproved = false): Promise<ModVersion | null> {
+        let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id && (version.platform == platform || version.platform == Platform.Universal));
         if (!versions) {
-            versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id } });
+            versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id, [Op.or]: [{ platform: platform }, { platform: Platform.Universal }] } });
         }
         let latestVersion: ModVersion | null = null;
         for (let version of versions) {
@@ -593,7 +603,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getDependencies(gameVersionId: number): Promise<ModVersion[]> {
+    public async getDependencies(gameVersionId: number, platform: Platform): Promise<ModVersion[]> {
         let dependencies: ModVersion[] = [];
         for (let dependancyId of this.dependencies) {
             let dependancy = DatabaseHelper.cache.modVersions.find((version) => version.id == dependancyId);
@@ -603,7 +613,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
             if (dependancy) {
                 let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == dependancy?.modId);
-                let latest = await mod.getLatestVersion(gameVersionId, true);
+                let latest = await mod.getLatestVersion(gameVersionId, platform, true);
                 if (latest && await ModVersion.isValidDependancySucessor(latest, dependancy, gameVersionId)) {
                     dependencies.push(latest);
                 } else {
@@ -616,24 +626,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return dependencies;
     }
 
-    public async toJSONWithGameVersions() {
-        return {
-            id: this.id,
-            modId: this.modId,
-            authorId: this.authorId,
-            modVersion: this.modVersion,
-            platform: this.platform,
-            zipHash: this.zipHash,
-            visibility: this.visibility,
-            dependencies: this.dependencies,
-            contentHashes: this.contentHashes,
-            supportedGameVersions: await this.getSupportedGameVersions(),
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt,
-        };
-    }
-
-    public async toAPIResonse() {
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal) {
         return {
             id: this.id,
             modId: this.modId,
@@ -642,7 +635,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             platform: this.platform,
             zipHash: this.zipHash,
             visibility: this.visibility,
-            dependencies: this.dependencies,
+            dependencies: (await this.getDependencies(gameVersionId, platform)).flatMap((dependancy) => dependancy.id),
             contentHashes: this.contentHashes,
             supportedGameVersions: await this.getSupportedGameVersions(),
             createdAt: this.createdAt,

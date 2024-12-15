@@ -1,6 +1,5 @@
 import { Express } from 'express';
-import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, SupportedGames, Visibility } from '../../shared/Database';
-import { Logger } from '../../shared/Logger';
+import { DatabaseHelper, GameVersion, Mod, SupportedGames, Visibility } from '../../shared/Database';
 import { HTTPTools } from '../../shared/HTTPTools';
 
 export class GetModRoutes {
@@ -20,11 +19,17 @@ export class GetModRoutes {
             // #swagger.responses[400] = { description: 'Invalid gameVersion.' }
             // #swagger.parameters['gameName'] = { description: 'The game name.', type: 'string' }
             // #swagger.parameters['gameVersion'] = { description: 'The game version (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
+            // #swagger.parameters['visibility'] = { description: 'The visibility of the mod. Available visibilities are: \'verified\'', type: 'string' }
+            // #swagger.parameters['platform'] = { description: 'The platform of the mod. Available platforms are: \'oculuspc\', \'universalpc\', \'steampc\'', type: 'string' }
             let gameName = req.query.gameName;
             let gameVersion = req.query.gameVersion;
+            let visibility = req.query.visibility;
+            let platform = req.query.platform;
 
             let filteredGameName = (gameName && HTTPTools.validateStringParameter(gameName) && DatabaseHelper.isValidGameName(gameName)) ? gameName : SupportedGames.BeatSaber;
             let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : await GameVersion.getDefaultVersion(filteredGameName);
+            let filteredPlatform = (platform && HTTPTools.validateStringParameter(platform) && DatabaseHelper.isValidPlatform(platform)) ? platform : undefined;
+            let onlyApproved = visibility === `verified`;
 
             if (gameVersion && HTTPTools.validateStringParameter(gameVersion) && !DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) {
                 return res.status(400).send({ message: `Invalid gameVersion.` });
@@ -36,19 +41,20 @@ export class GetModRoutes {
                     continue;
                 }
 
-                // if the mod isn't verified or unverified, don't show it
-                if (mod.visibility != Visibility.Unverified && mod.visibility != Visibility.Verified) {
+                // uses the same check as the old beatmods api down below
+                if (mod.visibility != Visibility.Verified && (mod.visibility != Visibility.Unverified || onlyApproved)) {
                     continue;
                 }
 
                 // TODO: determine how to set onlyApproved
-                let latest = await mod.getLatestVersion(DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName)?.id);
+                let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName);
+                let latest = await mod.getLatestVersion(gameVersion.id, filteredPlatform, onlyApproved);
                 if (latest) {
                     // if the modVersion isn't verified or unverified, don't show it
                     if (latest.visibility != Visibility.Unverified && latest.visibility != Visibility.Verified) {
                         continue;
                     }
-                    mods.push({mod: mod, latest: await latest.toAPIResonse()});
+                    mods.push({mod: mod, latest: await latest.toAPIResonse(gameVersion.id)});
                 }
             }
 
@@ -114,164 +120,5 @@ export class GetModRoutes {
             }
             return res.status(404).send({ message: `Hash not founds.` });
         });
-
-        this.app.get(`/api/beatmods/mod`, async (req, res) => {
-            // #swagger.tags = ['Mods']
-            // #swagger.summary = 'Legacy BeatMods API endpoint.'
-            // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.'
-            // #swagger.responses[200] = { description: 'Returns all mods.' }
-            // #swagger.responses[400] = { description: 'Missing Game Version.' }
-            // #swagger.parameters['gameVersion'] = { description: 'The game version as a string (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
-            // #swagger.parameters['status'] = { description: 'The statuses to return. Available statuses are: \`approved\` & \`pending\`', type: 'string' }
-            // #swagger.deprecated = true
-            let version = req.query.gameVersion;
-            let status = req.query.status;
-
-            let modArray: BeatModsMod[] = [];
-
-            if (!version || typeof version !== `string`) {
-                version = await GameVersion.getDefaultVersion(SupportedGames.BeatSaber);
-            }
-
-            let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === version && gameVersion.gameName === SupportedGames.BeatSaber);
-            if (!gameVersion) {
-                return res.status(400).send({message: `No valid game version.`});
-            }
-
-            let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName === SupportedGames.BeatSaber);
-            for (let mod of mods) {
-                //if (mod.id === 194) {
-                //    console.log(mod);
-                //}
-                if (mod.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified || status === `approved`)) {
-                    continue;
-                }
-                let modVersion = await mod.getLatestVersion(gameVersion.id, status === `approved`);
-                if (!modVersion) {
-                    continue;
-                }
-                if (modVersion.visibility !== Visibility.Verified && (modVersion.visibility !== Visibility.Unverified || status === `approved`)) {
-                    continue;
-                }
-
-                modArray.push(await this.convertToBeatmodsMod(mod, modVersion, gameVersion));
-            }
-
-            return res.status(200).send(modArray);
-        });
     }
-
-    private async convertToBeatmodsMod(mod: Mod, modVersion:ModVersion, gameVersion: GameVersion, doResolution:boolean = true): Promise<BeatModsMod> {
-        let dependencies: (BeatModsMod | string)[] = [];
-    
-        if (modVersion.dependencies.length !== 0) {
-            for (let dependancy of (await modVersion.getDependencies(gameVersion.id))) {
-                if (doResolution) {
-                    let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancy.modId);
-                    if (dependancyMod) {
-                        dependencies.push(await this.convertToBeatmodsMod(dependancyMod, dependancy, gameVersion, false));
-                    } else {
-                        Logger.warn(`Dependancy ${dependancy.id} for mod ${mod.name} v${modVersion.modVersion.raw} was unable to be resolved`, `getMod`); // in theory this should never happen, but i wanna know when it does lol
-                    }
-                } else {
-                    dependencies.push(dependancy.id.toString());
-                }
-            }
-        }
-        
-        let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
-        let platform = `universal`;
-        let status = `private`;
-        switch (modVersion.visibility) {
-            case Visibility.Private:
-                status = `declined`;
-                break;
-            case Visibility.Unverified:
-                status = `pending`;
-                break;
-            case Visibility.Verified:
-                status = `approved`;
-                break;
-            case Visibility.Removed:
-                status = `declined`;
-                break;
-            default:
-                status = `declined`;
-                break;
-        }
-        switch (modVersion.platform) {
-            case Platform.Universal:
-                platform = `universal`;
-                break;
-            case Platform.Oculus:
-                platform = `oculus`;
-                break;
-            case Platform.Steam:
-                platform = `steam`;
-                break;
-            default:
-                platform = `universal`;
-                break;
-        }
-            
-        return {
-            _id: modVersion.id.toString(),
-            name: mod.name.toString(),
-            version: modVersion.modVersion.raw,
-            gameVersion: gameVersion.version,
-            authorId: author.id.toString(),
-            updatedDate: modVersion.updatedAt.toUTCString(),
-            uploadedDate: modVersion.createdAt.toUTCString(),
-            author: doResolution ? {
-                _id: author.id.toString(),
-                username: author.username.toString(),
-                lastLogin: author.createdAt.toString(),
-            } : undefined,
-            status: status,
-            description: mod.description,
-            link: mod.gitUrl,
-            category: mod.category,
-            downloads: [{
-                type: platform,
-                url: `/cdn/mod/${modVersion.zipHash}.zip`, //tbd
-                hashMd5: modVersion.contentHashes.map((hash) => {
-                    return {
-                        hash: hash.hash,
-                        file: hash.path
-                    };
-                })
-            }],
-            dependencies: doResolution ? dependencies as BeatModsMod[] : dependencies as string[],
-            required: (mod.category === Categories.Core),
-        };
-    }
-}
-
-export type BeatModsMod = {
-    name: string,
-    version: string,
-    gameVersion: string,
-    authorId: string,
-    author: {
-        _id: string,
-        username: string,
-        lastLogin: string,
-    } | undefined,
-    uploadedDate: string,
-    updatedDate: string,
-    status: string,
-    description: string,
-    link: string,
-    category: string,
-    required: boolean,
-    downloads: {
-        type: string,
-        url: string,
-        hashMd5: {
-            hash: string,
-            file: string,
-        }[],
-    }[],
-    dependencies: BeatModsMod[] | string[],
-    _id: string,
 }
