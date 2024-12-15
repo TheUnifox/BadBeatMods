@@ -6,11 +6,11 @@ These need to take a priority before deployment due to the potential for a datab
 - [x] (L) Download Counts
 
 ## High Priority
-- [ ] Fix importer causing MA/BeatMods Endpoint crashing
+- [x] Fix importer causing MA/BeatMods Endpoint crashing
 - [x] Require mod versions to never have the same version number (e.g. 1.0.0 and 1.0.0 is not allowed, but 1.0.0 and 1.0.0+1.29.1 is allowed)
 - [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
-- [ ] Handle dependency resolution in API 
+- [x] Handle dependency resolution in Database 
 - [x] Update all SemVer checks to use SemVer.raw
 - [x] Model.find is a query to the database. Need to make sure that its not overused, and cached when appropriate.
 
