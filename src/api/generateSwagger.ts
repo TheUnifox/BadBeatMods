@@ -1,5 +1,6 @@
 import swaggerAutogen from 'swagger-autogen';
 
+// docs: https://swagger-autogen.github.io/docs/getting-started/quick-start/
 const doc = {
     info: {
         title: `BadBeatMods API`,
@@ -14,14 +15,16 @@ const doc = {
     tags: [
         { name: `Mods`, description: `Mod related endpoints` },
         { name: `Auth`, description: `Authentication related endpoints` },
-        { name: `Misc`, description: `Miscellaneous endpoints` },
+        { name: `Versions`, description: `Version Management` },
         { name: `Admin`, description: `Admin related endpoints` },
         { name: `Approval`, description: `Approval related endpoints` },
+        { name: `BeatMods`, description: `Legacy BeatMods API endpoints` },
     ],
 };
 
 const outputFile = `./swagger.json`;
 const routes = [
+    `./routes/beatmods.ts`,
     `./routes/getMod.ts`,
     `./routes/createMod.ts`,
     `./routes/updateMod.ts`,

@@ -13,14 +13,14 @@ Running the server is (mostly) easy to do:
 ## Config: 
 ```json
 {
-    "auth" : {
+    "auth": {
         "discord": {
-            "clientId": "123456789012345678",
-            "clientSecret": "supersecret"
+            "clientId": "id",
+            "clientSecret": "secret"
         },
         "github": {
-            "clientId": "123456789012345678",
-            "clientSecret": "supersecret"
+            "clientId": "idfk",
+            "clientSecret": "idfk"
         }
     },
     "database": {
@@ -30,7 +30,7 @@ Running the server is (mostly) easy to do:
         "password": "password"
     },
     "storage" : {
-        "uploadsDir" : "./storage/uploads",
+        "modsDir" : "./storage/uploads",
         "iconsDir" : "./storage/icons"
     },
     "devmode" : true,
@@ -40,14 +40,17 @@ Running the server is (mostly) easy to do:
         "url" : "http://localhost:5001",
         "sessionSecret" : "supersecret"
     },
-    "webhooks" : {
+    "webhooks": {
         "disableWebhooks": true,
-        "loggingUrl": "test",
-        "modLogUrl": "test"
+        "enablePublicWebhook": true,
+        "loggingUrl": "url",
+        "modLogUrl": "url",
+        "publicUrl" : "url"
     },
-    "bot" : {
-        "clientId": "123456789012345678",
-        "token" : "supersecret"
+    "bot": {
+        "enabled": true,
+        "clientId": "id",
+        "token": "token"
     }
 }
 ```
