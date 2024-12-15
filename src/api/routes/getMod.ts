@@ -37,6 +37,9 @@ export class GetModRoutes {
             
             let mods:{mod: Mod, latest: any}[] = [];
             for (let mod of DatabaseHelper.cache.mods) {
+                if (mod.id === 96) {
+                    console.log(mod);
+                }
                 if (mod.gameName !== filteredGameName) {
                     continue;
                 }
@@ -93,6 +96,37 @@ export class GetModRoutes {
             }
 
             return res.status(200).send({ mod: { info: mod, versions: returnVal } });
+        });
+
+        this.app.get(`/api/modversions/:modVersionIdParam`, async (req, res) => {
+            // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Get a specific mod version by ID.'
+            // #swagger.description = 'Get a specific mod version by ID.'
+            // #swagger.responses[200] = { description: 'Returns the mod version.' }
+            // #swagger.responses[400] = { description: 'Invalid mod version id.' }
+            // #swagger.responses[404] = { description: 'Mod version not found.' }
+            // #swagger.parameters['modVersionIdParam'] = { in: 'path', description: 'The mod version ID.', type: 'number', required: true }
+            // #swagger.parameters['raw'] = { description: 'Return the raw mod depedendcies.', type: 'boolean' }
+            let modVersionId = parseInt(req.params.modVersionIdParam);
+            let raw = req.query.raw;
+            if (!modVersionId) {
+                return res.status(400).send({ message: `Invalid mod version id.` });
+            }
+
+            let modVersion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === modVersionId);
+            if (!modVersion) {
+                return res.status(404).send({ message: `Mod version not found.` });
+            }
+
+            if (modVersion.visibility != Visibility.Unverified && modVersion.visibility != Visibility.Verified) {
+                return res.status(404).send({ message: `Mod version not found.` });
+            }
+
+            if (raw === `true`) {
+                return res.status(200).send({ modVersion: await modVersion.toRawAPIResonse() });
+            } else {
+                return res.status(200).send({ modVersion: await modVersion.toAPIResonse() });
+            }
         });
 
         this.app.get(`/api/hashlookup`, async (req, res) => {

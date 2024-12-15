@@ -314,6 +314,41 @@
         }
       }
     },
+    "/api/modversions/{modVersionIdParam}": {
+      "get": {
+        "tags": [
+          "Mods"
+        ],
+        "summary": "Get a specific mod version by ID.",
+        "description": "Get a specific mod version by ID.",
+        "parameters": [
+          {
+            "name": "modVersionIdParam",
+            "in": "path",
+            "required": true,
+            "type": "number",
+            "description": "The mod version ID."
+          },
+          {
+            "name": "raw",
+            "description": "Return the raw mod depedendcies.",
+            "type": "boolean",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the mod version."
+          },
+          "400": {
+            "description": "Invalid mod version id."
+          },
+          "404": {
+            "description": "Mod version not found."
+          }
+        }
+      }
+    },
     "/api/hashlookup": {
       "get": {
         "tags": [

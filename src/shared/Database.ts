@@ -626,6 +626,23 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return dependencies;
     }
 
+    public async toRawAPIResonse() {
+        return {
+            id: this.id,
+            modId: this.modId,
+            authorId: this.authorId,
+            modVersion: this.modVersion.raw,
+            platform: this.platform,
+            zipHash: this.zipHash,
+            visibility: this.visibility,
+            dependencies: this.dependencies,
+            contentHashes: this.contentHashes,
+            supportedGameVersions: await this.getSupportedGameVersions(),
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
+
     public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal) {
         return {
             id: this.id,
