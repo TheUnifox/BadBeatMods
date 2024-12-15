@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, SupportedGames, Visibility } from '../../shared/Database';
+import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, SupportedGames, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { HTTPTools } from '../../shared/HTTPTools';
 
@@ -41,6 +41,7 @@ export class GetModRoutes {
                     continue;
                 }
 
+                // TODO: determine how to set onlyApproved
                 let latest = await mod.getLatestVersion(DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName)?.id);
                 if (latest) {
                     // if the modVersion isn't verified or unverified, don't show it
@@ -124,7 +125,7 @@ export class GetModRoutes {
             // #swagger.parameters['status'] = { description: 'The statuses to return. Available statuses are: \`approved\` & \`pending\`', type: 'string' }
             // #swagger.deprecated = true
             let version = req.query.gameVersion;
-            let status = req.query.status || `approved`;
+            let status = req.query.status;
 
             let modArray: BeatModsMod[] = [];
 
@@ -145,7 +146,7 @@ export class GetModRoutes {
                 if (mod.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified || status === `approved`)) {
                     continue;
                 }
-                let modVersion = await mod.getLatestVersion(gameVersion.id);
+                let modVersion = await mod.getLatestVersion(gameVersion.id, status === `approved`);
                 if (!modVersion) {
                     continue;
                 }
@@ -179,6 +180,7 @@ export class GetModRoutes {
         }
         
         let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
+        let platform = `universal`;
         let status = `private`;
         switch (modVersion.visibility) {
             case Visibility.Private:
@@ -197,8 +199,21 @@ export class GetModRoutes {
                 status = `declined`;
                 break;
         }
-
-
+        switch (modVersion.platform) {
+            case Platform.Universal:
+                platform = `universal`;
+                break;
+            case Platform.Oculus:
+                platform = `oculus`;
+                break;
+            case Platform.Steam:
+                platform = `steam`;
+                break;
+            default:
+                platform = `universal`;
+                break;
+        }
+            
         return {
             _id: modVersion.id.toString(),
             name: mod.name.toString(),
@@ -217,7 +232,7 @@ export class GetModRoutes {
             link: mod.gitUrl,
             category: mod.category,
             downloads: [{
-                type: modVersion.platform,
+                type: platform,
                 url: `/cdn/mod/${modVersion.zipHash}.zip`, //tbd
                 hashMd5: modVersion.contentHashes.map((hash) => {
                     return {

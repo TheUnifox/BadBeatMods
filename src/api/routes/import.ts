@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import { validateSession } from '../../shared/AuthHelper';
-import { Categories, ContentHash, DatabaseHelper, ModVersion, Platform, SupportedGames, UserRoles, Visibility } from '../../shared/Database';
+import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Visibility } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './getMod';
 import { coerce, satisfies, SemVer, valid } from 'semver';
@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = false;
+    private readonly ENABLE_DOWNLOADS = true;
 
     constructor(app: Express) {
         this.app = app;
@@ -155,17 +155,18 @@ export class ImportRoutes {
                     console.log(`${AllBeatModsMods.length - count} mods on the endpoint left`);
                 }
 
-                let dependancies = await this.downloadBeatModsDownloads(existingMod.id, importAuthor.id, mod);
+                let dependancies = await this.downloadBeatModsDownloads(existingMod, importAuthor.id, mod);
                 dependancyRecord.push(...dependancies);
             }
             Logger.log(`Send them to the depths`, `Import`);
 
+            let count2 = 0;
             for (const record of dependancyRecord) {
                 if (typeof record.dependancy === `string`) {
                     Logger.warn(`Dependancy ${record.dependancy} not found for mod ${record.modVersionId}`, `Import`);
                     continue;
                 }
-                console.log(`Resolving dependancy ${record.dependancy.name} for mod ${record.modVersionId}`, `Import`);
+                count2 % 100 ? console.log(`Resolving dependancy #${count2++} of ${dependancyRecord.length}`) : null;
                 // dependancy mod
                 let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy.name } });
                 if (!mod) {
@@ -209,7 +210,7 @@ export class ImportRoutes {
         });
     }
 
-    private async downloadBeatModsDownloads(modId:number, authorId:number, mod: BeatModsMod) {
+    private async downloadBeatModsDownloads(modId:Mod, authorId:number, mod: BeatModsMod) {
         let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
 
         let dependancyRecord: { dependancy: BeatModsMod | string, modVersionId: number}[] = [];
@@ -226,6 +227,7 @@ export class ImportRoutes {
                 platform = Platform.Universal;
             }
     
+            // create game version if it doesn't exist
             let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { version: mod.gameVersion } });
             if (!gameVersion) {
                 gameVersion = await DatabaseHelper.database.GameVersions.create({
@@ -234,31 +236,49 @@ export class ImportRoutes {
                 });
             }
     
+            // validate semver
             if (!coerce(mod.version, { includePrerelease: true })) {
                 Logger.error(`Failed to parse Semver ${mod.version}`, `Import`);
                 continue;
             }
+
+            // check if mod is verified, if so, set parent mod as verified
+            if (status == Visibility.Verified && modId.visibility !== Visibility.Verified) {
+                console.log(`Mod ${mod.name} v${mod.version} is marked as verified, setting parent mod as verified.`);
+                modId.visibility = Visibility.Verified;
+                await modId.save();
+            }
     
-            let existingVersion = await ModVersion.checkForExistingVersion(modId, coerce(mod.version, { includePrerelease: true }), platform);
+            // check if mod version already exists, and if so, if it has the same hash. if all is true, mark the modversion as compatible with the game version and skip
+            let existingVersion = await ModVersion.checkForExistingVersion(modId.id, coerce(mod.version, { includePrerelease: true }), platform);
             if (existingVersion) {
                 let doesHashMatch = download.hashMd5.every((hash) => existingVersion.contentHashes.some((contentHash) => contentHash.hash == hash.hash));
                 if (status == Visibility.Verified && doesHashMatch) {
+                    // hash and status match, mark as compatible and skip
                     Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as compatible and skipping.`, `Import`);
                     existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
+                    // if the existing version is unverified & the incoming version is, mark as verified
+                    if (existingVersion.visibility !== Visibility.Verified) {
+                        Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as verified.`, `Import`);
+                        existingVersion.visibility = Visibility.Verified;
+                    }
                     await existingVersion.save();
                     continue;
                 } else {
                     if (doesHashMatch) {
+                        // hash matches, but status is unapproved, mark as compatible and skip
                         Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the db but has unapproved status. marked compatible. Status: ${mod.status}, gV: ${mod.gameVersion}`, `Import`);
                         existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
                         await existingVersion.save();
                         continue;
                     }
+                    // hash doesn't match, log and continue
                     Logger.warn(`Mod ${mod.name} v${mod.version} already exists in db but has different hashes. Status: ${mod.status}, gV: ${mod.gameVersion}`, `Import`);
                     continue;
                 }
             }
     
+            // download mod
             let result = `DOWNLOAD DISABLED`;
             if (this.ENABLE_DOWNLOADS) {
                 let filefetch = await fetch(`https://beatmods.com${download.url}`);
@@ -272,8 +292,9 @@ export class ImportRoutes {
                 }
             }
     
+            // create mod version
             let newVersion = await DatabaseHelper.database.ModVersions.create({
-                modId: modId,
+                modId: modId.id,
                 modVersion: coerce(mod.version, {includePrerelease: true}),
                 supportedGameVersionIds: [gameVersion.id],
                 authorId: authorId,

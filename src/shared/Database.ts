@@ -509,7 +509,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
-    public async getLatestVersion(gameVersion: number): Promise<ModVersion | null> {
+    public async getLatestVersion(gameVersion: number, onlyApproved = false): Promise<ModVersion | null> {
         let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id);
         if (!versions) {
             versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id } });
@@ -517,7 +517,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         let latestVersion: ModVersion | null = null;
         for (let version of versions) {
             if (version.supportedGameVersionIds.includes(gameVersion)) {
-                if (!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) {
+                if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.visibility == Visibility.Verified)) {
                     latestVersion = version;
                 }
             }
@@ -603,7 +603,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
             if (dependancy) {
                 let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == dependancy?.modId);
-                let latest = await mod.getLatestVersion(gameVersionId);
+                let latest = await mod.getLatestVersion(gameVersionId, true);
                 if (latest && await ModVersion.isValidDependancySucessor(latest, dependancy, gameVersionId)) {
                     dependencies.push(latest);
                 } else {
