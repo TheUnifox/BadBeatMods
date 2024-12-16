@@ -60,7 +60,7 @@ export class GetModRoutes {
                     if (latest.visibility != Visibility.Unverified && latest.visibility != Visibility.Verified) {
                         continue;
                     }
-                    mods.push({mod: mod, latest: await latest.toAPIResonse(gameVersion.id)});
+                    mods.push({mod: mod, latest: await latest.toAPIResonse(gameVersion.id, filteredPlatform, onlyApproved)});
                 }
             }
 

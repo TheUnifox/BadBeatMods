@@ -8,44 +8,13 @@ import * as path from 'path';
 
 export class AdminRoutes {
     private app: Express;
-
     constructor(app: Express) {
         this.app = app;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.post(`/api/admin/addversion`, async (req, res) => {
-            // #swagger.tags = ['Admin']
-            let version = req.body.version;
-            let gameName = req.body.gameName;
-
-            if (!version || !gameName || version.length === 0 || !DatabaseHelper.isValidGameName(gameName)) {
-                return res.status(400).send({ message: `Missing version.` });
-            }
-
-            let session = await validateSession(req, res, UserRoles.Admin, gameName);
-            if (!session.approved) {
-                return;
-            }
-
-            let versions = await DatabaseHelper.database.GameVersions.findAll({ where: { version: version, gameName: gameName } });
-            if (versions.length > 0) {
-                return res.status(409).send({ message: `Version already exists.` });
-            }
-
-            DatabaseHelper.database.GameVersions.create({
-                version: version
-            }).then((version) => {
-                Logger.log(`Version ${version} added by ${session.user.username}.`);
-                return res.status(200).send({ version });
-            }).catch((error) => {
-                Logger.error(`Error creating version: ${error}`);
-                return res.status(500).send({ message: `Error creating version: ${error}` });
-            });
-        });
-
-        this.app.get(`/api/admin/hashCheck`, async (req, res) => {
+        this.app.get(`/api/admin/health/hashCheck`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
             if (!session.approved) {
@@ -55,10 +24,10 @@ export class AdminRoutes {
             let versions = await DatabaseHelper.database.ModVersions.findAll();
             let errors = [];
 
-            let allZips = fs.readdirSync(path.resolve(`../../../`, Config.storage.modsDir), { withFileTypes: true }).filter(dirent => dirent.isFile() && dirent.name.endsWith(`.zip`));
+            let allZips = fs.readdirSync(path.resolve(Config.storage.modsDir), { withFileTypes: true }).filter(dirent => dirent.isFile() && dirent.name.endsWith(`.zip`));
 
             for (let version of versions) {
-                if (!allZips.find(zip => zip.name === version.zipHash)) {
+                if (!allZips.find(zip => zip.name === `${version.zipHash}.zip`)) {
                     errors.push(version.zipHash);
                 }
             }
@@ -68,6 +37,57 @@ export class AdminRoutes {
             }
 
             return res.status(200).send({ message: `All hashes are valid.` });
+        });
+
+        this.app.get(`/api/admin/health/missingIcons`, async (req, res) => {
+            // #swagger.tags = ['Admin']
+            let session = await validateSession(req, res, UserRoles.Admin);
+            if (!session.approved) {
+                return;
+            }
+
+            let mods = await DatabaseHelper.database.Mods.findAll();
+            let errors = [];
+
+            let allIcons = fs.readdirSync(path.resolve(Config.storage.iconsDir), { withFileTypes: true }).filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+
+            for (let mod of mods) {
+                if (!allIcons.find(icon => icon === mod.iconFileName)) {
+                    errors.push(mod.iconFileName);
+                }
+            }
+
+            if (errors.length > 0) {
+                return res.status(500).send({ message: `Unable to resolve ${errors.length} icons.`, errors });
+            }
+
+            return res.status(200).send({ message: `All icons are valid.` });
+        });
+
+        this.app.get(`/api/admin/health/dependencyResolution`, async (req, res) => {
+            // #swagger.tags = ['Admin']
+            let session = await validateSession(req, res, UserRoles.Admin);
+            if (!session.approved) {
+                return;
+            }
+
+            let request = await fetch(`http://localhost:${Config.server.port}/api/mods`);
+            let mods = await request.json() as any;
+            let errors = [];
+            for (let mod of mods.mods) {
+                for (let dependancy of mod.latest.dependencies) {
+                    if (!mods.mods.find((m: any) => m.latest.id === dependancy)) {
+                        errors.push({ mod: mod.mod.name, versionId: mod.latest.id, dependency: dependancy });
+                    }
+                }
+            }
+
+            if (errors.length > 0) {
+                let missingIds = Array.from(new Set(errors.map((error: any) => error.dependency)));
+                return res.status(500).send({ message: `Unable to resolve ${errors.length} dependencies.`, missingIds, errors });
+            }
+
+            return res.status(200).send({ message: `All dependencies are valid.` });
         });
 
         this.app.post(`/api/admin/linkversions`, async (req, res) => {

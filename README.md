@@ -27,7 +27,8 @@ Running the server is (mostly) easy to do:
         "dialect": "sqlite",
         "url": "./storage/database.sqlite",
         "username": "user",
-        "password": "password"
+        "password": "password",
+        "alter": true
     },
     "storage" : {
         "modsDir" : "./storage/uploads",

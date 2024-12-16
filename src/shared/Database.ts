@@ -39,7 +39,7 @@ export class DatabaseManager {
 
     public async init() {
         await this.sequelize.sync({
-            alter: Config.devmode,
+            alter: Config.database.alter,
         }).then(() => {
             Logger.log(`Database Loaded.`);
             new DatabaseHelper(this);
@@ -606,7 +606,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getDependencies(gameVersionId: number, platform: Platform): Promise<ModVersion[]> {
+    public async getDependencies(gameVersionId: number, platform: Platform, onlyApproved = false): Promise<ModVersion[]> {
         let dependencies: ModVersion[] = [];
         for (let dependancyId of this.dependencies) {
             let dependancy = DatabaseHelper.cache.modVersions.find((version) => version.id == dependancyId);
@@ -616,8 +616,8 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
             if (dependancy) {
                 let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == dependancy?.modId);
-                let latest = await mod.getLatestVersion(gameVersionId, platform, true);
-                if (latest && await ModVersion.isValidDependancySucessor(latest, dependancy, gameVersionId)) {
+                let latest = await mod.getLatestVersion(gameVersionId, platform, onlyApproved);
+                if (latest && await ModVersion.isValidDependancySucessor(dependancy, latest, gameVersionId)) {
                     dependencies.push(latest);
                 } else {
                     dependencies.push(dependancy);
@@ -646,7 +646,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         };
     }
 
-    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal) {
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal, onlyApproved = false) {
         return {
             id: this.id,
             modId: this.modId,
@@ -655,7 +655,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             platform: this.platform,
             zipHash: this.zipHash,
             visibility: this.visibility,
-            dependencies: (await this.getDependencies(gameVersionId, platform)).flatMap((dependancy) => dependancy.id),
+            dependencies: (await this.getDependencies(gameVersionId, platform, onlyApproved)).flatMap((dependancy) => dependancy.id),
             contentHashes: this.contentHashes,
             supportedGameVersions: await this.getSupportedGameVersions(),
             createdAt: this.createdAt,

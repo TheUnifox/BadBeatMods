@@ -600,6 +600,19 @@
         }
       }
     },
+    "/api/games": {
+      "get": {
+        "tags": [
+          "Versions"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/versions": {
       "get": {
         "tags": [
@@ -616,6 +629,43 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Versions"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "example": "any"
+                },
+                "gameName": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -693,38 +743,15 @@
         }
       }
     },
-    "/api/admin/addversion": {
-      "post": {
+    "/api/admin/health/hashCheck": {
+      "get": {
         "tags": [
           "Admin"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "example": "any"
-                },
-                "gameName": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "409": {
-            "description": "Conflict"
           },
           "500": {
             "description": "Internal Server Error"
@@ -732,7 +759,23 @@
         }
       }
     },
-    "/api/admin/hashCheck": {
+    "/api/admin/health/missingIcons": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/admin/health/dependencyResolution": {
       "get": {
         "tags": [
           "Admin"

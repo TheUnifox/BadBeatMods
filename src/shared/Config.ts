@@ -17,6 +17,7 @@ const configMapping = {
         url: cf.database.url ? cf.database.url : `./storage/database.sqlite`,
         username: cf.database.username ? cf.database.username : `user`,
         password: cf.database.password ? cf.database.password : `password`,
+        alter: cf.database.alter ? cf.database.alter : false,
     },
     storage: {
         modsDir :  cf.storage.modsDir ? cf.storage.modsDir : `./storage/uploads`,
@@ -53,6 +54,7 @@ export class Config {
         url: string;
         username: string;
         password: string;
+        alter: boolean;
     } = configMapping.database;
     public static readonly storage: {
         modsDir: string;
