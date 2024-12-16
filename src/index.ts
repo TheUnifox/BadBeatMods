@@ -3,7 +3,6 @@ import session from 'express-session';
 import MemoryStore from 'memorystore';
 import { HTTPTools } from './shared/HTTPTools';
 import { DatabaseHelper, DatabaseManager } from './shared/Database';
-import path from 'path';
 import fileUpload from 'express-fileupload';
 import { CreateModRoutes } from './api/routes/createMod';
 import rateLimit from 'express-rate-limit';
@@ -21,13 +20,14 @@ import { ActivityType } from 'discord.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './api/swagger.json';
 import { BeatModsRoutes } from './api/routes/beatmods';
+import { CDNRoutes } from './api/routes/cdn';
 
 console.log(`Starting setup...`);
 new Config();
 const app = express();
 const memstore = MemoryStore(session);
 const port = Config.server.port;
-new DatabaseManager();
+let database = new DatabaseManager();
 
 if (Config.bot.enabled) {
     const luma = new Luma({
@@ -102,56 +102,20 @@ new VersionsRoutes(app);
 swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.get(`/favicon.ico`, (req, res) => {
-    res.sendFile(path.resolve(`./assets/favicon.png`), {
-        maxAge: 1000 * 60 * 60 * 24 * 1,
-        //immutable: true,
-        lastModified: true,
-    });
-});
-
-app.get(`/banner.png`, (req, res) => {
-    res.sendFile(path.resolve(`./assets/banner.png`), {
-        maxAge: 1000 * 60 * 60 * 24 * 1,
-        //immutable: true,
-        lastModified: true,
-    });
-});
-
-app.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
-    extensions: [`png`],
-    dotfiles: `ignore`,
-    immutable: true,
-    index: false,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    fallthrough: false,
-}));
-
-app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
-    extensions: [`zip`],
-    dotfiles: `ignore`,
-    immutable: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    setHeaders: (res, file) => { // this is a hacky workaround to get code to execute when a file is served, but it should work with minimal preformance impact
-        res.set(`Content-Disposition`, `attachment`);
-        let hash = path.basename(file).replace(path.extname(file), ``);
-        DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
-            version.increment(`downloadCount`);
-        }).catch((error) => {
-            Config.devmode ? Logger.warn(`Error incrementing download count: ${error}`) : null;
-        });
-    },
-    fallthrough: false,
-}));
+new CDNRoutes(app);
 
 HTTPTools.handleExpressShenanigans(app);
 
-app.listen(port, () => {
-    console.log(`Server listening @ http://localhost:${port}`);
-    Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
-    Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
-    Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
-});
+async function startServer() {
+    await database.init();
+    app.listen(port, () => {
+        console.log(`Server listening @ http://localhost:${port}`);
+        Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
+        Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
+        Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
+    });
+}
+startServer();
 
 process.on(`exit`, (code) => {
     Logger.log(`Process exiting with code ${code}`);
