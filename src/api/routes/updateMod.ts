@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, Visibility, UserRoles } from '../../shared/Database';
+import { DatabaseHelper, Status, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
@@ -16,7 +16,6 @@ export class UpdateModRoutes {
     private async loadRoutes() {
         this.app.patch(`/api/mods/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
-            return res.status(501).send({ message: `Not implemented.` });
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;
@@ -40,24 +39,28 @@ export class UpdateModRoutes {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
-            if (authorIds && !Array.isArray(authorIds)) {
+            if (authorIds && HTTPTools.validateNumberArrayParameter(authorIds) == false) {
                 return res.status(400).send({ message: `Invalid authorIds.` });
             }
 
-            if (category && typeof category !== `string`) {
+            if (category && HTTPTools.validateStringParameter(category) == false) {
                 return res.status(400).send({ message: `Invalid category.` });
             }
 
-            if (gitUrl && typeof gitUrl !== `string`) {
+            if (gitUrl && HTTPTools.validateStringParameter(gitUrl) == false) {
                 return res.status(400).send({ message: `Invalid gitUrl.` });
             }
 
-            if (name && typeof name !== `string`) {
+            if (name && HTTPTools.validateStringParameter(name) == false) {
                 return res.status(400).send({ message: `Invalid name.` });
             }
 
-            if (description && typeof description !== `string`) {
+            if (description && HTTPTools.validateStringParameter(description) == false) {
                 return res.status(400).send({ message: `Invalid description.` });
+            }
+
+            if (gameName && HTTPTools.validateStringParameter(gameName) == false && DatabaseHelper.isValidGameName(gameName) == false) {
+                return res.status(400).send({ message: `Invalid gameName.` });
             }
 
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
@@ -66,32 +69,48 @@ export class UpdateModRoutes {
             }
 
             // TODO: check per game permissions
-            if (session.user.roles.sitewide.includes(UserRoles.Admin) || session.user.roles.sitewide.includes(UserRoles.Moderator) || mod.authorIds.includes(session.user.id)) {
-                // Admins and moderators can edit any mod, authors can edit their own mods
-            } else {
+            let allowedToEdit = false;
+            if (session.user.roles.sitewide.includes(UserRoles.Admin) || session.user.roles.sitewide.includes(UserRoles.Approver) || mod.authorIds.includes(session.user.id)
+            ) {
+                allowedToEdit = true;
+            }
+
+            if (gameName && !allowedToEdit && DatabaseHelper.isValidGameName(gameName)) {
+                session.user.roles.perGame[gameName]?.includes(UserRoles.Admin) || session.user.roles.perGame[gameName]?.includes(UserRoles.Approver) ? allowedToEdit = true : null;
+            }
+
+            if (!allowedToEdit) {
                 return res.status(401).send({ message: `You cannot edit this mod.` });
             }
 
-            let existingEdit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { objId: mod.id, objTableName: `mods`, submitterId: session.user.id } });
+            if (mod.status == Status.Private) {
+                let existingEdit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { objectId: mod.id, objectTableName: `mods`, submitterId: session.user.id } });
 
-            if (existingEdit) {
-                return res.status(400).send({ message: `You already have a pending edit for this mod.` }); // todo: allow updating the edit
-            }
-
-            let edit = await DatabaseHelper.database.EditApprovalQueue.create({
-                submitterId: session.user.id,
-                objTableName: `mods`,
-                objId: mod.id,
-                obj: {
-                    name: name || mod.name,
-                    description: description || mod.description,
-                    gameName: gameName || mod.gameName,
-                    gitUrl: gitUrl || mod.gitUrl,
-                    authorIds: authorIds || mod.authorIds,
-                    category: category || mod.category,
+                if (existingEdit) {
+                    return res.status(400).send({ message: `You already have a pending edit for this mod.` }); // todo: allow updating the edit
                 }
-            });
-            res.status(200).send({ message: `Edit submitted for approval.`, edit: edit });
+
+                await DatabaseHelper.database.EditApprovalQueue.create({
+                    submitterId: session.user.id,
+                    objectTableName: `mods`,
+                    objectId: mod.id,
+                    object: {
+                        name: name || mod.name,
+                        description: description || mod.description,
+                        gameName: gameName || mod.gameName,
+                        gitUrl: gitUrl || mod.gitUrl,
+                        authorIds: authorIds || mod.authorIds,
+                        category: category || mod.category,
+                    }
+                }).then((edit) => {
+                    res.status(200).send({ message: `Edit submitted for approval.`, edit: edit });
+                }).catch((error) => {
+                    Logger.error(`Error submitting edit: ${error}`);
+                    res.status(500).send({ message: `Error submitting edit.` });
+                });
+            } else {
+                res.status(501).send({ message: `Not implemented.` });
+            }
         });
 
         this.app.patch(`/api/modversion/:modVersionIdParam`, async (req, res) => {

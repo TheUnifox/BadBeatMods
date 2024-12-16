@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, UserRoles, Visibility } from '../../shared/Database';
+import { DatabaseHelper, UserRoles, Status } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { coerce } from 'semver';
@@ -24,8 +24,8 @@ export class ApprovalRoutes {
                 return;
             }
 
-            let newMods = await DatabaseHelper.database.Mods.findAll({ where: { visibility: `unverified`, gameName: gameName } });
-            let newModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { visibility: `unverified` } });
+            let newMods = await DatabaseHelper.database.Mods.findAll({ where: { status: `unverified`, gameName: gameName } });
+            let newModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { status: `unverified` } });
             if (!newMods || !newModVersions) {
                 return res.status(404).send({ message: `No mods found.` });
             }
@@ -61,10 +61,10 @@ export class ApprovalRoutes {
             }
 
             editQueue = editQueue.filter((edit) => {
-                if (`name` in edit.obj) {
-                    return edit.obj.gameName === gameName;
+                if (`name` in edit.object) {
+                    return edit.object.gameName === gameName;
                 } else {
-                    return edit.obj.supportedGameVersionIds.filter((gameVersionId) => {
+                    return edit.object.supportedGameVersionIds.filter((gameVersionId) => {
                         let gV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === gameVersionId);
                         if (!gV) {
                             return false;
@@ -144,7 +144,7 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            modVersion.setVisibility(status, session.user).then(() => {
+            modVersion.setStatus(status, session.user).then(() => {
                 Logger.log(`ModVersion ${modVersion.id} set to status ${status} by ${session.user.username}.`);
                 return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
@@ -175,8 +175,8 @@ export class ApprovalRoutes {
                 return res.status(404).send({ message: `Edit not found.` });
             }
 
-            let isMod = `name` in edit.obj;
-            let modId = isMod ? edit.objId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objId } }).then((modVersion) => modVersion.modId);
+            let isMod = `name` in edit.object;
+            let modId = isMod ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => modVersion.modId);
 
             if (!modId) {
                 return res.status(404).send({ message: `Mod not found.` });
@@ -191,7 +191,7 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            if (status === Visibility.Verified) {
+            if (status === Status.Verified) {
                 edit.approve(session.user).then(() => {
                     Logger.log(`Edit ${editId} set to status ${status} by ${session.user.username}.`);
                     return res.status(200).send({ message: `Edit ${status}.` });
@@ -199,7 +199,7 @@ export class ApprovalRoutes {
                     Logger.error(`Error ${status} edit: ${error}`);
                     return res.status(500).send({ message: `Error ${status} edit:  ${error}` });
                 });
-            } else if (status === Visibility.Unverified) {
+            } else if (status === Status.Unverified) {
                 edit.destroy().then(() => {
                     Logger.log(`Edit ${editId} set to status ${status} by ${session.user.username}.`);
                     return res.status(200).send({ message: `Edit ${status}.` });
@@ -226,7 +226,7 @@ export class ApprovalRoutes {
                 return;
             }
 
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId, visibility: Visibility.Unverified } });
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId, status: Status.Unverified } });
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
@@ -273,7 +273,7 @@ export class ApprovalRoutes {
                 return;
             }
 
-            let modVersionDB = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, visibility: Visibility.Unverified } });
+            let modVersionDB = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, status: Status.Unverified } });
             if (!modVersionDB) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
@@ -350,7 +350,7 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own edit.` });
             }
 
-            let modId = `name` in edit.obj ? edit.objId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objId } }).then((modVersion) => modVersion.modId);
+            let modId = `name` in edit.object ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => modVersion.modId);
             
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
 
@@ -362,9 +362,9 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            switch (edit.objTableName) {
+            switch (edit.objectTableName) {
                 case `mods`:
-                    if (!(`name` in edit.obj)) {
+                    if (!(`name` in edit.object)) {
                         Logger.error(`Edit ${editId} is not a mod edit, despite the table name being "mods".`);
                         return res.status(400).send({ message: `Invalid edit.` });
                     }
@@ -376,19 +376,19 @@ export class ApprovalRoutes {
                     let authorIds = req.body.authorIds;
                     
                     if (name && typeof name === `string` && name.length > 0) {
-                        edit.obj.name = name;
+                        edit.object.name = name;
                     }
 
                     if (description && typeof description === `string` && description.length > 0) {
-                        edit.obj.description = description;
+                        edit.object.description = description;
                     }
 
                     if (gitUrl && typeof gitUrl === `string` && gitUrl.length > 0) {
-                        edit.obj.gitUrl = gitUrl;
+                        edit.object.gitUrl = gitUrl;
                     }
 
                     if (category && typeof category === `string` && DatabaseHelper.isValidCategory(category)) {
-                        edit.obj.category = category;
+                        edit.object.category = category;
                     }
 
                     if (authorIds && Array.isArray(authorIds)) {
@@ -403,13 +403,13 @@ export class ApprovalRoutes {
                             }
                             authors.push(author.id);
                         }
-                        edit.obj.authorIds = authors;
+                        edit.object.authorIds = authors;
                     }
 
                     edit.save();
                     break;
                 case `modVersions`:
-                    if (!(`modVersion` in edit.obj)) {
+                    if (!(`modVersion` in edit.object)) {
                         Logger.error(`Edit ${editId} is not a mod version edit, despite the table name being "modVersions".`);
                         return res.status(400).send({ message: `Invalid edit.` });
                     }
@@ -443,15 +443,15 @@ export class ApprovalRoutes {
                             }
                             versionsToPush.push(gameVersionDB.id);
                         }
-                        edit.obj.supportedGameVersionIds = versionsToPush;
+                        edit.object.supportedGameVersionIds = versionsToPush;
                     }
 
                     if (modVersion && typeof modVersion === `string`) {
-                        edit.obj.modVersion = coerce(modVersion, { includePrerelease: true });
+                        edit.object.modVersion = coerce(modVersion, { includePrerelease: true });
                     }
 
                     if (platform && DatabaseHelper.isValidPlatform(platform)) {
-                        edit.obj.platform = platform;
+                        edit.object.platform = platform;
                     }
 
                     edit.save();

@@ -16,13 +16,13 @@ export class VersionsRoutes {
         this.app.get(`/api/games`, async (req, res) => {
             // #swagger.tags = ['Versions']
             const deduplicatedArray = Array.from(new Set(DatabaseHelper.cache.gameVersions.map(a => a.gameName)));
-            let retVal = [];
+            let games = [];
             for (let gameName of deduplicatedArray) {
-                retVal.push({ gameName, default: DatabaseHelper.cache.gameVersions.filter(v => v.gameName === gameName && v.defaultVersion === true) });
+                games.push({ gameName, default: DatabaseHelper.cache.gameVersions.find(v => v.gameName === gameName && v.defaultVersion === true) });
             }
-            return res.status(200).send({ retVal });
+            return res.status(200).send({ games });
         });
-        
+
         this.app.get(`/api/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
             let gameName = req.query.gameName && HTTPTools.validateStringParameter(req.query.gameName) && DatabaseHelper.isValidGameName(req.query.gameName) ? req.query.gameName : undefined;

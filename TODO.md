@@ -6,6 +6,9 @@ These need to take a priority before deployment due to the potential for a datab
 - [x] (L) Download Counts
 
 ## High Priority
+- [ ] Handle Approval
+- [ ] Handle Mod Creation
+- [ ] Handle Approval revocation
 - [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [x] Handle dependency resolution in Database 
@@ -15,6 +18,7 @@ These need to take a priority before deployment due to the potential for a datab
 - [x] add mod filtering to /api/mods
 - [ ] Make mod management endpoints
 - [ ] Make admin endpoints
+- [ ] do not hardcode games in an enum
 
 ## Low Priority
 - [ ] frontend (maybe)

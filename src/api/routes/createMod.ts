@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import path from 'node:path';
-import { DatabaseHelper, ContentHash, Visibility } from '../../shared/Database';
+import { DatabaseHelper, ContentHash, Status } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
 import { validateSession } from '../../shared/AuthHelper';
@@ -8,6 +8,7 @@ import { Config } from '../../shared/Config';
 import { HTTPTools } from '../../shared/HTTPTools';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
+import { Op } from 'sequelize';
 
 export class CreateModRoutes {
     private app: Express;
@@ -30,18 +31,18 @@ export class CreateModRoutes {
             let gitUrl = req.body.gitUrl;
             let category = req.body.category;
             let gameName = req.body.gameName;
-            let file = req.files?.file;
+            let icon = req.files?.icon;
 
             //#region Request Validation
             if (HTTPTools.validateStringParameter(name, 3) == false || HTTPTools.validateStringParameter(description, 3) == false || HTTPTools.validateStringParameter(gitUrl, 3) == false || HTTPTools.validateStringParameter(category, 3) == false || HTTPTools.validateStringParameter(gameName, 3) == false || DatabaseHelper.isValidCategory(category) == false || DatabaseHelper.isValidGameName(gameName) == false) {
                 return res.status(400).send({ message: `Missing and/or Invalid parameters.` });
             }
 
-            if (!file || Array.isArray(file) || file.size > 8 * 1024 * 1024) {
+            if (!icon || Array.isArray(icon) || icon.size > 8 * 1024 * 1024) {
                 return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
             }
             
-            let isAcceptableImage = (file.mimetype !== `image/png` && file.name.endsWith(`.png`)) || (file.mimetype !== `image/jpeg` && (file.name.endsWith(`.jpeg`) || file.name.endsWith(`.jpg`)) || (file.mimetype !== `image/webp` && file.name.endsWith(`.webp`)));
+            let isAcceptableImage = (icon.mimetype !== `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype !== `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype !== `image/webp` && icon.name.endsWith(`.webp`)));
 
             if (!isAcceptableImage) {
                 return res.status(400).send({ error: `Invalid file type.` });
@@ -55,10 +56,11 @@ export class CreateModRoutes {
                 gitUrl: gitUrl,
                 category: category,
                 gameName: gameName,
-                iconFileName: `${file.md5}${path.extname(file.name)}`,
-                visibility: Visibility.Unverified,
+                iconFileName: `${icon.md5}${path.extname(icon.name)}`,
+                lastUpdatedById: session.user.id,
+                status: Status.Private,
             }).then((mod) => {
-                file.mv(`${path.resolve(Config.storage.iconsDir)}/${file.md5}${path.extname(file.name)}`);
+                icon.mv(`${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`);
                 return res.status(200).send({ mod });
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });
@@ -104,20 +106,20 @@ export class CreateModRoutes {
 
             
             for (let dependancy of dependencies) {
-                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
+                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private}] } });
                 if (!dependancyMod) {
                     return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
                 }
             }
             for (let version of gameVersions) {
-                let gameVersionDB = await DatabaseHelper.database.Mods.findOne({ where: { id: version } });
+                let gameVersionDB = await DatabaseHelper.database.GameVersions.findOne({ where: { id: version } });
                 if (!gameVersionDB) {
                     return res.status(404).send({ message: `Game version (${version}) not found.` });
                 }
             }
 
 
-            if (!file || Array.isArray(file) || file.size > 50 * 1024 * 1024) {
+            if (!file || Array.isArray(file) || file.size > 75 * 1024 * 1024) {
                 return res.status(413).send({ error: `File missing or too large.` });
             }
             //#endregion
@@ -136,6 +138,9 @@ export class CreateModRoutes {
                         let result = md5.update(fileData).digest(`hex`);
                         hashs.push({ path: file, hash: result });
                     }
+                }).catch((error) => {
+                    Logger.error(`Error reading zip file: ${error}`);
+                    return res.status(500).send({ message: `Error reading zip file.` });
                 });
             } else {
                 return res.status(400).send({ error: `File must be a zip archive.` });
@@ -146,13 +151,14 @@ export class CreateModRoutes {
             DatabaseHelper.database.ModVersions.create({
                 modId: modId,
                 authorId: session.user.id,
-                visibility: Visibility.Unverified,
+                status: Status.Private,
                 supportedGameVersionIds: gameVersions,
                 modVersion: modVersion,
                 dependencies: dependencies ? dependencies : [],
                 platform: platform,
                 contentHashes: hashs,
                 zipHash: file.md5,
+                lastUpdatedById: session.user.id,
             }).then((modVersion) => {
                 res.status(200).send({ modVersion });
             }).catch((error) => {

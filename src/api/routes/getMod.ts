@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, GameVersion, Mod, SupportedGames, Visibility } from '../../shared/Database';
+import { DatabaseHelper, GameVersion, Mod, SupportedGames, Status } from '../../shared/Database';
 import { HTTPTools } from '../../shared/HTTPTools';
 
 export class GetModRoutes {
@@ -19,7 +19,7 @@ export class GetModRoutes {
             // #swagger.responses[400] = { description: 'Invalid gameVersion.' }
             // #swagger.parameters['gameName'] = { description: 'The game name.', type: 'string' }
             // #swagger.parameters['gameVersion'] = { description: 'The game version (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
-            // #swagger.parameters['visibility'] = { description: 'The visibility of the mod. Available visibilities are: \'verified\'', type: 'string' }
+            // #swagger.parameters['visibility'] = { description: 'The visibility of the mod. Available visibilities are: \'verified\'. Typing anything other than that will show you unverified mods too.', type: 'string' }
             // #swagger.parameters['platform'] = { description: 'The platform of the mod. Available platforms are: \'oculuspc\', \'universalpc\', \'steampc\'', type: 'string' }
             let gameName = req.query.gameName;
             let gameVersion = req.query.gameVersion;
@@ -45,7 +45,7 @@ export class GetModRoutes {
                 }
 
                 // uses the same check as the old beatmods api down below
-                if (mod.visibility != Visibility.Verified && (mod.visibility != Visibility.Unverified || onlyApproved)) {
+                if (mod.status != Status.Verified && (mod.status != Status.Unverified || onlyApproved)) {
                     continue;
                 }
 
@@ -57,7 +57,7 @@ export class GetModRoutes {
                 let latest = await mod.getLatestVersion(gameVersion.id, filteredPlatform, onlyApproved);
                 if (latest) {
                     // if the modVersion isn't verified or unverified, don't show it
-                    if (latest.visibility != Visibility.Unverified && latest.visibility != Visibility.Verified) {
+                    if (latest.status != Status.Unverified && latest.status != Status.Verified) {
                         continue;
                     }
                     mods.push({mod: mod, latest: await latest.toAPIResonse(gameVersion.id, filteredPlatform, onlyApproved)});
@@ -85,14 +85,14 @@ export class GetModRoutes {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
-            if (mod.visibility != Visibility.Unverified && mod.visibility != Visibility.Verified) {
+            if (mod.status != Status.Unverified && mod.status != Status.Verified) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
             let modVersions = DatabaseHelper.cache.modVersions.filter((modVersion) => modVersion.modId === mod.id);
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
-                if (version.visibility != Visibility.Unverified && version.visibility != Visibility.Verified) {
+                if (version.status != Status.Unverified && version.status != Status.Verified) {
                     continue;
                 }
                 returnVal.push(await version.toAPIResonse());
@@ -121,7 +121,7 @@ export class GetModRoutes {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
-            if (modVersion.visibility != Visibility.Unverified && modVersion.visibility != Visibility.Verified) {
+            if (modVersion.status != Status.Unverified && modVersion.status != Status.Verified) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 

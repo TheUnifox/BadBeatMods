@@ -23,7 +23,7 @@ export class DatabaseManager {
     public ModVersions: ModelStatic<ModVersion>;
     public Mods: ModelStatic<Mod>;
     public GameVersions: ModelStatic<GameVersion>;
-    public EditApprovalQueue: ModelStatic<EditApprovalQueue>;
+    public EditApprovalQueue: ModelStatic<EditQueue>;
 
     constructor() {
         Logger.log(`Loading Database...`);
@@ -231,10 +231,18 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
-            visibility: {
+            status: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: `private`,
+            },
+            lastApprovedById: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            lastUpdatedById: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
@@ -283,7 +291,7 @@ export class DatabaseManager {
                     this.setDataValue(`supportedGameVersionIds`, JSON.stringify(value));
                 },
             },
-            visibility: {
+            status: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: `private`,
@@ -329,6 +337,14 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: 0,
             },
+            lastApprovedById: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            lastUpdatedById: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
         }, {
@@ -336,7 +352,7 @@ export class DatabaseManager {
             modelName: `modVersions`,
         });
 
-        this.EditApprovalQueue = EditApprovalQueue.init({
+        this.EditApprovalQueue = EditQueue.init({
             id: {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
@@ -347,15 +363,15 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
-            objId: {
+            objectId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
-            objTableName: {
+            objectTableName: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            obj: {
+            object: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: `{}`,
@@ -375,8 +391,8 @@ export class DatabaseManager {
             },
             approved: {
                 type: DataTypes.BOOLEAN,
-                allowNull: false,
-                defaultValue: false,
+                allowNull: true,
+                defaultValue: null,
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
@@ -387,8 +403,6 @@ export class DatabaseManager {
         // #endregion
 
         // #region Hooks
-        
-
         this.Mods.beforeCreate(async (mod) => {
             await Mod.checkForExistingMod(mod.name).then((existingMod) => {
                 if (existingMod) {
@@ -422,7 +436,7 @@ export class DatabaseManager {
         this.ModVersions.beforeUpdate(async (modVersion) => {
             await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
                 if (existingVersion) {
-                    if (existingVersion.id != modVersion.id && modVersion.visibility == Visibility.Verified) {
+                    if (existingVersion.id != modVersion.id && modVersion.status == Status.Verified) {
                         throw new Error(`Edit would cause a duplicate version.`);
                     }
                 }
@@ -440,6 +454,12 @@ export class DatabaseManager {
                     gameVersion.defaultVersion = true;
                 }
             });
+        });
+
+        this.EditApprovalQueue.beforeCreate(async (queueItem) => {
+            if (!queueItem.isMod() || !queueItem.isModVersion()) {
+                throw new Error(`Invalid object type.`);
+            }
         });
     }
     // #endregion
@@ -516,9 +536,11 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare gameName: SupportedGames;
     declare category: Categories;
     declare authorIds: number[];
-    declare visibility: Visibility;
+    declare status: Status;
     declare iconFileName: string;
     declare gitUrl: string;
+    declare lastApprovedById: number;
+    declare lastUpdatedById: number;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
@@ -530,7 +552,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         let latestVersion: ModVersion | null = null;
         for (let version of versions) {
             if (version.supportedGameVersionIds.includes(gameVersion)) {
-                if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.visibility == Visibility.Verified)) {
+                if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
                     latestVersion = version;
                 }
             }
@@ -538,8 +560,8 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         return latestVersion;
     }
 
-    public async setVisibility(visibility:Visibility, user: User) {
-        this.visibility = visibility;
+    public async setVisibility(visibility:Status, user: User) {
+        this.status = visibility;
         await this.save();
         Logger.log(`Mod ${this.id} approved by ${user.username}`);
         return this;
@@ -554,6 +576,39 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         let count = await DatabaseHelper.database.Mods.count({ where: { name } });
         return count;
     }
+
+    public toAPIResponse(): ModAPIResponse {
+        return {
+            id: this.id,
+            name: this.name,
+            description: this.description,
+            gameName: this.gameName,
+            category: this.category,
+            authorIds: this.authorIds,
+            status: this.status,
+            iconFileName: this.iconFileName,
+            gitUrl: this.gitUrl,
+            lastApprovedById: this.lastApprovedById,
+            lastUpdatedById: this.lastUpdatedById,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
+}
+export interface ModAPIResponse {
+    id: number;
+    name: string;
+    description: string;
+    gameName: SupportedGames;
+    category: Categories;
+    authorIds: number[]|User[];
+    status: Status;
+    iconFileName: string;
+    gitUrl: string;
+    lastApprovedById: number;
+    lastUpdatedById: number;
+    createdAt: Date;
+    updatedAt: Date;
 }
 // #endregion
 // #region ModVersion
@@ -563,17 +618,19 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare authorId: number;
     declare modVersion: SemVer;
     declare supportedGameVersionIds: number[];
-    declare visibility: Visibility;
+    declare status: Status;
     declare dependencies: number[]; // array of modVersion ids
     declare platform: Platform;
     declare zipHash: string;
     declare contentHashes: ContentHash[];
     declare downloadCount: number;
+    declare lastApprovedById: number;
+    declare lastUpdatedById: number;
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 
-    public async setVisibility(visibility:Visibility, user: User) {
-        this.visibility = visibility;
+    public async setStatus(visibility:Status, user: User) {
+        this.status = visibility;
         await this.save(); // this will error if the version already exists, so it should be checked.
         Logger.log(`ModVersion ${this.id} approved by ${user.username}`);
         return this;
@@ -581,12 +638,12 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
     // this function called to see if a duplicate version already exists in the database. if it does, creation of a new version should be halted.
     public static async checkForExistingVersion(modId: number, semver: SemVer, platform:Platform): Promise<ModVersion | null> {
-        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{visibility: Visibility.Verified}, {visibility: Visibility.Unverified}] } });
+        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
         return modVersion;
     }
 
     public static async countExistingVersions(modId: number, semver: SemVer, platform:Platform): Promise<number> {
-        let count = DatabaseHelper.database.ModVersions.count({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{visibility: Visibility.Verified}, {visibility: Visibility.Unverified}] } });
+        let count = DatabaseHelper.database.ModVersions.count({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}] } });
         return count;
     }
 
@@ -628,41 +685,6 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         }
         return dependencies;
     }
-
-    public async toRawAPIResonse() {
-        return {
-            id: this.id,
-            modId: this.modId,
-            authorId: this.authorId,
-            modVersion: this.modVersion.raw,
-            platform: this.platform,
-            zipHash: this.zipHash,
-            visibility: this.visibility,
-            dependencies: this.dependencies,
-            contentHashes: this.contentHashes,
-            supportedGameVersions: await this.getSupportedGameVersions(),
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt,
-        };
-    }
-
-    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal, onlyApproved = false) {
-        return {
-            id: this.id,
-            modId: this.modId,
-            authorId: this.authorId,
-            modVersion: this.modVersion.raw,
-            platform: this.platform,
-            zipHash: this.zipHash,
-            visibility: this.visibility,
-            dependencies: (await this.getDependencies(gameVersionId, platform, onlyApproved)).flatMap((dependancy) => dependancy.id),
-            contentHashes: this.contentHashes,
-            supportedGameVersions: await this.getSupportedGameVersions(),
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt,
-        };
-    }
-
     // this function is for when a mod supports a newer version but the dependancy does not. (uses ^x.x.x for comparison)
     public static async isValidDependancySucessor(originalVersion:ModVersion, newVersion:ModVersion, forVersion: number): Promise<boolean> {
         let newGameVersions = await newVersion.getSupportedGameVersions();
@@ -674,58 +696,118 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.raw}`);
     }
 
+    public async toRawAPIResonse() {
+        return {
+            id: this.id,
+            modId: this.modId,
+            authorId: this.authorId,
+            modVersion: this.modVersion.raw,
+            platform: this.platform,
+            zipHash: this.zipHash,
+            visibility: this.status,
+            dependencies: this.dependencies,
+            contentHashes: this.contentHashes,
+            supportedGameVersions: this.supportedGameVersionIds,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
+
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal, onlyApproved = false): Promise<ModVersionAPIResponse> {
+        return {
+            id: this.id,
+            modId: this.modId,
+            authorId: this.authorId,
+            modVersion: this.modVersion.raw,
+            platform: this.platform,
+            zipHash: this.zipHash,
+            visibility: this.status,
+            dependencies: (await this.getDependencies(gameVersionId, platform, onlyApproved)).flatMap((dependancy) => dependancy.id),
+            contentHashes: this.contentHashes,
+            supportedGameVersions: await this.getSupportedGameVersions(),
+
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
+}
+
+export interface ModVersionAPIResponse {
+    id: number;
+    modId: number;
+    authorId: number;
+    modVersion: string;
+    platform: Platform;
+    zipHash: string;
+    visibility: Status;
+    dependencies: number[];
+    contentHashes: ContentHash[];
+    supportedGameVersions: APIGameVersion[];
+    lastApprovedById?: number;
+    lastUpdatedById?: number;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 // #endregion
 // #region EditApprovalQueue
-export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `authorId` | `visibility` | `contentHashes` | `zipHash`}>
-export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileName` | `visibility` }>
+export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
+export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileName` | `status` | `lastApprovedById` | `lastUpdatedById` }>
 
 //this is gonna be fun :3
-export class EditApprovalQueue extends Model<InferAttributes<EditApprovalQueue>, InferCreationAttributes<EditApprovalQueue>> {
+export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAttributes<EditQueue>> {
     declare readonly id: number;
     declare submitterId: number;
-    declare objId: number;
-    declare objTableName: `modVersions` | `mods`;
-    declare obj: ModVersionApproval | ModApproval;
+    declare objectId: number;
+    declare objectTableName: `modVersions` | `mods`;
+    declare object: ModVersionApproval | ModApproval;
 
     declare approverId: number;
-    declare approved: boolean;
+    declare approved: boolean|null; // just use null as a 3rd bit 5head
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 
-    public isModVersion(): this is EditApprovalQueue & { objTableName: `modVersions`, obj: ModVersionApproval } {
-        return this.objTableName === `modVersions` && `modVersion` in this.obj;
+    public isModVersion(): this is EditQueue & { objectTableName: `modVersions`, object: ModVersionApproval } {
+        return this.objectTableName === `modVersions` && `modVersion` in this.object;
     }
 
-    public isMod(): this is EditApprovalQueue & { objTableName: `mods`, obj: ModApproval } {
-        return this.objTableName === `mods` && `name` in this.obj;
+    public isMod(): this is EditQueue & { objTableName: `mods`, obj: ModApproval } {
+        return this.objectTableName === `mods` && `name` in this.object;
     }
 
-    public async approve(user: User) {
-        if (this.objTableName == `modVersions` && `modVersion` in this.obj) {
-            let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objId);
+    public async approve(approver: User) {
+        if (this.approved) {
+            return;
+        }
+
+        if (this.objectTableName == `modVersions` && `modVersion` in this.object) {
+            let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objectId);
             if (modVersion) {
-                modVersion.modVersion = this.obj.modVersion || modVersion.modVersion;
-                modVersion.platform = this.obj.platform || modVersion.platform;
-                modVersion.supportedGameVersionIds = this.obj.supportedGameVersionIds || modVersion.supportedGameVersionIds;
-                modVersion.dependencies = this.obj.dependencies || modVersion.dependencies;
-                modVersion.visibility = Visibility.Verified;
+                modVersion.modVersion = this.object.modVersion || modVersion.modVersion;
+                modVersion.platform = this.object.platform || modVersion.platform;
+                modVersion.supportedGameVersionIds = this.object.supportedGameVersionIds || modVersion.supportedGameVersionIds;
+                modVersion.dependencies = this.object.dependencies || modVersion.dependencies;
+                modVersion.lastApprovedById = approver.id;
+                modVersion.lastUpdatedById = this.submitterId;
+                modVersion.status = Status.Verified;
                 modVersion.save();
             }
-        } else if (this.objTableName == `mods` && `name` in this.obj) {
-            let mod = await DatabaseHelper.database.Mods.findByPk(this.objId);
+        } else if (this.objectTableName == `mods` && `name` in this.object) {
+            let mod = await DatabaseHelper.database.Mods.findByPk(this.objectId);
             if (mod) {
-                mod.name = this.obj.name || mod.name;
-                mod.description = this.obj.description || mod.description;
-                mod.category = this.obj.category || mod.category;
-                mod.gitUrl = this.obj.gitUrl || mod.gitUrl;
-                mod.authorIds = this.obj.authorIds || mod.authorIds;
-                mod.visibility = Visibility.Verified;
+                mod.name = this.object.name || mod.name;
+                mod.description = this.object.description || mod.description;
+                mod.category = this.object.category || mod.category;
+                mod.gitUrl = this.object.gitUrl || mod.gitUrl;
+                mod.authorIds = this.object.authorIds || mod.authorIds;
+                mod.gameName = this.object.gameName || mod.gameName;
+                mod.lastApprovedById = approver.id;
+                mod.lastUpdatedById = this.submitterId;
+                mod.status = Status.Verified;
                 mod.save();
             }
         }
         this.approved = true;
-        this.approverId = user.id;
+        this.approverId = approver.id;
         this.save();
     }
 }
@@ -742,7 +824,7 @@ export enum Platform {
     Universal = `universalpc`,
 }
 
-export enum Visibility {
+export enum Status {
     Private = `private`,
     Removed = `removed`,
     Unverified = `unverified`,
@@ -782,7 +864,7 @@ export class DatabaseHelper {
         modVersions: ModVersion[],
         mods: Mod[],
         users: User[],
-        editApprovalQueue: EditApprovalQueue[],
+        editApprovalQueue: EditQueue[],
     } = {
             gameVersions: [],
             modVersions: [],
@@ -851,10 +933,10 @@ export class DatabaseHelper {
         if (!edit) {
             return null;
         }
-        if (edit.objTableName == `mods` && `gameName` in edit.obj) {
-            return edit.obj.gameName;
-        } else if (edit.objTableName == `modVersions`) {
-            return DatabaseHelper.getGameNameFromModVersionId(edit.objId);
+        if (edit.objectTableName == `mods` && `gameName` in edit.object) {
+            return edit.object.gameName;
+        } else if (edit.objectTableName == `modVersions`) {
+            return DatabaseHelper.getGameNameFromModVersionId(edit.objectId);
         }
     }
 
@@ -862,8 +944,8 @@ export class DatabaseHelper {
         return validateEnumValue(value, Platform);
     }
     
-    public static isValidVisibility(value: string): value is Visibility {
-        return validateEnumValue(value, Visibility);
+    public static isValidVisibility(value: string): value is Status {
+        return validateEnumValue(value, Status);
     }
 
     public static isValidCategory(value: string): value is Categories {

@@ -1,5 +1,5 @@
 import { Express, Request, Response } from 'express';
-import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, SupportedGames, Visibility } from '../../shared/Database';
+import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, SupportedGames, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 
 export class BeatModsRoutes {
@@ -108,7 +108,7 @@ export class BeatModsRoutes {
             //if (mod.id === 194) {
             //    console.log(mod);
             //}
-            if (mod.visibility !== Visibility.Verified && (mod.visibility !== Visibility.Unverified || status === `approved`)) {
+            if (mod.status !== Status.Verified && (mod.status !== Status.Unverified || status === `approved`)) {
                 continue;
             }
             // hardcoded to universal for now, need to fix this
@@ -116,7 +116,7 @@ export class BeatModsRoutes {
             if (!modVersion) {
                 continue;
             }
-            if (modVersion.visibility !== Visibility.Verified && (modVersion.visibility !== Visibility.Unverified || status === `approved`)) {
+            if (modVersion.status !== Status.Verified && (modVersion.status !== Status.Unverified || status === `approved`)) {
                 continue;
             }
 
@@ -148,17 +148,17 @@ export class BeatModsRoutes {
         let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
         let platform = `universal`;
         let status = `private`;
-        switch (modVersion.visibility) {
-            case Visibility.Private:
+        switch (modVersion.status) {
+            case Status.Private:
                 status = `declined`;
                 break;
-            case Visibility.Unverified:
+            case Status.Unverified:
                 status = `pending`;
                 break;
-            case Visibility.Verified:
+            case Status.Verified:
                 status = `approved`;
                 break;
-            case Visibility.Removed:
+            case Status.Removed:
                 status = `declined`;
                 break;
             default:

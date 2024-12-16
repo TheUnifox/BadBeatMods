@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import { validateSession } from '../../shared/AuthHelper';
-import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Visibility } from '../../shared/Database';
+import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './beatmods';
 import { coerce, satisfies, SemVer, valid } from 'semver';
@@ -94,7 +94,7 @@ export class ImportRoutes {
                 }
 
                 let existingMod = await DatabaseHelper.database.Mods.findOne({ where: { name: mod.name } });
-                let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
+                let status = mod.status == `approved` || mod.status == `inactive` ? Status.Verified : Status.Unverified;
 
                 if (!existingMod) {
                     let category = Categories.Other;
@@ -143,7 +143,7 @@ export class ImportRoutes {
                         description: mod.description,
                         authorIds: [importAuthor.id],
                         category: category,
-                        visibility: status,
+                        status: status,
                         iconFileName: `default.png`,
                         gitUrl: mod.link,
                     });
@@ -211,7 +211,7 @@ export class ImportRoutes {
     }
 
     private async downloadBeatModsDownloads(modId:Mod, authorId:number, mod: BeatModsMod) {
-        let status = mod.status == `approved` || mod.status == `inactive` ? Visibility.Verified : Visibility.Unverified;
+        let status = mod.status == `approved` || mod.status == `inactive` ? Status.Verified : Status.Unverified;
 
         let dependancyRecord: { dependancy: BeatModsMod | string, modVersionId: number}[] = [];
 
@@ -243,9 +243,9 @@ export class ImportRoutes {
             }
 
             // check if mod is verified, if so, set parent mod as verified
-            if (status == Visibility.Verified && modId.visibility !== Visibility.Verified) {
+            if (status == Status.Verified && modId.status !== Status.Verified) {
                 console.log(`Mod ${mod.name} v${mod.version} is marked as verified, setting parent mod as verified.`);
-                modId.visibility = Visibility.Verified;
+                modId.status = Status.Verified;
                 await modId.save();
             }
     
@@ -253,14 +253,14 @@ export class ImportRoutes {
             let existingVersion = await ModVersion.checkForExistingVersion(modId.id, coerce(mod.version, { includePrerelease: true }), platform);
             if (existingVersion) {
                 let doesHashMatch = download.hashMd5.every((hash) => existingVersion.contentHashes.some((contentHash) => contentHash.hash == hash.hash));
-                if (status == Visibility.Verified && doesHashMatch) {
+                if (status == Status.Verified && doesHashMatch) {
                     // hash and status match, mark as compatible and skip
                     Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as compatible and skipping.`, `Import`);
                     existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
                     // if the existing version is unverified & the incoming version is, mark as verified
-                    if (existingVersion.visibility !== Visibility.Verified) {
+                    if (existingVersion.status !== Status.Verified) {
                         Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as verified.`, `Import`);
-                        existingVersion.visibility = Visibility.Verified;
+                        existingVersion.status = Status.Verified;
                     }
                     await existingVersion.save();
                     continue;
@@ -299,7 +299,7 @@ export class ImportRoutes {
                 supportedGameVersionIds: [gameVersion.id],
                 authorId: authorId,
                 zipHash: result, //this will break
-                visibility: status,
+                status: status,
                 contentHashes: download.hashMd5.map(hash => { return { path: hash.file, hash: hash.hash };}) as ContentHash[],
                 platform: platform,
                 dependencies: [],
