@@ -196,7 +196,7 @@ export class BeatModsRoutes {
             status: status,
             description: mod.description,
             link: mod.gitUrl,
-            category: mod.category,
+            category: mod.category.charAt(0).toUpperCase() + mod.category.slice(1),
             downloads: [{
                 type: platform,
                 url: `/cdn/mod/${modVersion.zipHash}.zip`, //tbd
