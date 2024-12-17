@@ -7,7 +7,7 @@ import { coerce, satisfies, SemVer, valid } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
-import fs from 'fs';
+import fs, { stat } from 'fs';
 import { exit } from 'process';
 
 export class ImportRoutes {
@@ -146,6 +146,8 @@ export class ImportRoutes {
                         status: status,
                         iconFileName: `default.png`,
                         gitUrl: mod.link,
+                        lastApprovedById: status == Status.Verified ? importAuthor.id : null,
+                        lastUpdatedById: importAuthor.id,
                     });
                 }
 
@@ -303,6 +305,8 @@ export class ImportRoutes {
                 contentHashes: download.hashMd5.map(hash => { return { path: hash.file, hash: hash.hash };}) as ContentHash[],
                 platform: platform,
                 dependencies: [],
+                lastUpdatedById: authorId,
+                lastApprovedById: status == Status.Verified ? authorId : null,
             }).catch((err) => {
                 Logger.error(`Failed to create mod version ${mod.name} v${mod.version}`, `Import`);
                 console.error(err);
