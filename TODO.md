@@ -19,6 +19,8 @@ These need to take a priority before deployment due to the potential for a datab
 - [ ] Make mod management endpoints
 - [ ] Make admin endpoints
 - [ ] do not hardcode games in an enum
+- [ ] add quest platform compatibility
+- [ ] default to quest platform if quest is quest platform is detected
 
 ## Low Priority
 - [ ] frontend (maybe)
