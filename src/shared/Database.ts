@@ -339,7 +339,7 @@ export class DatabaseManager {
             },
             lastApprovedById: {
                 type: DataTypes.INTEGER,
-                allowNull: false,
+                allowNull: true,
             },
             lastUpdatedById: {
                 type: DataTypes.INTEGER,
@@ -476,6 +476,19 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare roles: UserRolesObject;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+
+    public toAPIResponse(): UserAPIResponse {
+        return {
+            id: this.id,
+            username: this.username,
+            githubId: this.githubId,
+            sponsorUrl: this.sponsorUrl,
+            displayName: this.displayName,
+            bio: this.bio,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
 }
 
 export interface UserRolesObject {
@@ -490,6 +503,17 @@ export enum UserRoles {
     Approver = `approver`,
     Moderator = `moderator`,
     Banned = `banned`,
+}
+
+export interface UserAPIResponse {
+    id: number;
+    username: string;
+    githubId: string;
+    sponsorUrl: string;
+    displayName: string;
+    bio: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 // #endregion
 // #region GameVersion
@@ -515,6 +539,9 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
         let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion == true);
         if (!version) {
             version = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+        }
+        if (!version) {
+            return null;
         }
         return version.version;
     }
@@ -584,7 +611,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
             description: this.description,
             gameName: this.gameName,
             category: this.category,
-            authorIds: this.authorIds,
+            authors: DatabaseHelper.cache.users.filter((user) => this.authorIds.includes(user.id)).map((user) => user.toAPIResponse()),
             status: this.status,
             iconFileName: this.iconFileName,
             gitUrl: this.gitUrl,
@@ -601,7 +628,7 @@ export interface ModAPIResponse {
     description: string;
     gameName: SupportedGames;
     category: Categories;
-    authorIds: number[]|User[];
+    authors: UserAPIResponse[];
     status: Status;
     iconFileName: string;
     gitUrl: string;
@@ -717,7 +744,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return {
             id: this.id,
             modId: this.modId,
-            authorId: this.authorId,
+            author: DatabaseHelper.cache.users.find((user) => user.id == this.authorId).toAPIResponse(),
             modVersion: this.modVersion.raw,
             platform: this.platform,
             zipHash: this.zipHash,
@@ -735,7 +762,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 export interface ModVersionAPIResponse {
     id: number;
     modId: number;
-    authorId: number;
+    author: UserAPIResponse;
     modVersion: string;
     platform: Platform;
     zipHash: string;

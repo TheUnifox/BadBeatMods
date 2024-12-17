@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, GameVersion, Mod, SupportedGames, Status } from '../../shared/Database';
+import { DatabaseHelper, GameVersion, Mod, SupportedGames, Status, ModAPIResponse } from '../../shared/Database';
 import { HTTPTools } from '../../shared/HTTPTools';
 
 export class GetModRoutes {
@@ -35,7 +35,7 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Invalid gameVersion.` });
             }
             
-            let mods:{mod: Mod, latest: any}[] = [];
+            let mods:{mod: ModAPIResponse, latest: any}[] = [];
             for (let mod of DatabaseHelper.cache.mods) {
                 //if (mod.id === 96) {
                 //    console.log(mod);
@@ -60,7 +60,7 @@ export class GetModRoutes {
                     if (latest.status != Status.Unverified && latest.status != Status.Verified) {
                         continue;
                     }
-                    mods.push({mod: mod, latest: await latest.toAPIResonse(gameVersion.id, filteredPlatform, onlyApproved)});
+                    mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, filteredPlatform, onlyApproved)});
                 }
             }
 
