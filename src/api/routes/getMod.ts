@@ -27,7 +27,10 @@ export class GetModRoutes {
             let platform = req.query.platform;
 
             let filteredGameName = (gameName && HTTPTools.validateStringParameter(gameName) && DatabaseHelper.isValidGameName(gameName)) ? gameName : SupportedGames.BeatSaber;
-            let filteredGameVersion = (gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) ? gameVersion : await GameVersion.getDefaultVersion(filteredGameName);
+            let filteredGameVersion = gameVersion && HTTPTools.validateStringParameter(gameVersion) && DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion) ? gameVersion : null;
+            if (filteredGameVersion === null) {
+                return res.status(400).send({ message: `Invalid gameVersion.` });
+            }
             let filteredPlatform = (platform && HTTPTools.validateStringParameter(platform) && DatabaseHelper.isValidPlatform(platform)) ? platform : undefined;
             let onlyApproved = visibility === `verified`;
 
