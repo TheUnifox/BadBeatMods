@@ -31,7 +31,7 @@ const configMapping = {
     devmode: cf.devmode ? cf.devmode : false,
     authBypass: cf.authBypass ? cf.authBypass : false,
     webhooks: {
-        enableWebhooks: cf.webhooks?.enableWebhooks ? cf.webhooks.enableWebhooks : true,
+        enableWebhooks: cf.webhooks?.enableWebhooks ? cf.webhooks.enableWebhooks : false,
         enablePublicWebhook: cf.webhooks?.enablePublicWebhook ? cf.webhooks.enablePublicWebhook : false,
         loggingUrl: cf.webhooks?.loggingUrl ? cf.webhooks.loggingUrl : null,
         modLogUrl: cf.webhooks?.modLogUrl ? cf.webhooks.modLogUrl : null,
