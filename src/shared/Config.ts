@@ -81,7 +81,6 @@ export class Config {
     } = configMapping.bot;
 
     constructor() {
-        console.log(Config);
         console.log(`Config loaded.`);
     }
 }
