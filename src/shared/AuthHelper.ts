@@ -373,7 +373,7 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         return { approved: false, user: null };
     }
 
-    // check if user is banned
+    // check if user is banned only
     if (typeof role === `boolean` && role == true) {
         if (user.roles.sitewide.includes(UserRoles.Banned) || (gameName && user.roles.perGame[gameName]?.includes(UserRoles.Banned))) {
             if (handleRequest) {
@@ -391,9 +391,26 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
     if (user.roles.sitewide.includes(role) || (gameName && user.roles.perGame[gameName]?.includes(role))) {
         return { approved: true, user: user };
     } else {
-        if (handleRequest) {
-            res.status(401).send({ message: `Unauthorized.` });
+        if (user.roles.sitewide.includes(UserRoles.AllPermissions) || (gameName && user.roles.perGame[gameName]?.includes(UserRoles.AllPermissions))) {
+            return { approved: true, user: user };
+        } else {
+            if (handleRequest) {
+                res.status(401).send({ message: `Unauthorized.` });
+            }
+            return { approved: false, user: null };
         }
-        return { approved: false, user: null };
     }
+}
+
+export function validateAdditionalGamePermissions(session: {approved: boolean, user: User}, gameName: SupportedGames, role:UserRoles = UserRoles.Admin): boolean {
+    if (!session.approved) {
+        return false;
+    }
+    if (session.user.roles.sitewide.includes(UserRoles.AllPermissions) || session.user.roles.sitewide.includes(role)) {
+        return true;
+    }
+    if (session.user.roles.perGame[gameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[gameName]?.includes(role)) {
+        return true;
+    }
+    return false;
 }

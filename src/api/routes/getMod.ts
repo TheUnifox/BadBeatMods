@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, GameVersion, Mod, SupportedGames, Status, ModAPIResponse } from '../../shared/Database';
+import { DatabaseHelper, GameVersion, SupportedGames, Status, ModAPIResponse } from '../../shared/Database';
 import { HTTPTools } from '../../shared/HTTPTools';
 
 export class GetModRoutes {

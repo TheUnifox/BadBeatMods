@@ -31,14 +31,14 @@ const configMapping = {
     devmode: cf.devmode ? cf.devmode : false,
     authBypass: cf.authBypass ? cf.authBypass : false,
     webhooks: {
-        disableWebhooks: cf.webhooks?.disableWebhooks ? cf.webhooks.disableWebhooks : true,
+        enableWebhooks: cf.webhooks?.enableWebhooks ? cf.webhooks.enableWebhooks : true,
         enablePublicWebhook: cf.webhooks?.enablePublicWebhook ? cf.webhooks.enablePublicWebhook : false,
         loggingUrl: cf.webhooks?.loggingUrl ? cf.webhooks.loggingUrl : null,
         modLogUrl: cf.webhooks?.modLogUrl ? cf.webhooks.modLogUrl : null,
         publicUrl: cf.webhooks?.publicUrl ? cf.webhooks.publicUrl : null,
     },
     bot: {
-        enabled: cf.bot.enabled ? cf.bot.enabled : false,
+        enabled: cf.bot.enabled || false,
         clientId: cf.bot.clientId,
         token: cf.bot.token,
     }
@@ -68,7 +68,7 @@ export class Config {
     public static readonly devmode: boolean = configMapping.devmode;
     public static readonly authBypass: boolean = configMapping.authBypass;
     public static readonly webhooks: {
-        disableWebhooks: boolean;
+        enableWebhooks: boolean;
         enablePublicWebhook: boolean;
         loggingUrl: string;
         modLogUrl: string;
@@ -81,6 +81,7 @@ export class Config {
     } = configMapping.bot;
 
     constructor() {
+        console.log(Config);
         console.log(`Config loaded.`);
     }
 }

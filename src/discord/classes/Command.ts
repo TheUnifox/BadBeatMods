@@ -50,21 +50,10 @@ export class Command {
         luma.logger.log(`<@!${interaction.user.id}> ran ${this.data.name}: ${interaction.commandName}`, `Interactions`);
 
         try {
-            try {
-                await this.execute(luma, interaction);
-                await new Promise(f => setTimeout(f, 3000));
-            } catch (error: any) {
-                console.error(error);
-                luma.logger.warn(`Interaction (${interaction.commandName}) did not reply.`, `Interactions`);
-                await interaction.reply({ content: `damn it broke. msg <@!213074932458979330>\nError: \`${error.name}: ${error.message}\`` }).catch(error => {
-                    interaction.editReply(`damn it broke. msg <@!213074932458979330>\nError: \`${error.name}: ${error.message}\``).catch(error => {
-                        luma.logger.warn(`Interaction (${interaction.commandName}) did not reply in time.`, `Interactions`);
-                        console.warn(error);
-                    });
-                });
-            }
-        } catch (error) {
-            luma.logger.error(error, `interactions`);
+            await this.execute(luma, interaction);
+        } catch (error: any) {
+            console.error(error);
+            luma.logger.warn(`Interaction (${interaction.commandName}) did not reply.`, `Interactions`);
         }
     }
 }

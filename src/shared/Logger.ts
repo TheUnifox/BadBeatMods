@@ -14,9 +14,9 @@ export class Logger {
         Config.devmode ? console.debug(`[DEBUG${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`) : null;
     }
 
-    public static log(message:any, moduleName?:string, sendWebhook:boolean = true) {
+    public static log(message:any, moduleName?:string) {
         console.log(`[BBM${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`);
-        this.sendWebhookLog(`[BNS${moduleName ? ` ${moduleName}` : ``}] ${time(new Date(Date.now()), TimestampStyles.LongTime)} > ${message}`);
+        this.sendWebhookLog(`[BBM${moduleName ? ` ${moduleName}` : ``}] ${time(new Date(Date.now()), TimestampStyles.LongTime)} > ${message}`);
     }
 
     public static warn(message:any, source?:string) {
@@ -53,11 +53,11 @@ export class Logger {
             .setDescription(message.toString())
             .setColor(color)
             .setFooter({
-                text: `BNS - ${source}`,
+                text: `BBM - ${source}`,
             })
             .setTimestamp();
 
-        if (!Config.webhooks.disableWebhooks) {
+        if (Config.webhooks.enableWebhooks) {
             if (!Logger.webhook) {
                 Logger.webhook = new WebhookClient({url: Config.webhooks.loggingUrl});
             }
@@ -65,7 +65,7 @@ export class Logger {
         }
     }
     private static sendWebhookLog(message:any) {
-        if (!Config.webhooks.disableWebhooks) {
+        if (Config.webhooks.enableWebhooks) {
             if (!Logger.webhook) {
                 Logger.webhook = new WebhookClient({url: Config.webhooks.loggingUrl});
             }

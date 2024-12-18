@@ -2,7 +2,6 @@ import { Express } from 'express';
 import { DatabaseHelper, Status, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
-import { SemVer } from 'semver';
 import { HTTPTools } from '../../shared/HTTPTools';
 
 export class UpdateModRoutes {
@@ -13,6 +12,7 @@ export class UpdateModRoutes {
         this.loadRoutes();
     }
 
+    // Routes with optional parameters will return a 400 if the parameter is present but invalid
     private async loadRoutes() {
         this.app.patch(`/api/mods/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
@@ -26,6 +26,7 @@ export class UpdateModRoutes {
             if (gameName && (typeof gameName !== `string` || DatabaseHelper.isValidGameName(gameName) == false)) {
                 return res.status(400).send({ message: `Invalid gameName.` });
             }
+            
             let session = await validateSession(req, res, true, gameName ?? DatabaseHelper.getGameNameFromModId(modId));
             if (!session.approved) {
                 return;
@@ -39,6 +40,7 @@ export class UpdateModRoutes {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
+            // validate params if not null
             if (authorIds && HTTPTools.validateNumberArrayParameter(authorIds) == false) {
                 return res.status(400).send({ message: `Invalid authorIds.` });
             }
@@ -47,15 +49,15 @@ export class UpdateModRoutes {
                 return res.status(400).send({ message: `Invalid category.` });
             }
 
-            if (gitUrl && HTTPTools.validateStringParameter(gitUrl) == false) {
+            if (gitUrl && HTTPTools.validateStringParameter(gitUrl, 5) == false) {
                 return res.status(400).send({ message: `Invalid gitUrl.` });
             }
 
-            if (name && HTTPTools.validateStringParameter(name) == false) {
+            if (name && HTTPTools.validateStringParameter(name, 3) == false) {
                 return res.status(400).send({ message: `Invalid name.` });
             }
 
-            if (description && HTTPTools.validateStringParameter(description) == false) {
+            if (description && HTTPTools.validateStringParameter(description, 3) == false) {
                 return res.status(400).send({ message: `Invalid description.` });
             }
 
@@ -83,8 +85,15 @@ export class UpdateModRoutes {
                 return res.status(401).send({ message: `You cannot edit this mod.` });
             }
 
-            if (mod.status == Status.Private) {
-                let existingEdit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { objectId: mod.id, objectTableName: `mods`, submitterId: session.user.id } });
+            if (authorIds && HTTPTools.validateNumberArrayParameter(authorIds)) {
+                let authors = await DatabaseHelper.database.Users.findAll({ where: { id: authorIds } }); //wait this fucking works???
+                if (authors.length != authorIds.length) {
+                    return res.status(400).send({ message: `Invalid authorIds.` });
+                }
+            }
+
+            if (mod.status == Status.Verified) {
+                let existingEdit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { objectId: mod.id, objectTableName: `mods`, submitterId: session.user.id, approved: null } });
 
                 if (existingEdit) {
                     return res.status(400).send({ message: `You already have a pending edit for this mod.` }); // todo: allow updating the edit

@@ -4,12 +4,14 @@ import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, 
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
+import { sendModLog, sendModVersionLog } from "./ModWebhooks";
 
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
-    // Add games here
-    //Chromapper = `Chromapper`,
+    Chromapper = `Chromapper`,
+    TromboneChampUnflattened = `TromboneChampUnflattened`,
+    SpinRhythmXD = `SpinRhythmXD`,
 }
 
 
@@ -50,7 +52,7 @@ export class DatabaseManager {
                         username: `ServerAdmin`,
                         discordId: `1`,
                         roles: {
-                            sitewide: [UserRoles.Admin],
+                            sitewide: [UserRoles.AllPermissions],
                             perGame: {},
                         },
                         githubId: null,
@@ -60,13 +62,12 @@ export class DatabaseManager {
                         Logger.error(`Error creating built in server account: ${error}`);
                     });
                 } else {
-                    if (!user.roles.sitewide.includes(UserRoles.Admin)) {
+                    if (!user.roles.sitewide.includes(UserRoles.AllPermissions)) {
                         if (user.username != `ServerAdmin`) {
                             Logger.warn(`Server account has been tampered with!`);
                         } else {
-                            user.roles.sitewide = [UserRoles.Admin];
-                            user.save();
-                            Logger.log(`Added admin role to server account.`);
+                            user.addSiteWideRole(UserRoles.AllPermissions);
+                            Logger.log(`Added AllPermissions role to server account.`);
                         }
                     }
                 }
@@ -377,11 +378,11 @@ export class DatabaseManager {
                 defaultValue: `{}`,
                 get() {
                     // @ts-expect-error s(2345)
-                    return JSON.parse(this.getDataValue(`obj`));
+                    return JSON.parse(this.getDataValue(`object`));
                 },
                 set(value: any) {
                     // @ts-expect-error s(2345)
-                    this.setDataValue(`obj`, JSON.stringify(value));
+                    this.setDataValue(`object`, JSON.stringify(value));
                 },
             },
             approverId: {
@@ -457,7 +458,7 @@ export class DatabaseManager {
         });
 
         this.EditApprovalQueue.beforeCreate(async (queueItem) => {
-            if (!queueItem.isMod() || !queueItem.isModVersion()) {
+            if (!queueItem.isMod() && !queueItem.isModVersion()) {
                 throw new Error(`Invalid object type.`);
             }
         });
@@ -476,6 +477,18 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
     declare roles: UserRolesObject;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+
+    public addSiteWideRole(role: UserRoles) {
+        if (!this.roles.sitewide.includes(role)) {
+            this.roles = {
+                sitewide: [...this.roles.sitewide, role],
+                perGame: this.roles.perGame,
+            };
+            this.save();
+        } else {
+            Logger.warn(`User ${this.username} already has role ${role}`);
+        }
+    }
 
     public toAPIResponse(): UserAPIResponse {
         return {
@@ -499,6 +512,7 @@ export interface UserRolesObject {
 }
 
 export enum UserRoles {
+    AllPermissions = `allpermissions`,
     Admin = `admin`,
     Approver = `approver`,
     Moderator = `moderator`,
@@ -587,10 +601,26 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         return latestVersion;
     }
 
-    public async setVisibility(visibility:Status, user: User) {
-        this.status = visibility;
-        await this.save();
+    public async setStatus(status:Status, user: User) {
+        this.status = status;
+        try {
+            await this.save();
+        } catch (error) {
+            Logger.error(`Error setting status: ${error}`);
+            throw error;
+        }
         Logger.log(`Mod ${this.id} approved by ${user.username}`);
+        switch (status) {
+            case Status.Unverified:
+                sendModLog(this, user, `New`);
+                break;
+            case Status.Verified:
+                sendModLog(this, user, `Approved`);
+                break;
+            case Status.Removed:
+                sendModLog(this, user, `Rejected`);
+                break;
+        }
         return this;
     }
 
@@ -656,10 +686,26 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 
-    public async setStatus(visibility:Status, user: User) {
-        this.status = visibility;
-        await this.save(); // this will error if the version already exists, so it should be checked.
-        Logger.log(`ModVersion ${this.id} approved by ${user.username}`);
+    public async setStatus(status:Status, user: User) {
+        this.status = status;
+        try {
+            await this.save();
+        } catch (error) {
+            Logger.error(`Error setting status: ${error}`);
+            throw error;
+        }
+        Logger.log(`Mod ${this.id} approved by ${user.username}`);
+        switch (status) {
+            case Status.Unverified:
+                sendModVersionLog(this, user, `New`);
+                break;
+            case Status.Verified:
+                sendModVersionLog(this, user, `Approved`);
+                break;
+            case Status.Removed:
+                sendModVersionLog(this, user, `Rejected`);
+                break;
+        }
         return this;
     }
 
@@ -797,7 +843,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         return this.objectTableName === `modVersions` && `modVersion` in this.object;
     }
 
-    public isMod(): this is EditQueue & { objTableName: `mods`, obj: ModApproval } {
+    public isMod(): this is EditQueue & { objTableName: `mods`, object: ModApproval } {
         return this.objectTableName === `mods` && `name` in this.object;
     }
 
@@ -805,6 +851,8 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         if (this.approved) {
             return;
         }
+        
+        let record: Mod | ModVersion;
 
         if (this.objectTableName == `modVersions` && `modVersion` in this.object) {
             let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objectId);
@@ -816,7 +864,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
                 modVersion.lastApprovedById = approver.id;
                 modVersion.lastUpdatedById = this.submitterId;
                 modVersion.status = Status.Verified;
-                modVersion.save();
+                record = await modVersion.save();
             }
         } else if (this.objectTableName == `mods` && `name` in this.object) {
             let mod = await DatabaseHelper.database.Mods.findByPk(this.objectId);
@@ -830,12 +878,43 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
                 mod.lastApprovedById = approver.id;
                 mod.lastUpdatedById = this.submitterId;
                 mod.status = Status.Verified;
-                mod.save();
+                record = await mod.save();
             }
         }
         this.approved = true;
         this.approverId = approver.id;
-        this.save();
+        this.save().then(() => {
+            Logger.log(`Edit ${this.id} approved by ${approver.username}`);
+
+            if (this.isMod()) {
+                sendModLog(record as Mod, approver, `Approved`);
+            } else {
+                sendModVersionLog(this.object as ModVersion, approver, `Approved`);
+            }
+        }).catch((error) => {
+            Logger.error(`Error approving edit ${this.id}: ${error}`);
+        });
+        return record;
+    }
+
+    public async deny(approver: User) {
+        if (this.approved) {
+            return;
+        }
+
+        let record = this.isMod() ? await DatabaseHelper.database.Mods.findByPk(this.objectId) : await DatabaseHelper.database.ModVersions.findByPk(this.objectId);
+        this.approved = false;
+        this.approverId = approver.id;
+        this.save().then(() => {
+            Logger.log(`Edit ${this.id} denied by ${approver.username}`);
+            if (this.isMod()) {
+                sendModLog(record as Mod, approver, `Rejected`);
+            } else {
+                sendModVersionLog(record as ModVersion, approver, `Rejected`);
+            }
+        }).catch((error) => {
+            Logger.error(`Error denying edit ${this.id}: ${error}`);
+        });
     }
 }
 // #endregion
@@ -849,6 +928,12 @@ export enum Platform {
     Steam = `steampc`,
     Oculus = `oculuspc`,
     Universal = `universalpc`,
+    UniversalQuest = `universalquest`,
+    Quest1 = `quest1`,
+    Quest2 = `quest2`,
+    Quest3 = `quest3`,
+    Quest3S = `quest3s`,
+    QuestPro = `questpro`,
 }
 
 export enum Status {

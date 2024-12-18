@@ -1,8 +1,9 @@
 import { Express } from 'express';
-import { DatabaseHelper, UserRoles, Status } from '../../shared/Database';
-import { validateSession } from '../../shared/AuthHelper';
+import { DatabaseHelper, UserRoles, Status, ModVersionApproval } from '../../shared/Database';
+import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
-import { coerce } from 'semver';
+import { coerce, valid } from 'semver';
+import { HTTPTools } from '../../shared/HTTPTools';
 
 export class ApprovalRoutes {
     private app: Express;
@@ -24,7 +25,7 @@ export class ApprovalRoutes {
                 return;
             }
 
-            let newMods = await DatabaseHelper.database.Mods.findAll({ where: { status: `unverified`, gameName: gameName } });
+            let newMods = (await DatabaseHelper.database.Mods.findAll({ where: { status: `unverified`, gameName: gameName } })).map((mod) => mod.toAPIResponse());
             let newModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { status: `unverified` } });
             if (!newMods || !newModVersions) {
                 return res.status(404).send({ message: `No mods found.` });
@@ -55,7 +56,7 @@ export class ApprovalRoutes {
                 return;
             }
 
-            let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: false }});
+            let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: null }});
             if (!editQueue) {
                 return res.status(404).send({ message: `No edits found.` });
             }
@@ -78,7 +79,7 @@ export class ApprovalRoutes {
         });
 
         // #region Accept/Reject Approvals
-        this.app.post(`/api/approval/mod/:modIdParam`, async (req, res) => {
+        this.app.post(`/api/approval/mod/:modIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
             let modId = parseInt(req.params.modIdParam, 10);
             let status = req.body.status;
@@ -104,7 +105,7 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot approve your own mod.` });
             }
 
-            mod.setVisibility(status, session.user).then(() => {
+            mod.setStatus(status, session.user).then(() => {
                 Logger.log(`Mod ${modId} set to status ${status} by ${session.user.username}.`);
                 return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
@@ -113,7 +114,7 @@ export class ApprovalRoutes {
             });
         });
 
-        this.app.post(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
+        this.app.post(`/api/approval/modversion/:modVersionIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let status = req.body.status;
@@ -153,16 +154,16 @@ export class ApprovalRoutes {
             });
         });
 
-        this.app.post(`/api/approval/edit/:editIdParam`, async (req, res) => {
+        this.app.post(`/api/approval/edit/:editIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
             let editId = parseInt(req.params.editIdParam, 10);
-            let status = req.body.status;
+            let accepted = req.body.accepted;
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));
             if (!session.approved) {
                 return;
             }
 
-            if (!status || !DatabaseHelper.isValidVisibility(status)) {
+            if (accepted === null || accepted === undefined || typeof accepted !== `boolean`) {
                 return res.status(400).send({ message: `Missing status.` });
             }
 
@@ -187,147 +188,167 @@ export class ApprovalRoutes {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
-            if (mod.authorIds.includes(session.user.id)) {
-                return res.status(401).send({ message: `You cannot approve your own mod.` });
-            }
-
-            if (status === Status.Verified) {
-                edit.approve(session.user).then(() => {
-                    Logger.log(`Edit ${editId} set to status ${status} by ${session.user.username}.`);
-                    return res.status(200).send({ message: `Edit ${status}.` });
+            if (accepted) {
+                edit.approve(session.user).then((record) => {
+                    Logger.log(`Edit ${editId} accepted by ${session.user.username}.`);
+                    return res.status(200).send({ message: `Edit accepted.`, record: record });
                 }).catch((error) => {
-                    Logger.error(`Error ${status} edit: ${error}`);
-                    return res.status(500).send({ message: `Error ${status} edit:  ${error}` });
+                    Logger.error(`Error approving edit ${editId}: ${error}`);
+                    return res.status(500).send({ message: `Error approving edit:  ${error}` });
                 });
-            } else if (status === Status.Unverified) {
-                edit.destroy().then(() => {
-                    Logger.log(`Edit ${editId} set to status ${status} by ${session.user.username}.`);
-                    return res.status(200).send({ message: `Edit ${status}.` });
+            } else {
+                edit.deny(session.user).then(() => {
+                    Logger.log(`Edit ${editId} rejected by ${session.user.username}.`);
+                    return res.status(200).send({ message: `Edit rejected.` });
                 }).catch((error) => {
-                    Logger.error(`Error ${status} edit: ${error}`);
-                    return res.status(500).send({ message: `Error ${status} edit:  ${error}` });
+                    Logger.error(`Error rejecting edit ${editId}: ${error}`);
+                    return res.status(500).send({ message: `Error rejecting edit:  ${error}` });
                 });
             }
-        // #endregion
         });
         // #endregion
 
         // #region Edit Approvals
         this.app.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            return res.status(501).send({ message: `Not implemented.` });
+            //return res.status(501).send({ message: `Not implemented.` });
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
             let category = req.body.category;
+            let gameName = req.body.gameName;
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModId(modId));
             if (!session.approved) {
                 return;
             }
 
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId, status: Status.Unverified } });
+            if (validateAdditionalGamePermissions(session, gameName, UserRoles.Approver) == false) {
+                return res.status(401).send({ message: `You cannot edit this mod.` });
+            }
+
+            if (!name && !description && !gitUrl && !category && !gameName) {
+                return res.status(400).send({ message: `No changes provided.` });
+            }
+
+            if (name && HTTPTools.validateStringParameter(name, 3) == false) {
+                return res.status(400).send({ message: `Invalid name.` });
+            }
+
+            if (description && HTTPTools.validateStringParameter(description, 3) == false) {
+                return res.status(400).send({ message: `Invalid description.` });
+            }
+
+            if (gitUrl && HTTPTools.validateStringParameter(gitUrl, 5) == false) {
+                return res.status(400).send({ message: `Invalid gitUrl.` });
+            }
+
+            if (category && HTTPTools.validateStringParameter(category) && DatabaseHelper.isValidCategory(category)) {
+                return res.status(400).send({ message: `Invalid category.` });
+            }
+
+            if (gameName && (typeof gameName !== `string` || DatabaseHelper.isValidGameName(gameName) == false)) {
+                return res.status(400).send({ message: `Invalid gameName.` });
+            }
+
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
+
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
-            if (mod.authorIds.includes(session.user.id)) {
-                return res.status(401).send({ message: `You cannot approve your own mod.` });
-            }
-
-            if (name && typeof name === `string` && name.length > 0) {
-                mod.name = name;
-            }
-
-            if (description && typeof description === `string` && description.length > 0) {
-                mod.description = description;
-            }
-
-            if (gitUrl && typeof gitUrl === `string` && gitUrl.length > 0) {
-                mod.gitUrl = gitUrl;
-            }
-
-            if (category && typeof category === `string` && DatabaseHelper.isValidCategory(category)) {
-                mod.category = category;
-            }
-
+            mod.name = name || mod.name;
+            mod.description = description || mod.description;
+            mod.gitUrl = gitUrl || mod.gitUrl;
+            mod.category = category || mod.category;
+            mod.gameName = gameName || mod.gameName;
+            mod.lastUpdatedById = session.user.id;
             mod.save().then(() => {
                 Logger.log(`Mod ${modId} updated by ${session.user.username}.`);
-                return res.status(200).send({ message: `Mod updated.` });
+                return res.status(200).send({ message: `Mod updated.`, mod: mod });
             }).catch((error) => {
-                Logger.error(`Error updating mod: ${error}`);
+                Logger.error(`Error updating mod ${modId}: ${error}`);
                 return res.status(500).send({ message: `Error updating mod: ${error}` });
             });
         });
 
         this.app.patch(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
-            return res.status(501).send({ message: `Not implemented.` });
+            //return res.status(501).send({ message: `Not implemented.` });
             // #swagger.tags = ['Approval']
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
-            let gameVersions = req.body.gameVersions;
+            let gameVersionIds = req.body.gameVersionIds;
             let modVersion = req.body.modVersion;
-            let dependencies = req.body.dependencies;
+            let dependencyIds = req.body.dependencyIds;
             let platform = req.body.platform;
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId));
             if (!session.approved) {
                 return;
             }
 
-            let modVersionDB = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, status: Status.Unverified } });
-            if (!modVersionDB) {
+            let modVer = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, status: Status.Unverified } });
+            if (!modVer) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersionDB.modId } });
-            if (!mod) {
-                return res.status(404).send({ message: `Mod not found.` });
+            if (!modVersion && !gameVersionIds && !dependencyIds && !platform) {
+                return res.status(400).send({ message: `No changes provided.` });
             }
 
-            if (mod.authorIds.includes(session.user.id)) {
-                return res.status(401).send({ message: `You cannot approve your own mod.` });
+            if (modVersion && HTTPTools.validateStringParameter(modVersion, 3) == false && valid(modVersion) == null) {
+                return res.status(400).send({ message: `Invalid mod version.` });
             }
 
-            if (dependencies && Array.isArray(dependencies)) {
-                for (let dependancy of dependencies) {
-                    if (typeof dependancy !== `number`) {
-                        return res.status(400).send({ message: `Invalid dependancy. (Reading ${dependancy})` });
-                    }
-                    let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy } });
-                    if (!dependancyMod) {
-                        return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
-                    }
-                }
+            if (platform && HTTPTools.validateStringParameter(platform, 3) == false && DatabaseHelper.isValidPlatform(platform) == false) {
+                return res.status(400).send({ message: `Invalid platform.` });
             }
 
-            if (gameVersions && Array.isArray(gameVersions)) {
+            if (dependencyIds && HTTPTools.validateNumberArrayParameter(dependencyIds) == false) {
+                return res.status(400).send({ message: `Invalid dependency ids.` });
+            }
+
+            if (gameVersionIds && HTTPTools.validateNumberArrayParameter(gameVersionIds)) {
                 let versionsToPush = [];
-                for (let version of gameVersions) {
-                    if (typeof version !== `number`) {
-                        return res.status(400).send({ message: `Invalid game version. (Reading ${version})` });
+                for (let gVId of gameVersionIds) {
+                    if (typeof gVId !== `number`) {
+                        return res.status(400).send({ message: `Invalid game version id. (Reading ${gVId})` });
                     }
-                    let gameVersionDB = await DatabaseHelper.database.Mods.findOne({ where: { id: version } });
+                    let gameVersionDB = await DatabaseHelper.database.GameVersions.findOne({ where: { id: gVId } });
                     if (!gameVersionDB) {
-                        return res.status(404).send({ message: `Game version (${version}) not found.` });
+                        return res.status(404).send({ message: `Game version (${gVId}) not found.` });
                     }
                     versionsToPush.push(gameVersionDB.id);
                 }
-                modVersionDB.supportedGameVersionIds = versionsToPush;
+                modVer.supportedGameVersionIds = versionsToPush;
+            } else if (gameVersionIds) {
+                return res.status(400).send({ message: `Invalid gameVersionIds.` });
             }
 
-            if (modVersion && typeof modVersion === `string`) {
-                modVersionDB.modVersion = coerce(modVersion, { includePrerelease: true });
+            if (dependencyIds && HTTPTools.validateNumberArrayParameter(dependencyIds)) {
+                let dependenciesToPush = [];
+                for (let dependencyId of dependencyIds) {
+                    if (typeof dependencyId !== `number`) {
+                        return res.status(400).send({ message: `Invalid dependency id. (Reading ${dependencyId})` });
+                    }
+                    let dependencyMod = await DatabaseHelper.database.ModVersions.findOne({ where: { id: dependencyId } });
+                    if (!dependencyMod) {
+                        return res.status(404).send({ message: `Dependency mod (${dependencyId}) not found.` });
+                    }
+                    dependenciesToPush.push(dependencyMod.id);
+                }
+                modVer.dependencies = dependenciesToPush;
+            } else if (dependencyIds) {
+                return res.status(400).send({ message: `Invalid dependencyIds.` });
             }
 
-            if (platform && DatabaseHelper.isValidPlatform(platform)) {
-                modVersionDB.platform = platform;
-            }
-
-            modVersionDB.save().then(() => {
-                Logger.log(`Mod version ${modVersionId} updated by ${session.user.username}.`);
-                return res.status(200).send({ message: `Mod version updated.` });
+            modVer.modVersion = modVersion || modVer.modVersion;
+            modVer.platform = platform || modVer.platform;
+            modVer.lastUpdatedById = session.user.id;
+            modVer.save().then(() => {
+                Logger.log(`ModVersion ${modVersionId} updated by ${session.user.username}.`);
+                return res.status(200).send({ message: `ModVersion updated.`, modVersion: modVer });
             }).catch((error) => {
-                Logger.error(`Error updating mod version: ${error}`);
-                return res.status(500).send({ message: `Error updating mod version: ${error}` });
+                Logger.error(`Error updating modVersion ${modVersionId}: ${error}`);
+                return res.status(500).send({ message: `Error updating modVersion: ${error}` });
             });
         });
 
@@ -340,33 +361,29 @@ export class ApprovalRoutes {
                 return;
             }
             
-            let edit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { id: editId, approved: false } });
+            let edit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { id: editId, approved: null } });
 
             if (!edit) {
                 return res.status(404).send({ message: `Edit not found.` });
             }
 
-            if (edit.submitterId === session.user.id) {
-                return res.status(401).send({ message: `You cannot approve your own edit.` });
-            }
-
-            let modId = `name` in edit.object ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => modVersion.modId);
+            let modId = edit.isMod() ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => modVersion.modId);
             
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
 
             if (!mod) {
-                return res.status(404).send({ message: `Mod not found.` });
+                return res.status(500).send({ message: `Mod not found.` });
             }
 
             if (mod.authorIds.includes(session.user.id)) {
-                return res.status(401).send({ message: `You cannot approve your own mod.` });
+                Logger.warn(`User ${session.user.username} edited their own mod (${mod.name}).`);
             }
 
             switch (edit.objectTableName) {
                 case `mods`:
-                    if (!(`name` in edit.object)) {
+                    if (!edit.isMod()) {
                         Logger.error(`Edit ${editId} is not a mod edit, despite the table name being "mods".`);
-                        return res.status(400).send({ message: `Invalid edit.` });
+                        return res.status(500).send({ message: `Invalid edit.` });
                     }
 
                     let name = req.body.name;
@@ -374,25 +391,29 @@ export class ApprovalRoutes {
                     let gitUrl = req.body.gitUrl;
                     let category = req.body.category;
                     let authorIds = req.body.authorIds;
+                    let gameName = req.body.gameName;
                     
-                    if (name && typeof name === `string` && name.length > 0) {
-                        edit.object.name = name;
+                    if (name && HTTPTools.validateStringParameter(name, 3) == false) {
+                        return res.status(400).send({ message: `Invalid name.` });
                     }
 
-                    if (description && typeof description === `string` && description.length > 0) {
-                        edit.object.description = description;
+                    if (description && HTTPTools.validateStringParameter(description, 3) == false) {
+                        return res.status(400).send({ message: `Invalid description.` });
                     }
 
-                    if (gitUrl && typeof gitUrl === `string` && gitUrl.length > 0) {
-                        edit.object.gitUrl = gitUrl;
+                    if (gitUrl && HTTPTools.validateStringParameter(gitUrl, 5) == false) {
+                        return res.status(400).send({ message: `Invalid gitUrl.` });
                     }
 
-                    if (category && typeof category === `string` && DatabaseHelper.isValidCategory(category)) {
-                        edit.object.category = category;
+                    if (category && HTTPTools.validateStringParameter(category) && DatabaseHelper.isValidCategory(category)) {
+                        return res.status(400).send({ message: `Invalid category.` });
                     }
 
-                    if (authorIds && Array.isArray(authorIds)) {
-                        let authors = [];
+                    if (gameName && (typeof gameName !== `string` || DatabaseHelper.isValidGameName(gameName) == false)) {
+                        return res.status(400).send({ message: `Invalid gameName.` });
+                    }
+
+                    if (authorIds && HTTPTools.validateNumberArrayParameter(authorIds)) {
                         for (let authorId of authorIds) {
                             if (typeof authorId !== `number`) {
                                 return res.status(400).send({ message: `Invalid author id. (Reading ${authorId})` });
@@ -401,23 +422,33 @@ export class ApprovalRoutes {
                             if (!author) {
                                 return res.status(404).send({ message: `Author (${authorId}) not found.` });
                             }
-                            authors.push(author.id);
                         }
-                        edit.object.authorIds = authors;
+                    } else if (authorIds) {
+                        return res.status(400).send({ message: `Invalid authorIds.` });
                     }
 
+                    edit.object = {
+                        name: name || edit.object.name,
+                        description: description || edit.object.description,
+                        gitUrl: gitUrl || edit.object.gitUrl,
+                        category: category || edit.object.category,
+                        authorIds: authorIds || edit.object.authorIds,
+                        gameName: gameName || edit.object.gameName,
+                    };
                     edit.save();
                     break;
                 case `modVersions`:
-                    if (!(`modVersion` in edit.object)) {
+                    if (!edit.isModVersion()) {
                         Logger.error(`Edit ${editId} is not a mod version edit, despite the table name being "modVersions".`);
-                        return res.status(400).send({ message: `Invalid edit.` });
+                        return res.status(500).send({ message: `Invalid edit.` });
                     }
                     
                     let gameVersions = req.body.gameVersions;
                     let modVersion = req.body.modVersion;
                     let dependencies = req.body.dependencies;
                     let platform = req.body.platform;
+
+                    let modVerObj = Object.create(edit.object, edit.object) as ModVersionApproval;
 
                     if (dependencies && Array.isArray(dependencies)) {
                         for (let dependancy of dependencies) {
@@ -429,6 +460,7 @@ export class ApprovalRoutes {
                                 return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
                             }
                         }
+                        modVerObj.dependencies = dependencies;
                     }
 
                     if (gameVersions && Array.isArray(gameVersions)) {
@@ -443,17 +475,18 @@ export class ApprovalRoutes {
                             }
                             versionsToPush.push(gameVersionDB.id);
                         }
-                        edit.object.supportedGameVersionIds = versionsToPush;
+                        modVerObj.supportedGameVersionIds = versionsToPush;
                     }
 
                     if (modVersion && typeof modVersion === `string`) {
-                        edit.object.modVersion = coerce(modVersion, { includePrerelease: true });
+                        modVerObj.modVersion = coerce(modVersion, { includePrerelease: true });
                     }
 
                     if (platform && DatabaseHelper.isValidPlatform(platform)) {
-                        edit.object.platform = platform;
+                        modVerObj.platform = platform;
                     }
 
+                    edit.object = modVerObj;
                     edit.save();
                     break;
             }

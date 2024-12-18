@@ -1,7 +1,6 @@
 import { Express } from 'express';
 import { DatabaseHelper, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
-import { Logger } from '../../shared/Logger';
 import { Config } from '../../shared/Config';
 import * as fs from 'fs';
 import * as path from 'path';

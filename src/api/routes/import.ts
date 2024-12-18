@@ -3,11 +3,11 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './beatmods';
-import { coerce, satisfies, SemVer, valid } from 'semver';
+import { coerce, satisfies } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
-import fs, { stat } from 'fs';
+import fs from 'fs';
 import { exit } from 'process';
 
 export class ImportRoutes {

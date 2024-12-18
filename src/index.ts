@@ -21,6 +21,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './api/swagger.json';
 import { BeatModsRoutes } from './api/routes/beatmods';
 import { CDNRoutes } from './api/routes/cdn';
+import cors from 'cors';
 
 console.log(`Starting setup...`);
 new Config();
@@ -39,6 +40,9 @@ if (Config.bot.enabled) {
 // handle parsing request bodies
 app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
+app.use(cors({
+    origin: `*`, // this should probably be changed in the future
+}));
 app.use(fileUpload({
     limits: {
         fileSize: 75 * 1024 * 1024, // here you go kaitlyn

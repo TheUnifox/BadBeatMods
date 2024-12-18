@@ -206,7 +206,7 @@
           },
           {
             "name": "visibility",
-            "description": "The visibility of the mod. Available visibilities are: 'verified'",
+            "description": "The visibility of the mod. Available visibilities are: 'verified'. Typing anything other than that will show you unverified mods too.",
             "type": "string",
             "in": "query"
           },
@@ -307,6 +307,9 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
           },
           "501": {
             "description": "Not Implemented"
@@ -884,7 +887,7 @@
         }
       }
     },
-    "/api/approval/mod/{modIdParam}": {
+    "/api/approval/mod/{modIdParam}/approve": {
       "post": {
         "tags": [
           "Approval"
@@ -927,7 +930,96 @@
             "description": "Internal Server Error"
           }
         }
-      },
+      }
+    },
+    "/api/approval/modversion/{modVersionIdParam}/approve": {
+      "post": {
+        "tags": [
+          "Approval"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "modVersionIdParam",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/approval/edit/{editIdParam}/approve": {
+      "post": {
+        "tags": [
+          "Approval"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "editIdParam",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "accepted": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/approval/mod/{modIdParam}": {
       "patch": {
         "tags": [
           "Approval"
@@ -957,50 +1049,8 @@
                 },
                 "category": {
                   "example": "any"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          },
-          "501": {
-            "description": "Not Implemented"
-          }
-        }
-      }
-    },
-    "/api/approval/modversion/{modVersionIdParam}": {
-      "post": {
-        "tags": [
-          "Approval"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "modVersionIdParam",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "status": {
+                },
+                "gameName": {
                   "example": "any"
                 }
               }
@@ -1024,7 +1074,9 @@
             "description": "Internal Server Error"
           }
         }
-      },
+      }
+    },
+    "/api/approval/modversion/{modVersionIdParam}": {
       "patch": {
         "tags": [
           "Approval"
@@ -1043,13 +1095,13 @@
             "schema": {
               "type": "object",
               "properties": {
-                "gameVersions": {
+                "gameVersionIds": {
                   "example": "any"
                 },
                 "modVersion": {
                   "example": "any"
                 },
-                "dependencies": {
+                "dependencyIds": {
                   "example": "any"
                 },
                 "platform": {
@@ -1066,65 +1118,16 @@
           "400": {
             "description": "Bad Request"
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "404": {
             "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error"
-          },
-          "501": {
-            "description": "Not Implemented"
           }
         }
       }
     },
     "/api/approval/edit/{editIdParam}": {
-      "post": {
-        "tags": [
-          "Approval"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "editIdParam",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "status": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      },
       "patch": {
         "tags": [
           "Approval"
@@ -1158,6 +1161,9 @@
                 "authorIds": {
                   "example": "any"
                 },
+                "gameName": {
+                  "example": "any"
+                },
                 "gameVersions": {
                   "example": "any"
                 },
@@ -1181,11 +1187,11 @@
           "400": {
             "description": "Bad Request"
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "404": {
             "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }

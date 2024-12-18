@@ -6,23 +6,26 @@ These need to take a priority before deployment due to the potential for a datab
 - [x] (L) Download Counts
 
 ## High Priority
-- [ ] Handle Approval
-- [ ] Handle Mod Creation
+- [x] Handle Approval
+- [x] Handle Mod Creation
 - [ ] Handle Approval revocation
 - [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [x] Handle dependency resolution in Database 
 
 ## Medium Priority
-- [ ] add webhooks (make this public????)
+- [ ] Add logging to various endpoints
+- [ ] add optional pagination to various endpoints
+- [x] add webhooks (make this public????)
 - [x] add mod filtering to /api/mods
 - [ ] Make mod management endpoints
 - [ ] Make admin endpoints
 - [ ] do not hardcode games in an enum
-- [ ] add quest platform compatibility
+- [x] add quest platform compatibility (see below)
 - [ ] default to quest platform if quest is quest platform is detected
 
 ## Low Priority
+- [ ] Version diffing
 - [ ] frontend (maybe)
 - [ ] Allow only uploading single dll (autopackage into zip)
 - [ ] do more with the discord bot

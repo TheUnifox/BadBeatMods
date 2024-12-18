@@ -42,15 +42,15 @@ Running the server is (mostly) easy to do:
         "sessionSecret" : "supersecret"
     },
     "webhooks": {
-        "disableWebhooks": true,
-        "enablePublicWebhook": true,
+        "enableWebhooks": true,
+        "enablePublicWebhook": false,
         "loggingUrl": "url",
         "modLogUrl": "url",
         "publicUrl" : "url"
     },
     "bot": {
         "enabled": true,
-        "clientId": "id",
+        "clientId": "clientid",
         "token": "token"
     }
 }

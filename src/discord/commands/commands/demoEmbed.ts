@@ -3,6 +3,7 @@ import { Command } from "../../classes/Command";
 import { Luma } from "../../classes/Luma";
 import { sendModLog, sendModVersionLog } from "../../../shared/ModWebhooks";
 import { DatabaseHelper } from "../../../shared/Database";
+import { randomInt } from "crypto";
 let commandData = new SlashCommandBuilder();
 commandData.setName(`embed`)
     .setDescription(`Test embed command.`)
@@ -33,7 +34,7 @@ commandData.setName(`embed`)
                 value: `modVersionNew`,
             },
         )
-    ).setContexts(InteractionContextType.PrivateChannel);
+    ).setContexts(InteractionContextType.PrivateChannel, InteractionContextType.Guild, InteractionContextType.BotDM);
 
 module.exports = {
     command: new Command({
@@ -42,7 +43,8 @@ module.exports = {
             if (!interaction.isChatInputCommand()) {
                 return;
             }
-            let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: 1 } });
+            let randomVersionId = randomInt(1, DatabaseHelper.cache.mods.length);
+            let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: randomVersionId } });
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
             let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
             let embedtype = interaction.options.getString(`embedtype`);
