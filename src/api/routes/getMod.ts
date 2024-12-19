@@ -78,7 +78,9 @@ export class GetModRoutes {
             // #swagger.responses[400] = { description: 'Invalid mod id.' }
             // #swagger.responses[404] = { description: 'Mod not found.' }
             // #swagger.parameters['modIdParam'] = { in: 'path', description: 'The mod ID.', type: 'number', required: true }
+            // #swagger.parameters['raw'] = { description: 'Return the raw mod info.', type: 'boolean' }
             let modId = parseInt(req.params.modIdParam);
+            let raw = req.query.raw === `true` ? true : false;
             if (!modId) {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
@@ -98,10 +100,14 @@ export class GetModRoutes {
                 if (version.status != Status.Unverified && version.status != Status.Verified) {
                     continue;
                 }
-                returnVal.push(await version.toAPIResonse());
+                if (raw) {
+                    returnVal.push(await version.toRawAPIResonse());
+                } else {
+                    returnVal.push(await version.toAPIResonse());
+                }
             }
 
-            return res.status(200).send({ mod: { info: mod, versions: returnVal } });
+            return res.status(200).send({ mod: { info: raw ? mod : mod.toAPIResponse(), versions: returnVal } });
         });
 
         this.app.get(`/api/modversions/:modVersionIdParam`, async (req, res) => {
@@ -112,7 +118,7 @@ export class GetModRoutes {
             // #swagger.responses[400] = { description: 'Invalid mod version id.' }
             // #swagger.responses[404] = { description: 'Mod version not found.' }
             // #swagger.parameters['modVersionIdParam'] = { in: 'path', description: 'The mod version ID.', type: 'number', required: true }
-            // #swagger.parameters['raw'] = { description: 'Return the raw mod depedendcies.', type: 'boolean' }
+            // #swagger.parameters['raw'] = { description: 'Return the raw mod depedendcies without attempting to resolve them.', type: 'boolean' }
             let modVersionId = parseInt(req.params.modVersionIdParam);
             let raw = req.query.raw;
             if (!modVersionId) {

@@ -241,6 +241,12 @@
             "required": true,
             "type": "number",
             "description": "The mod ID."
+          },
+          {
+            "name": "raw",
+            "description": "Return the raw mod info.",
+            "type": "boolean",
+            "in": "query"
           }
         ],
         "responses": {

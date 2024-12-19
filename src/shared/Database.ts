@@ -781,6 +781,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             dependencies: this.dependencies,
             contentHashes: this.contentHashes,
             supportedGameVersions: this.supportedGameVersionIds,
+            downloadCount: this.downloadCount,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -797,6 +798,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             visibility: this.status,
             dependencies: (await this.getDependencies(gameVersionId, platform, onlyApproved)).flatMap((dependancy) => dependancy.id),
             contentHashes: this.contentHashes,
+            downloadCount: this.downloadCount,
             supportedGameVersions: await this.getSupportedGameVersions(),
 
             createdAt: this.createdAt,
@@ -816,6 +818,7 @@ export interface ModVersionAPIResponse {
     dependencies: number[];
     contentHashes: ContentHash[];
     supportedGameVersions: APIGameVersion[];
+    downloadCount: number;
     lastApprovedById?: number;
     lastUpdatedById?: number;
     createdAt?: Date;
