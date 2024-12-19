@@ -9,7 +9,7 @@ import { sendModLog, sendModVersionLog } from "./ModWebhooks";
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
-    Chromapper = `Chromapper`,
+    ChroMapper = `ChroMapper`,
     TromboneChampUnflattened = `TromboneChampUnflattened`,
     SpinRhythmXD = `SpinRhythmXD`,
 }
