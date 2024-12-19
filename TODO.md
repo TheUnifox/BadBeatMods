@@ -2,6 +2,7 @@
 ## Database Changes
 These need to take a priority before deployment due to the potential for a databasse structure change.  
 - [ ] (H) Validate that Approval Workflow is good.
+- [ ] (H) Split description into summary and description
 - [x] (M) Make per game permissions (add to User class)
 - [x] (L) Download Counts
 
@@ -12,6 +13,7 @@ These need to take a priority before deployment due to the potential for a datab
 - [ ] Check ALL endpoints for Multi-Game support
 - [ ] Double check every POST/PATCH request for duplicate value checking
 - [x] Handle dependency resolution in Database 
+- [ ] Handle crash from api/routes/getMod.ts:60:69
 
 ## Medium Priority
 - [ ] Add logging to various endpoints
