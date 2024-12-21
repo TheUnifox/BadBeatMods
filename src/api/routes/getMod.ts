@@ -52,10 +52,9 @@ export class GetModRoutes {
                     continue;
                 }
 
-                // TODO: determine how to set onlyApproved
                 let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === filteredGameVersion && gameVersion.gameName === filteredGameName);
                 if (!gameVersion) {
-                    res.status(400).send({ message: `Invalid game version.` });
+                    return res.status(400).send({ message: `Invalid game version.` });
                 }
                 let latest = await mod.getLatestVersion(gameVersion.id, filteredPlatform, onlyApproved);
                 if (latest) {
