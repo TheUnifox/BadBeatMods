@@ -19,11 +19,11 @@ export class GetModRoutes {
             // #swagger.responses[400] = { description: 'Invalid gameVersion.' }
             // #swagger.parameters['gameName'] = { description: 'The game name.', type: 'string' }
             // #swagger.parameters['gameVersion'] = { description: 'The game version (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
-            // #swagger.parameters['visibility'] = { description: 'The visibility of the mod. Available visibilities are: \'verified\'. Typing anything other than that will show you unverified mods too.', type: 'string' }
+            // #swagger.parameters['status'] = { description: 'The status of the mod. Available status are: \'verified\'. Typing anything other than that will show you unverified mods too.', type: 'string' }
             // #swagger.parameters['platform'] = { description: 'The platform of the mod. Available platforms are: \'oculuspc\', \'universalpc\', \'steampc\'', type: 'string' }
             let gameName = req.query.gameName;
             let gameVersion = req.query.gameVersion;
-            let visibility = req.query.visibility;
+            let status = req.query.status;
             let platform = req.query.platform;
 
             let filteredGameName = (gameName && HTTPTools.validateStringParameter(gameName) && DatabaseHelper.isValidGameName(gameName)) ? gameName : SupportedGames.BeatSaber;
@@ -32,7 +32,7 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Invalid gameVersion.` });
             }
             let filteredPlatform = (platform && HTTPTools.validateStringParameter(platform) && DatabaseHelper.isValidPlatform(platform)) ? platform : undefined;
-            let onlyApproved = visibility === `verified`;
+            let onlyApproved = status === `verified`;
 
             if (gameVersion && HTTPTools.validateStringParameter(gameVersion) && !DatabaseHelper.isValidGameVersion(filteredGameName, gameVersion)) {
                 return res.status(400).send({ message: `Invalid gameVersion.` });
