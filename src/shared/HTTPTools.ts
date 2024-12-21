@@ -36,7 +36,7 @@ export class HTTPTools {
         if (typeof param === `number`) {
             return param;
         } else if (typeof param === `string`) {
-            const num = parseInt(param);
+            const num = parseInt(param, 10);
             if (!isNaN(num)) {
                 return num;
             }
