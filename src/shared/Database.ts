@@ -129,7 +129,7 @@ export class DatabaseManager {
                 defaultValue: ``,
             },
             bio: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
@@ -194,8 +194,13 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
-            description: {
+            summary: {
                 type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            description: {
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
@@ -373,7 +378,7 @@ export class DatabaseManager {
                 allowNull: false,
             },
             object: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `{}`,
                 get() {
@@ -573,6 +578,7 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
 export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod>> {
     declare readonly id: CreationOptional<number>;
     declare name: string;
+    declare summary: string;
     declare description: string;
     declare gameName: SupportedGames;
     declare category: Categories;
@@ -638,6 +644,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         return {
             id: this.id,
             name: this.name,
+            summary: this.summary,
             description: this.description,
             gameName: this.gameName,
             category: this.category,
@@ -655,6 +662,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
 export interface ModAPIResponse {
     id: number;
     name: string;
+    summary: string;
     description: string;
     gameName: SupportedGames;
     category: Categories;
@@ -777,7 +785,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             modVersion: this.modVersion.raw,
             platform: this.platform,
             zipHash: this.zipHash,
-            visibility: this.status,
+            status: this.status,
             dependencies: this.dependencies,
             contentHashes: this.contentHashes,
             supportedGameVersions: this.supportedGameVersionIds,
@@ -795,7 +803,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             modVersion: this.modVersion.raw,
             platform: this.platform,
             zipHash: this.zipHash,
-            visibility: this.status,
+            status: this.status,
             dependencies: (await this.getDependencies(gameVersionId, platform, onlyApproved)).flatMap((dependancy) => dependancy.id),
             contentHashes: this.contentHashes,
             downloadCount: this.downloadCount,
@@ -814,7 +822,7 @@ export interface ModVersionAPIResponse {
     modVersion: string;
     platform: Platform;
     zipHash: string;
-    visibility: Status;
+    status: Status;
     dependencies: number[];
     contentHashes: ContentHash[];
     supportedGameVersions: APIGameVersion[];

@@ -23,7 +23,7 @@ export class HTTPTools {
         return key;
     }
 
-    public static validateStringParameter(param: any | undefined, minLength:number = 1): param is string {
+    public static validateStringParameter(param: any | undefined, minLength:number = 1, maxLength:number = 2048): param is string {
         if (typeof param === `string`) {
             if (param.length >= minLength) {
                 return true;

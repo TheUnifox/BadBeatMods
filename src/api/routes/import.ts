@@ -140,6 +140,7 @@ export class ImportRoutes {
 
                     existingMod = await DatabaseHelper.database.Mods.create({
                         name: mod.name,
+                        summary: mod.description,
                         description: mod.description,
                         authorIds: [importAuthor.id],
                         category: category,
@@ -148,6 +149,7 @@ export class ImportRoutes {
                         gitUrl: mod.link,
                         lastApprovedById: status == Status.Verified ? importAuthor.id : null,
                         lastUpdatedById: importAuthor.id,
+                        createdAt: new Date(mod.uploadedDate),
                     });
                 }
 

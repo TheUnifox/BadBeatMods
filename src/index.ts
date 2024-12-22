@@ -54,10 +54,18 @@ app.use(fileUpload({
 // rate limiting
 app.use(rateLimit({
     windowMs: 60 * 1000,
-    max: 50,
+    max: 10,
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: true,
+}));
+
+app.use(rateLimit({
+    windowMs: 10 * 1000,
+    max: 50,
+    statusCode: 429,
+    message: `Rate limit exceeded.`,
+    skipSuccessfulRequests: false,
 }));
 
 // session handling
@@ -83,8 +91,6 @@ app.use((req, res, next) => {
     if (Config.devmode) {
         if (Config.authBypass) {
             req.session.userId = 1;
-            req.session.username = `TestUser`;
-            req.session.avatarUrl = `${Config.server.url}/favicon.ico`;
         }
         console.log(req.url);
     }

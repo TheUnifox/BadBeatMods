@@ -6,12 +6,6 @@ import { DatabaseHelper, SupportedGames, User, UserRoles } from "./Database";
 declare module 'express-session' {
     export interface Session {
         userId: number;
-        username: string;
-        avatarUrl: string;
-        csrf: {
-            token: string;
-            expiration: number;
-        };
     }
 }
 
@@ -176,16 +170,6 @@ export class DiscordAuthHelper extends OAuth2Helper {
             return Idjson;
         } else {
             return null;
-        }
-    }
-
-    public static async getGuildMemberData(token: string, guildId: string, userId:string): Promise<DiscordUserGuild | null> {
-        const userIdRequest = await fetch(`https://discord.com/api/v10/users/@me/guilds/${guildId}/member`, super.getRequestData(token));
-        const Idjson: DiscordUserGuild = await userIdRequest.json() as DiscordUserGuild;
-        if (!Idjson.roles) {
-            return null;
-        } else {
-            return Idjson;
         }
     }
 }

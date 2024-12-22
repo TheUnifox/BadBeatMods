@@ -17,10 +17,11 @@ export class AuthRoutes {
     private async loadRoutes() {
         this.app.get(`/api/auth`, async (req, res) => {
             // #swagger.tags = ['Auth']
-            if (req.session.userId) {
-                return res.status(200).send({ message: `Hello, ${req.session.username}!`, username: req.session.username, userId: req.session.userId });
+            let user = DatabaseHelper.cache.users.find((u) => u.id === req.session.userId);
+            if (user) {
+                return res.status(401).send({ error: `Unauthorized.` });
             } else {
-                return res.status(401).send({ error: `Not logged in.` });
+                return res.status(200).send({ message: `Hello, ${user.username}!`, username: user.username, userId: user.id, roles: user.roles });
             }
         });
 
@@ -80,7 +81,6 @@ export class AuthRoutes {
             }
 
             req.session.userId = userDb.id;
-            req.session.username = userDb.username;
             req.session.save();
 
             Logger.log(`User ${userDb.username} logged in.`, `Auth`);
