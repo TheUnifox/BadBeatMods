@@ -205,8 +205,8 @@
             "in": "query"
           },
           {
-            "name": "visibility",
-            "description": "The visibility of the mod. Available visibilities are: 'verified'. Typing anything other than that will show you unverified mods too.",
+            "name": "status",
+            "description": "The status of the mod. Available status are: 'verified'. Typing anything other than that will show you unverified mods too.",
             "type": "string",
             "in": "query"
           },
@@ -282,6 +282,9 @@
                 "name": {
                   "example": "any"
                 },
+                "summary": {
+                  "example": "any"
+                },
                 "description": {
                   "example": "any"
                 },
@@ -340,7 +343,7 @@
           },
           {
             "name": "raw",
-            "description": "Return the raw mod depedendcies.",
+            "description": "Return the raw mod depedendcies without attempting to resolve them.",
             "type": "boolean",
             "in": "query"
           }
@@ -1047,6 +1050,9 @@
                 "name": {
                   "example": "any"
                 },
+                "summary": {
+                  "example": "any"
+                },
                 "description": {
                   "example": "any"
                 },
@@ -1156,6 +1162,9 @@
                   "example": "any"
                 },
                 "description": {
+                  "example": "any"
+                },
+                "summary": {
                   "example": "any"
                 },
                 "gitUrl": {

@@ -18,6 +18,7 @@ export class UpdateModRoutes {
             // #swagger.tags = ['Mods']
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
+            let summary = req.body.summary;
             let description = req.body.description;
             let category = req.body.category;
             let authorIds = req.body.authorIds;
@@ -36,7 +37,7 @@ export class UpdateModRoutes {
                 return res.status(400).send({ message: `Missing valid modId.` });
             }
 
-            if (!name && !description && !category && !authorIds && !gitUrl) {
+            if (!name && !summary && !description && !category && !authorIds && !gitUrl) {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
@@ -57,8 +58,13 @@ export class UpdateModRoutes {
                 return res.status(400).send({ message: `Invalid name.` });
             }
 
+            // need to set these limits
             if (description && HTTPTools.validateStringParameter(description, 3) == false) {
                 return res.status(400).send({ message: `Invalid description.` });
+            }
+
+            if (summary && HTTPTools.validateStringParameter(summary, 3) == false) {
+                return res.status(400).send({ message: `Invalid summary.` });
             }
 
             if (gameName && HTTPTools.validateStringParameter(gameName) == false && DatabaseHelper.isValidGameName(gameName) == false) {
@@ -105,6 +111,7 @@ export class UpdateModRoutes {
                     objectId: mod.id,
                     object: {
                         name: name || mod.name,
+                        summary: summary || mod.summary,
                         description: description || mod.description,
                         gameName: gameName || mod.gameName,
                         gitUrl: gitUrl || mod.gitUrl,

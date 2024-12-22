@@ -214,6 +214,7 @@ export class ApprovalRoutes {
             //return res.status(501).send({ message: `Not implemented.` });
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
+            let summary = req.body.summary;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
             let category = req.body.category;
@@ -227,7 +228,7 @@ export class ApprovalRoutes {
                 return res.status(401).send({ message: `You cannot edit this mod.` });
             }
 
-            if (!name && !description && !gitUrl && !category && !gameName) {
+            if (!name && !summary && !description && !gitUrl && !category && !gameName) {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
@@ -237,6 +238,10 @@ export class ApprovalRoutes {
 
             if (description && HTTPTools.validateStringParameter(description, 3) == false) {
                 return res.status(400).send({ message: `Invalid description.` });
+            }
+
+            if (summary && HTTPTools.validateStringParameter(summary, 3) == false) {
+                return res.status(400).send({ message: `Invalid summary.` });
             }
 
             if (gitUrl && HTTPTools.validateStringParameter(gitUrl, 5) == false) {
@@ -258,6 +263,7 @@ export class ApprovalRoutes {
             }
 
             mod.name = name || mod.name;
+            mod.summary = summary || mod.summary;
             mod.description = description || mod.description;
             mod.gitUrl = gitUrl || mod.gitUrl;
             mod.category = category || mod.category;
@@ -388,13 +394,19 @@ export class ApprovalRoutes {
 
                     let name = req.body.name;
                     let description = req.body.description;
+                    let summary = req.body.summary;
                     let gitUrl = req.body.gitUrl;
                     let category = req.body.category;
                     let authorIds = req.body.authorIds;
                     let gameName = req.body.gameName;
                     
+                    // set limits
                     if (name && HTTPTools.validateStringParameter(name, 3) == false) {
                         return res.status(400).send({ message: `Invalid name.` });
+                    }
+
+                    if (summary && HTTPTools.validateStringParameter(summary, 3) == false) {
+                        return res.status(400).send({ message: `Invalid summary.` });
                     }
 
                     if (description && HTTPTools.validateStringParameter(description, 3) == false) {
@@ -429,6 +441,7 @@ export class ApprovalRoutes {
 
                     edit.object = {
                         name: name || edit.object.name,
+                        summary: summary || edit.object.summary,
                         description: description || edit.object.description,
                         gitUrl: gitUrl || edit.object.gitUrl,
                         category: category || edit.object.category,
