@@ -41,7 +41,7 @@ if (Config.bot.enabled) {
 app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
 app.use(cors({
-    origin: `*`, // this should probably be changed in the future
+    origin: [`http://localhost:5173`, `http://localhost:5001`, `https://bbm.saera.gay`], // this should probably be changed in the future
     credentials: Config.devmode ? true : false,
 }));
 app.use(fileUpload({
