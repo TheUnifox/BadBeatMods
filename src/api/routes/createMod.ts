@@ -1,7 +1,7 @@
 import { Express } from 'express';
 import path from 'node:path';
 import { DatabaseHelper, ContentHash, Status } from '../../shared/Database';
-import JSZip from 'jszip';
+import JSZip, { file } from 'jszip';
 import crypto from 'crypto';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
@@ -62,8 +62,14 @@ export class CreateModRoutes {
                 lastUpdatedById: session.user.id,
                 status: Status.Private,
             }).then((mod) => {
-                icon.mv(`${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`);
-                return res.status(200).send({ mod });
+                let filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
+                if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}/`) == false) {
+                    mod.update({ iconFileName: `default.png` });
+                    res.status(200).send({ mod });
+                } else {
+                    icon.mv(filePath);
+                    return res.status(200).send({ mod });
+                }
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });
             });

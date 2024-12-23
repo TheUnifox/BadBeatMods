@@ -1,9 +1,10 @@
 import { Express } from 'express';
-import { DatabaseHelper, UserRoles, Status, ModVersionApproval } from '../../shared/Database';
+import { DatabaseHelper, UserRoles, Status, ModVersionApproval, ModVersion } from '../../shared/Database';
 import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { coerce, valid } from 'semver';
 import { HTTPTools } from '../../shared/HTTPTools';
+import { Op } from 'sequelize';
 
 export class ApprovalRoutes {
     private app: Express;
@@ -14,6 +15,7 @@ export class ApprovalRoutes {
     }
 
     private async loadRoutes() {
+        // #region Get Approvals
         this.app.get(`/api/approval/new`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Get new mods & modVersions pending approval.'
@@ -91,7 +93,7 @@ export class ApprovalRoutes {
 
             res.status(200).send({ edits: editQueue });
         });
-
+        // #endregion
         // #region Accept/Reject Approvals
         this.app.post(`/api/approval/mod/:modIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
@@ -248,7 +250,6 @@ export class ApprovalRoutes {
             }
         });
         // #endregion
-
         // #region Edit Approvals
         this.app.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
@@ -589,5 +590,67 @@ export class ApprovalRoutes {
 
             res.status(200).send({ message: `Edit updated.`, edit: edit });
         });
+        // #endregion
+        // #region Revoke Approvals
+        this.app.post(`/api/approval/modVersion/:modVersionIdParam/revoke`, async (req, res) => {
+            // #swagger.tags = ['Approval']
+
+            if (HTTPTools.validateNumberParameter(req.params.modVersionIdParam) == false) {
+                return res.status(400).send({ message: `Invalid modVersionId.` });
+            }
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(parseInt(req.params.modVersionIdParam, 10)));
+            if (!session.approved) {
+                return;
+            }
+
+            let status = req.body.status;
+            let modVersionId = HTTPTools.parseNumberParameter(req.params.modVersionIdParam);
+            let allowDependants = req.body.allowDependants === `true` ? true : false;
+            if (!status || !DatabaseHelper.isValidVisibility(status)) {
+                return res.status(400).send({ message: `Missing status.` });
+            }
+
+            let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId } });
+            if (!modVersion) {
+                return res.status(404).send({ message: `Mod version not found.` });
+            }
+
+            let dependants = await DatabaseHelper.database.ModVersions.findAll({ where: { dependencies: { [Op.contains]: [modVersionId] } } });
+
+            if (dependants.length > 0 && !allowDependants) {
+                return res.status(400).send({ message: `Mod version has ${dependants.length} dependants. Set "allowDependants" to true to revoke this mod's approved status.` });
+            }
+
+            
+            let revokedIds:number[] = [];
+            if (dependants.length > 0) {
+                for (let dependant of dependants) {
+                    let ids = await unverifyModVersionId(session.user.id, dependant.id, dependant);
+                    revokedIds = [...revokedIds, ...ids];
+                }
+            } else {
+                let ids = await unverifyModVersionId(session.user.id, modVersionId, modVersion);
+                revokedIds = [...revokedIds, ...ids];
+            }
+            Logger.log(`ModVersion ${modVersionId} & its ${dependants.length} have been revoked by ${session.user.username}.`);
+            return res.status(200).send({ message: `Mod version revoked.`, revokedIds: revokedIds });
+        });
     }
+}
+
+async function unverifyModVersionId(approverId:number, modVersion: number, modObj?:ModVersion): Promise<number[]> {
+    let modVersionDb = modObj || await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersion } });
+    if (!modVersionDb || modVersionDb.status !== Status.Verified) {
+        return [];
+    }
+    let revokedIds = [modVersionDb.id];
+    modVersionDb.lastApprovedById = approverId;
+    modVersionDb.status = Status.Unverified;
+    await modVersionDb.save().then(async () => {
+        for (let dependant of modVersionDb.dependencies) {
+            let id = await unverifyModVersionId(approverId, dependant); // recursiveness
+            revokedIds = [...revokedIds, ...id];
+        }
+    });
+    return revokedIds;
 }

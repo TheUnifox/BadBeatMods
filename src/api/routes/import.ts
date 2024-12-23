@@ -149,7 +149,7 @@ export class ImportRoutes {
                         gitUrl: mod.link,
                         lastApprovedById: status == Status.Verified ? importAuthor.id : null,
                         lastUpdatedById: importAuthor.id,
-                        createdAt: new Date(mod.uploadedDate),
+                        createdAt: new Date(mod.uploadDate),
                     });
                 }
 
@@ -309,6 +309,7 @@ export class ImportRoutes {
                 dependencies: [],
                 lastUpdatedById: authorId,
                 lastApprovedById: status == Status.Verified ? authorId : null,
+                createdAt: new Date(mod.uploadDate),
             }).catch((err) => {
                 Logger.error(`Failed to create mod version ${mod.name} v${mod.version}`, `Import`);
                 console.error(err);

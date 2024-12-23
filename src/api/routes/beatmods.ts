@@ -187,7 +187,7 @@ export class BeatModsRoutes {
             gameVersion: gameVersion.version,
             authorId: author.id.toString(),
             updatedDate: modVersion.updatedAt.toUTCString(),
-            uploadedDate: modVersion.createdAt.toUTCString(),
+            uploadDate: modVersion.createdAt.toUTCString(),
             author: doResolution ? {
                 _id: author.id.toString(),
                 username: author.username.toString(),
@@ -223,7 +223,7 @@ export type BeatModsMod = {
         username: string,
         lastLogin: string,
     } | undefined,
-    uploadedDate: string,
+    uploadDate: string,
     updatedDate: string,
     status: string,
     description: string,
