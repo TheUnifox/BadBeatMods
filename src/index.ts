@@ -82,7 +82,7 @@ app.use(session({
         maxAge: 86400000,
         secure: false,
         httpOnly: true,
-        sameSite: `strict`
+        sameSite: Config.devmode ? `none` : `strict`,
     }
 }));
 app.set(`trust proxy`, `uniquelocal, loopback`);
