@@ -18,11 +18,10 @@ export class AuthRoutes {
         this.app.get(`/api/auth`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
-            if (session.approved == false) {
-                return res.status(401).send({ error: `Unauthorized.` });
-            } else {
-                return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
+            if (!session.approved) {
+                return;
             }
+            return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
         });
 
         this.app.get(`/api/auth/logout`, async (req, res) => {
