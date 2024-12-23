@@ -27,6 +27,7 @@ export class CreateModRoutes {
             }
 
             let name = req.body.name;
+            let summary = req.body.summary;
             let description = req.body.description;
             let gitUrl = req.body.gitUrl;
             let category = req.body.category;
@@ -51,6 +52,7 @@ export class CreateModRoutes {
 
             DatabaseHelper.database.Mods.create({
                 name: name,
+                summary: summary,
                 description: description,
                 authorIds: [session.user.id],
                 gitUrl: gitUrl,

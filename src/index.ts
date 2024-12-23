@@ -42,6 +42,7 @@ app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
 app.use(cors({
     origin: `*`, // this should probably be changed in the future
+    credentials: Config.devmode ? true : false,
 }));
 app.use(fileUpload({
     limits: {
@@ -80,7 +81,7 @@ app.use(session({
     unset: `destroy`,
     cookie: {
         maxAge: 86400000,
-        secure: false,
+        secure: `auto`,
         httpOnly: true,
         sameSite: Config.devmode ? `none` : `strict`,
     }
