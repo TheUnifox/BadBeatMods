@@ -406,6 +406,9 @@
                 "name": {
                   "example": "any"
                 },
+                "summary": {
+                  "example": "any"
+                },
                 "description": {
                   "example": "any"
                 },
@@ -525,9 +528,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
           }
         }
       }
@@ -1459,6 +1459,137 @@
           },
           "500": {
             "description": "Error updating edit."
+          }
+        }
+      }
+    },
+    "/api/approval/modVersion/{modVersionIdParam}/revoke": {
+      "post": {
+        "tags": [
+          "Approval"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "modVersionIdParam",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "example": "any"
+                },
+                "allowDependants": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/motd": {
+      "get": {
+        "tags": [
+          "MOTD"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "gameName",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MOTD"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "gameName",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "example": "any"
+                },
+                "startDate": {
+                  "example": "any"
+                },
+                "endDate": {
+                  "example": "any"
+                },
+                "postType": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/motd/{id}": {
+      "delete": {
+        "tags": [
+          "MOTD"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }

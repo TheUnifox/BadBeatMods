@@ -33,6 +33,7 @@ const routes = [
     `./routes/import.ts`,
     `./routes/admin.ts`,
     `./routes/approval.ts`,
+    `./routes/motd.ts`,
 ];
 
 swaggerAutogen()(outputFile, routes, doc);

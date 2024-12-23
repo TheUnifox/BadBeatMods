@@ -39,7 +39,9 @@ Running the server is (mostly) easy to do:
     "server" : {
         "port" : 5001,
         "url" : "http://localhost:5001",
-        "sessionSecret" : "supersecret"
+        "sessionSecret" : "supersecret",
+        "iHateSecurity" : false,
+        "corsOrigins": "*"
     },
     "webhooks": {
         "enableWebhooks": true,
