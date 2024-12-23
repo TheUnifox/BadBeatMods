@@ -2,6 +2,7 @@ import { Express } from 'express';
 import express from 'express';
 import path from 'path';
 import { Config } from '../../shared/Config';
+import fs from 'fs';
 import { DatabaseHelper } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 
@@ -55,5 +56,15 @@ export class CDNRoutes {
             },
             fallthrough: false,
         }));
+
+        if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
+            this.app.use(`/`, express.static(path.resolve(`./storage/frontend`), {
+                dotfiles: `ignore`,
+                immutable: false,
+                index: true,
+                maxAge: 1000 * 60 * 60 * 1,
+                fallthrough: true,
+            }));
+        }
     }
 }
