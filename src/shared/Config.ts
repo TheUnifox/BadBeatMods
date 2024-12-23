@@ -26,7 +26,9 @@ const configMapping = {
     server: {
         port: cf.server.port ? cf.server.port : 5001,
         url: cf.server.url ? cf.server.url : `http://localhost:5001`,
-        sessionSecret:  cf.server.sessionSecret ? cf.server.sessionSecret : `supersecretkey`
+        sessionSecret:  cf.server.sessionSecret ? cf.server.sessionSecret : `supersecretkey`,
+        iHateSecurity: cf.server.iHateSecurity ? cf.server.iHateSecurity : false,
+        corsOrigins: cf.server.corsOrigins ? cf.server.corsOrigins : `*`
     },
     devmode: cf.devmode ? cf.devmode : false,
     authBypass: cf.authBypass ? cf.authBypass : false,
@@ -64,6 +66,8 @@ export class Config {
         port: number;
         url: string;
         sessionSecret: string;
+        iHateSecurity: boolean;
+        corsOrigins: string;
     } = configMapping.server;
     public static readonly devmode: boolean = configMapping.devmode;
     public static readonly authBypass: boolean = configMapping.authBypass;

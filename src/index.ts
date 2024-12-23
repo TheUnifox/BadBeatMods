@@ -41,8 +41,8 @@ if (Config.bot.enabled) {
 app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
 app.use(cors({
-    origin: [`http://localhost:5173`, `http://localhost:5001`, `https://bbm.saera.gay`], // this should probably be changed in the future
-    credentials: Config.devmode ? true : false,
+    origin: Config.server.corsOrigins,
+    credentials: Config.server.iHateSecurity ? true : false,
 }));
 app.use(fileUpload({
     limits: {
@@ -53,17 +53,17 @@ app.use(fileUpload({
 }));
 
 // rate limiting
-app.use(rateLimit({
+app.use(`/cdn`, rateLimit({
     windowMs: 60 * 1000,
-    max: 10,
+    max: 100,
     statusCode: 429,
     message: `Rate limit exceeded.`,
-    skipSuccessfulRequests: true,
+    skipSuccessfulRequests: false,
 }));
 
-app.use(rateLimit({
-    windowMs: 10 * 1000,
-    max: 50,
+app.use(`/api`, rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: false,
@@ -83,7 +83,7 @@ app.use(session({
         maxAge: 86400000,
         secure: `auto`,
         httpOnly: true,
-        sameSite: Config.devmode ? `none` : `strict`,
+        sameSite: Config.server.iHateSecurity ? `none` : `strict`,
     }
 }));
 app.set(`trust proxy`, `uniquelocal, loopback`);
