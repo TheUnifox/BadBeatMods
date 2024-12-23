@@ -849,23 +849,41 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Get new mods & modVersions pending approval.",
+        "description": "Get a list of mods & modVersions pending their first approval.",
         "parameters": [
           {
             "name": "gameName",
-            "in": "query",
-            "type": "string"
+            "description": "The name of the game to get new mods for.",
+            "type": "string",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "List of mods pending first approval",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mods": {
+                  "type": "array",
+                  "example": [],
+                  "items": {}
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing game name."
+          },
+          "401": {
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "No mods found."
           }
         }
       }
@@ -875,23 +893,41 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Get edits pending approval.",
+        "description": "Get a list of already existing mod & modVersions that are pending approval.",
         "parameters": [
           {
             "name": "gameName",
-            "in": "query",
-            "type": "string"
+            "description": "The name of the game to get edits for.",
+            "type": "string",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "List of edits pending approval",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "edits": {
+                  "type": "array",
+                  "example": [],
+                  "items": {}
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing game name."
+          },
+          "401": {
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "No edits found."
           }
         }
       }
@@ -901,13 +937,21 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Approve a mod.",
+        "description": "Approve a mod for public visibility.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "The id of the mod to approve."
+          },
+          {
+            "name": "status",
+            "description": "The status to set the mod to.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "body",
@@ -924,19 +968,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Mod status updated."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing status."
           },
           "401": {
-            "description": "Unauthorized"
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "Mod not found."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error approving mod."
           }
         }
       }
@@ -946,13 +990,21 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Approve a modVersion.",
+        "description": "Approve a modVersion for public visibility.",
         "parameters": [
           {
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "The id of the modVersion to approve."
+          },
+          {
+            "name": "status",
+            "description": "The status to set the modVersion to.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "body",
@@ -969,19 +1021,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "ModVersion status updated."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing status."
           },
           "401": {
-            "description": "Unauthorized"
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "ModVersion not found."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error approving modVersion."
           }
         }
       }
@@ -991,13 +1043,21 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Approve an edit.",
+        "description": "Approve an edit for public visibility.",
         "parameters": [
           {
             "name": "editIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "The id of the edit to approve."
+          },
+          {
+            "name": "status",
+            "description": "The status to set the edit to.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "body",
@@ -1014,16 +1074,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Edit status updated."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Missing status."
+          },
+          "401": {
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "Edit not found."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error approving edit."
           }
         }
       }
@@ -1033,13 +1096,51 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Edit a mod in the approval queue.",
+        "description": "Edit a mod in the approval queue.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "The id of the mod to edit."
+          },
+          {
+            "name": "name",
+            "description": "The new name of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "summary",
+            "description": "The new summary of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "description",
+            "description": "The new description of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "gitUrl",
+            "description": "The new gitUrl of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "category",
+            "description": "The new category of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "gameName",
+            "description": "The new gameName of the mod.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "body",
@@ -1071,19 +1172,31 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Mod updated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mod": {
+                  "type": "object",
+                  "properties": {}
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "400": {
-            "description": "Bad Request"
+            "description": "No changes provided."
           },
           "401": {
-            "description": "Unauthorized"
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "Mod not found."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error updating mod."
           }
         }
       }
@@ -1093,13 +1206,45 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Edit a modVersion in the approval queue.",
+        "description": "Edit a modVersion in the approval queue.",
         "parameters": [
           {
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "The id of the modVersion to edit."
+          },
+          {
+            "name": "gameVersionIds",
+            "description": "The new gameVersionIds of the modVersion.",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "in": "query"
+          },
+          {
+            "name": "modVersion",
+            "description": "The new modVersion of the modVersion.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "dependencyIds",
+            "description": "The new dependencyIds of the modVersion.",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "in": "query"
+          },
+          {
+            "name": "platform",
+            "description": "The new platform of the modVersion.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "body",
@@ -1125,16 +1270,31 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "ModVersion updated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "modVersion": {
+                  "type": "object",
+                  "properties": {}
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "400": {
-            "description": "Bad Request"
+            "description": "No changes provided."
+          },
+          "401": {
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "ModVersion not found."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error updating modVersion."
           }
         }
       }
@@ -1144,13 +1304,90 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Edit an edit in the approval queue.",
+        "description": "Edit an edit in the approval queue.",
         "parameters": [
           {
             "name": "editIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "The id of the edit to edit."
+          },
+          {
+            "name": "name",
+            "description": "The new name of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "summary",
+            "description": "The new summary of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "description",
+            "description": "The new description of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "gitUrl",
+            "description": "The new gitUrl of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "category",
+            "description": "The new category of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "authorIds",
+            "description": "The new authorIds of the mod.",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "in": "query"
+          },
+          {
+            "name": "gameName",
+            "description": "The new gameName of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "gameVersionIds",
+            "description": "The new gameVersionIds of the mod.",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "in": "query"
+          },
+          {
+            "name": "modVersion",
+            "description": "The new modVersion of the mod.",
+            "type": "string",
+            "in": "query"
+          },
+          {
+            "name": "dependencyIds",
+            "description": "The new dependencyIds of the mod.",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "in": "query"
+          },
+          {
+            "name": "platform",
+            "description": "The new platform of the mod.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "body",
@@ -1197,16 +1434,31 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Edit updated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "edit": {
+                  "type": "object",
+                  "properties": {}
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "400": {
-            "description": "Bad Request"
+            "description": "No changes provided."
+          },
+          "401": {
+            "description": "Unauthorized."
           },
           "404": {
-            "description": "Not Found"
+            "description": "Edit not found."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error updating edit."
           }
         }
       }

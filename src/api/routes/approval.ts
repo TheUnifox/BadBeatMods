@@ -16,6 +16,13 @@ export class ApprovalRoutes {
     private async loadRoutes() {
         this.app.get(`/api/approval/new`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Get new mods & modVersions pending approval.'
+            // #swagger.description = 'Get a list of mods & modVersions pending their first approval.'
+            // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string' }
+            // #swagger.responses[200] = { description: 'List of mods pending first approval', schema: { mods: [] } }
+            // #swagger.responses[400] = { description: 'Missing game name.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'No mods found.' }
             let gameName = req.query.gameName;
             if (typeof gameName !== `string` || !DatabaseHelper.isValidGameName(gameName)) {
                 return res.status(400).send({ message: `Missing game name.` });
@@ -47,6 +54,13 @@ export class ApprovalRoutes {
 
         this.app.get(`/api/approval/edits`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Get edits pending approval.'
+            // #swagger.description = 'Get a list of already existing mod & modVersions that are pending approval.'
+            // #swagger.parameters['gameName'] = { description: 'The name of the game to get edits for.', type: 'string' }
+            // #swagger.responses[200] = { description: 'List of edits pending approval', schema: { edits: [] } }
+            // #swagger.responses[400] = { description: 'Missing game name.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'No edits found.' }
             let gameName = req.query.gameName;
             if (typeof gameName !== `string` || !DatabaseHelper.isValidGameName(gameName)) {
                 return res.status(400).send({ message: `Missing game name.` });
@@ -81,6 +95,15 @@ export class ApprovalRoutes {
         // #region Accept/Reject Approvals
         this.app.post(`/api/approval/mod/:modIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Approve a mod.'
+            // #swagger.description = 'Approve a mod for public visibility.'
+            // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to approve.', type: 'integer' }
+            // #swagger.parameters['status'] = { description: 'The status to set the mod to.', type: 'string' }
+            // #swagger.responses[200] = { description: 'Mod status updated.' }
+            // #swagger.responses[400] = { description: 'Missing status.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'Mod not found.' }
+            // #swagger.responses[500] = { description: 'Error approving mod.' }
             let modId = parseInt(req.params.modIdParam, 10);
             let status = req.body.status;
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModId(modId));
@@ -116,6 +139,15 @@ export class ApprovalRoutes {
 
         this.app.post(`/api/approval/modversion/:modVersionIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Approve a modVersion.'
+            // #swagger.description = 'Approve a modVersion for public visibility.'
+            // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to approve.', type: 'integer' }
+            // #swagger.parameters['status'] = { description: 'The status to set the modVersion to.', type: 'string' }
+            // #swagger.responses[200] = { description: 'ModVersion status updated.' }
+            // #swagger.responses[400] = { description: 'Missing status.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'ModVersion not found.' }
+            // #swagger.responses[500] = { description: 'Error approving modVersion.' }
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let status = req.body.status;
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId));
@@ -156,6 +188,15 @@ export class ApprovalRoutes {
 
         this.app.post(`/api/approval/edit/:editIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Approve an edit.'
+            // #swagger.description = 'Approve an edit for public visibility.'
+            // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to approve.', type: 'integer' }
+            // #swagger.parameters['status'] = { description: 'The status to set the edit to.', type: 'string' }
+            // #swagger.responses[200] = { description: 'Edit status updated.' }
+            // #swagger.responses[400] = { description: 'Missing status.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'Edit not found.' }
+            // #swagger.responses[500] = { description: 'Error approving edit.' }
             let editId = parseInt(req.params.editIdParam, 10);
             let accepted = req.body.accepted;
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));
@@ -211,7 +252,20 @@ export class ApprovalRoutes {
         // #region Edit Approvals
         this.app.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
-            //return res.status(501).send({ message: `Not implemented.` });
+            // #swagger.summary = 'Edit a mod in the approval queue.'
+            // #swagger.description = 'Edit a mod in the approval queue.'
+            // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to edit.', type: 'integer', required: true }
+            // #swagger.parameters['name'] = { description: 'The new name of the mod.', type: 'string' }
+            // #swagger.parameters['summary'] = { description: 'The new summary of the mod.', type: 'string' }
+            // #swagger.parameters['description'] = { description: 'The new description of the mod.', type: 'string' }
+            // #swagger.parameters['gitUrl'] = { description: 'The new gitUrl of the mod.', type: 'string' }
+            // #swagger.parameters['category'] = { description: 'The new category of the mod.', type: 'string' }
+            // #swagger.parameters['gameName'] = { description: 'The new gameName of the mod.', type: 'string' }
+            // #swagger.responses[200] = { description: 'Mod updated.', schema: { mod: {} } }
+            // #swagger.responses[400] = { description: 'No changes provided.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'Mod not found.' }
+            // #swagger.responses[500] = { description: 'Error updating mod.' }
             let modId = parseInt(req.params.modIdParam, 10);
             let name = req.body.name;
             let summary = req.body.summary;
@@ -279,8 +333,19 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
-            //return res.status(501).send({ message: `Not implemented.` });
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Edit a modVersion in the approval queue.'
+            // #swagger.description = 'Edit a modVersion in the approval queue.'
+            // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to edit.', type: 'integer', required: true }
+            // #swagger.parameters['gameVersionIds'] = { description: 'The new gameVersionIds of the modVersion.', type: 'array', items: { type: 'integer' } }
+            // #swagger.parameters['modVersion'] = { description: 'The new modVersion of the modVersion.', type: 'string' }
+            // #swagger.parameters['dependencyIds'] = { description: 'The new dependencyIds of the modVersion.', type: 'array', items: { type: 'integer' } }
+            // #swagger.parameters['platform'] = { description: 'The new platform of the modVersion.', type: 'string' }
+            // #swagger.responses[200] = { description: 'ModVersion updated.', schema: { modVersion: {} } }
+            // #swagger.responses[400] = { description: 'No changes provided.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'ModVersion not found.' }
+            // #swagger.responses[500] = { description: 'Error updating modVersion.' }
             let modVersionId = parseInt(req.params.modVersionIdParam, 10);
             let gameVersionIds = req.body.gameVersionIds;
             let modVersion = req.body.modVersion;
@@ -359,8 +424,26 @@ export class ApprovalRoutes {
         });
 
         this.app.patch(`/api/approval/edit/:editIdParam`, async (req, res) => {
-            //return res.status(501).send({ message: `Not implemented.` });
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Edit an edit in the approval queue.'
+            // #swagger.description = 'Edit an edit in the approval queue.'
+            // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to edit.', type: 'integer', required: true }
+            // #swagger.parameters['name'] = { description: 'The new name of the mod.', type: 'string' }
+            // #swagger.parameters['summary'] = { description: 'The new summary of the mod.', type: 'string' }
+            // #swagger.parameters['description'] = { description: 'The new description of the mod.', type: 'string' }
+            // #swagger.parameters['gitUrl'] = { description: 'The new gitUrl of the mod.', type: 'string' }
+            // #swagger.parameters['category'] = { description: 'The new category of the mod.', type: 'string' }
+            // #swagger.parameters['authorIds'] = { description: 'The new authorIds of the mod.', type: 'array', items: { type: 'integer' } }
+            // #swagger.parameters['gameName'] = { description: 'The new gameName of the mod.', type: 'string' }
+            // #swagger.parameters['gameVersionIds'] = { description: 'The new gameVersionIds of the mod.', type: 'array', items: { type: 'integer' } }
+            // #swagger.parameters['modVersion'] = { description: 'The new modVersion of the mod.', type: 'string' }
+            // #swagger.parameters['dependencyIds'] = { description: 'The new dependencyIds of the mod.', type: 'array', items: { type: 'integer' } }
+            // #swagger.parameters['platform'] = { description: 'The new platform of the mod.', type: 'string' }
+            // #swagger.responses[200] = { description: 'Edit updated.', schema: { edit: {} } }
+            // #swagger.responses[400] = { description: 'No changes provided.' }
+            // #swagger.responses[401] = { description: 'Unauthorized.' }
+            // #swagger.responses[404] = { description: 'Edit not found.' }
+            // #swagger.responses[500] = { description: 'Error updating edit.' }
             let editId = parseInt(req.params.editIdParam, 10);
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId));
             if (!session.approved) {
