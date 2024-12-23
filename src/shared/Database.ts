@@ -26,6 +26,7 @@ export class DatabaseManager {
     public Mods: ModelStatic<Mod>;
     public GameVersions: ModelStatic<GameVersion>;
     public EditApprovalQueue: ModelStatic<EditQueue>;
+    public MOTDs: ModelStatic<MOTD>;
 
     constructor() {
         Logger.log(`Loading Database...`);
@@ -406,6 +407,47 @@ export class DatabaseManager {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
         });
+
+        this.MOTDs = MOTD.init({
+            id: {
+                type: DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+                unique: true,
+            },
+            gameName: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            message: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: ``,
+            },
+            startTime: {
+                type: DataTypes.DATE,
+                allowNull: false,
+            },
+            endTime: {
+                type: DataTypes.DATE,
+                allowNull: false,
+            },
+            postType: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: `community`,
+            },
+            authorId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            createdAt: DataTypes.DATE, // just so that typescript isn't angy
+            updatedAt: DataTypes.DATE,
+        }, {
+            sequelize: this.sequelize,
+            modelName: `motds`,
+        });
         // #endregion
 
         // #region Hooks
@@ -519,6 +561,7 @@ export interface UserRolesObject {
 export enum UserRoles {
     AllPermissions = `allpermissions`,
     Admin = `admin`,
+    Poster = `poster`,
     Approver = `approver`,
     Moderator = `moderator`,
     Banned = `banned`,
@@ -929,7 +972,34 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
     }
 }
 // #endregion
+// #region MOTD
+export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<MOTD>> {
+    declare readonly id: number;
+    declare gameName: SupportedGames;
+    declare postType: PostType;
+    declare message: string;
+    declare authorId: number;
+    declare startTime: Date;
+    declare endTime: Date;
+    declare readonly createdAt: Date;
+    declare readonly updatedAt: Date;
+
+    public static async getActiveMOTDs(gameName: SupportedGames, getExpired = false): Promise<MOTD[]> {
+        if (getExpired == false) {
+            return MOTD.findAll({ where: { gameName, startTime: { $lt: new Date(Date.now()) }, endTime: { $gt: new Date(Date.now()) }} });
+        } else {
+            return MOTD.findAll({ where: { gameName, endTime: { $lt: new Date(Date.now()) }} });
+        }
+    }
+}
+// #endregion
 // #region Interfaces/Enums
+export enum PostType {
+    Emergency = `emergency`,
+    GameUpdates = `gameupdates`,
+    Community = `community`
+}
+
 export interface ContentHash {
     path: string;
     hash: string;
@@ -1093,6 +1163,10 @@ export class DatabaseHelper {
 
         let game = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: gameName, version: version } });
         return game ? game.id : null;
+    }
+
+    public static isValidPostType(value: string): value is PostType {
+        return validateEnumValue(value, PostType);
     }
 }
 // #endregion
