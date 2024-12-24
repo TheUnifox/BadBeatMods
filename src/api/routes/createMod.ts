@@ -9,7 +9,7 @@ import { HTTPTools } from '../../shared/HTTPTools';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
 import { Op } from 'sequelize';
-import { ZodCreateMod } from 'src/shared/Validator';
+import { ZodCreateMod } from '../../shared/Validator';
 
 export class CreateModRoutes {
     private app: Express;
