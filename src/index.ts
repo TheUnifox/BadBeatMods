@@ -22,6 +22,8 @@ import swaggerDocument from './api/swagger.json';
 import { BeatModsRoutes } from './api/routes/beatmods';
 import { CDNRoutes } from './api/routes/cdn';
 import cors from 'cors';
+import { MOTDRoutes } from './api/routes/motd';
+import { UserRoutes } from './api/routes/users';
 
 console.log(`Starting setup...`);
 new Config();
@@ -109,6 +111,8 @@ new AuthRoutes(app);
 new ImportRoutes(app);
 new AdminRoutes(app);
 new VersionsRoutes(app);
+new MOTDRoutes(app);
+new UserRoutes(app);
 
 swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
 app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));

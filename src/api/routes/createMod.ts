@@ -9,6 +9,7 @@ import { HTTPTools } from '../../shared/HTTPTools';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
 import { Op } from 'sequelize';
+import { ZodCreateMod } from 'src/shared/Validator';
 
 export class CreateModRoutes {
     private app: Express;
@@ -26,24 +27,18 @@ export class CreateModRoutes {
                 return;
             }
 
-            let name = req.body.name;
-            let summary = req.body.summary;
-            let description = req.body.description;
-            let gitUrl = req.body.gitUrl;
-            let category = req.body.category;
-            let gameName = req.body.gameName;
+            let reqBody = ZodCreateMod.safeParse(req.body);
             let icon = req.files?.icon;
 
-            //#region Request Validation
-            if (HTTPTools.validateStringParameter(name, 3) == false || HTTPTools.validateStringParameter(description, 3) == false || HTTPTools.validateStringParameter(gitUrl, 3) == false || HTTPTools.validateStringParameter(category, 3) == false || HTTPTools.validateStringParameter(gameName, 3) == false || DatabaseHelper.isValidCategory(category) == false || DatabaseHelper.isValidGameName(gameName) == false) {
-                return res.status(400).send({ message: `Missing and/or Invalid parameters.` });
+            if (!reqBody.success) {
+                return res.status(400).send({ message: `Invalid parameters: ${reqBody.error.name}` });
             }
 
             if (!icon || Array.isArray(icon) || icon.size > 8 * 1024 * 1024) {
                 return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
             }
             
-            let isAcceptableImage = (icon.mimetype !== `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype !== `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype !== `image/webp` && icon.name.endsWith(`.webp`)));
+            let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
 
             if (!isAcceptableImage) {
                 return res.status(400).send({ error: `Invalid file type.` });
@@ -51,13 +46,13 @@ export class CreateModRoutes {
             //#endregion
 
             DatabaseHelper.database.Mods.create({
-                name: name,
-                summary: summary,
-                description: description,
+                name: reqBody.data.name,
+                summary: reqBody.data.summary,
+                description: reqBody.data.description,
                 authorIds: [session.user.id],
-                gitUrl: gitUrl,
-                category: category,
-                gameName: gameName,
+                gitUrl: reqBody.data.gitUrl,
+                category: reqBody.data.category,
+                gameName: reqBody.data.gameName,
                 iconFileName: `${icon.md5}${path.extname(icon.name)}`,
                 lastUpdatedById: session.user.id,
                 status: Status.Private,

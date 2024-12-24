@@ -3,7 +3,7 @@ import { DatabaseHelper, GameVersion, ModAPIResponse, User } from '../../shared/
 import { HTTPTools } from '../../shared/HTTPTools';
 import { validateSession } from '../../shared/AuthHelper';
 
-export class GetModRoutes {
+export class UserRoutes {
     private app: Express;
 
     constructor(app: Express) {
