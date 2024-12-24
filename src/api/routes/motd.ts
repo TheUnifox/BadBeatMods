@@ -1,7 +1,7 @@
 import { Express } from 'express';
 import { DatabaseHelper, MOTD, SupportedGames, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
-import { HTTPTools } from 'src/shared/HTTPTools';
+import { HTTPTools } from '../../shared/HTTPTools';
 
 export class MOTDRoutes {
     private app: Express;
