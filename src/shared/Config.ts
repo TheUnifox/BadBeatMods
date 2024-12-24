@@ -67,7 +67,7 @@ export class Config {
         url: string;
         sessionSecret: string;
         iHateSecurity: boolean;
-        corsOrigins: string;
+        corsOrigins: string | string[];
     } = configMapping.server;
     public static readonly devmode: boolean = configMapping.devmode;
     public static readonly authBypass: boolean = configMapping.authBypass;
