@@ -425,6 +425,19 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
+            translations: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: `{}`,
+                get() {
+                    // @ts-expect-error s(2345)
+                    return JSON.parse(this.getDataValue(`translations`));
+                },
+                set(value: string[]) {
+                    // @ts-expect-error s(2345)
+                    this.setDataValue(`translations`, JSON.stringify(value));
+                },
+            },
             startTime: {
                 type: DataTypes.DATE,
                 allowNull: false,
@@ -974,6 +987,7 @@ export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<M
     declare gameName: SupportedGames;
     declare postType: PostType;
     declare message: string;
+    declare translations: Translations;
     declare authorId: number;
     declare startTime: Date;
     declare endTime: Date;
@@ -994,6 +1008,10 @@ export enum PostType {
     Emergency = `emergency`,
     GameUpdates = `gameupdates`,
     Community = `community`
+}
+
+export interface Translations {
+    [locale: string]: string;
 }
 
 export interface ContentHash {
@@ -1050,12 +1068,14 @@ export class DatabaseHelper {
         mods: Mod[],
         users: User[],
         editApprovalQueue: EditQueue[],
+        motd: MOTD[],
     } = {
             gameVersions: [],
             modVersions: [],
             mods: [],
             users: [],
             editApprovalQueue: [],
+            motd: [],
         };
 
     constructor(database: DatabaseManager) {
@@ -1071,6 +1091,7 @@ export class DatabaseHelper {
         DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
         DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
         DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
+        DatabaseHelper.cache.motd = await DatabaseHelper.database.MOTDs.findAll();
     }
 
     public static async refreshCache(tableName: `gameVersions` | `modVersions` | `mods` | `users` | `editApprovalQueue`) {

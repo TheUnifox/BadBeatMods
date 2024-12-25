@@ -487,11 +487,15 @@ export class ApprovalRoutes {
         // #region Revoke Approvals
         this.app.post(`/api/approval/modVersion/:modVersionIdParam/revoke`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            // #swagger.summary = 'Revoke a modVersion's verification.'
+            // #swagger.description = 'Revoke a modVersion\'s verification status.\n\nThis will also revoke the verification status of any modVersions that depend on this modVersion.
+            // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to revoke.', type: 'integer', required: true }
+            // #swagger.parameters['allowDependants'] = { description: 'Allow dependants to remain verified. This is dangerous.', type: 'boolean', required: true }
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             if (!modVersionId.success) {
                 return res.status(400).send({ message: `Invalid mod version id.` });
             }
-            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
+            let session = await validateSession(req, res, UserRoles.Admin, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
             if (!session.approved) {
                 return;
             }

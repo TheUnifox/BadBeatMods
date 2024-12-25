@@ -29,6 +29,14 @@
       "description": "Approval related endpoints"
     },
     {
+      "name": "MOTD",
+      "description": "Message of the Day related endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "User related endpoints"
+    },
+    {
       "name": "BeatMods",
       "description": "Legacy BeatMods API endpoints"
     }
@@ -272,36 +280,6 @@
             "in": "path",
             "required": true,
             "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "example": "any"
-                },
-                "summary": {
-                  "example": "any"
-                },
-                "description": {
-                  "example": "any"
-                },
-                "category": {
-                  "example": "any"
-                },
-                "authorIds": {
-                  "example": "any"
-                },
-                "gitUrl": {
-                  "example": "any"
-                },
-                "gameName": {
-                  "example": "any"
-                }
-              }
-            }
           }
         ],
         "responses": {
@@ -319,9 +297,6 @@
           },
           "500": {
             "description": "Internal Server Error"
-          },
-          "501": {
-            "description": "Not Implemented"
           }
         }
       }
@@ -424,27 +399,6 @@
             "in": "path",
             "required": true,
             "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "gameVersions": {
-                  "example": "any"
-                },
-                "modVersion": {
-                  "example": "any"
-                },
-                "dependencies": {
-                  "example": "any"
-                },
-                "platform": {
-                  "example": "any"
-                }
-              }
-            }
           }
         ],
         "responses": {
@@ -484,8 +438,86 @@
           }
         ],
         "responses": {
-          "501": {
-            "description": "Not Implemented"
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/mods/{modIdParam}/submit": {
+      "post": {
+        "tags": [
+          "Mods"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "modIdParam",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/modVersions/{modVersionIdParam}/submit": {
+      "post": {
+        "tags": [
+          "Mods"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "modVersionIdParam",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -1112,33 +1144,6 @@
             "description": "The new gameName of the mod.",
             "type": "string",
             "in": "query"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "example": "any"
-                },
-                "summary": {
-                  "example": "any"
-                },
-                "description": {
-                  "example": "any"
-                },
-                "gitUrl": {
-                  "example": "any"
-                },
-                "category": {
-                  "example": "any"
-                },
-                "gameName": {
-                  "example": "any"
-                }
-              }
-            }
           }
         ],
         "responses": {
@@ -1216,27 +1221,6 @@
             "description": "The new platform of the modVersion.",
             "type": "string",
             "in": "query"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "gameVersionIds": {
-                  "example": "any"
-                },
-                "modVersion": {
-                  "example": "any"
-                },
-                "dependencyIds": {
-                  "example": "any"
-                },
-                "platform": {
-                  "example": "any"
-                }
-              }
-            }
           }
         ],
         "responses": {
@@ -1359,48 +1343,6 @@
             "description": "The new platform of the mod.",
             "type": "string",
             "in": "query"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "example": "any"
-                },
-                "description": {
-                  "example": "any"
-                },
-                "summary": {
-                  "example": "any"
-                },
-                "gitUrl": {
-                  "example": "any"
-                },
-                "category": {
-                  "example": "any"
-                },
-                "authorIds": {
-                  "example": "any"
-                },
-                "gameName": {
-                  "example": "any"
-                },
-                "gameVersions": {
-                  "example": "any"
-                },
-                "modVersion": {
-                  "example": "any"
-                },
-                "dependencies": {
-                  "example": "any"
-                },
-                "platform": {
-                  "example": "any"
-                }
-              }
-            }
           }
         ],
         "responses": {
@@ -1439,7 +1381,8 @@
         "tags": [
           "Approval"
         ],
-        "description": "",
+        "summary": "Revoke a modVersion",
+        "description": "Revoke a modVersion\\'s verification status.\\n\\nThis will also revoke the verification status of any modVersions that depend on this modVersion.\r  // ",
         "parameters": [
           {
             "name": "modVersionIdParam",
@@ -1453,9 +1396,6 @@
             "schema": {
               "type": "object",
               "properties": {
-                "status": {
-                  "example": "any"
-                },
                 "allowDependants": {
                   "example": "any"
                 }
@@ -1587,58 +1527,70 @@
     },
     "/api/user/{id}": {
       "get": {
-        "description": "",
+        "tags": [
+          "User"
+        ],
+        "summary": "Get user information.",
+        "description": "Get user information.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number",
+            "description": "User ID."
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Returns user information."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Invalid parameters."
           },
           "404": {
-            "description": "Not Found"
+            "description": "User not found."
           }
         }
       }
     },
     "/api/user/{id}/mods": {
       "get": {
-        "description": "",
+        "tags": [
+          "User"
+        ],
+        "summary": "Get user information.",
+        "description": "Get user information.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number",
+            "description": "User ID."
           },
           {
             "name": "status",
-            "in": "query",
-            "type": "string"
+            "description": "Status of the mod.",
+            "type": "string",
+            "in": "query"
           },
           {
             "name": "platform",
-            "in": "query",
-            "type": "string"
+            "description": "Platform of the mod.",
+            "type": "string",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Returns mods."
           },
           "400": {
-            "description": "Bad Request"
+            "description": "Invalid parameters."
           },
           "404": {
-            "description": "Not Found"
+            "description": "User not found."
           }
         }
       }

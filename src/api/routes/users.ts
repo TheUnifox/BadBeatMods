@@ -1,7 +1,8 @@
 import { Express } from 'express';
-import { DatabaseHelper, GameVersion, ModAPIResponse, User } from '../../shared/Database';
+import { DatabaseHelper, GameVersion, ModAPIResponse, Status, User } from '../../shared/Database';
 import { HTTPTools } from '../../shared/HTTPTools';
 import { validateSession } from '../../shared/AuthHelper';
+import { Validator } from '../../shared/Validator';
 
 export class UserRoutes {
     private app: Express;
@@ -28,6 +29,13 @@ export class UserRoutes {
         });
 
         this.app.get(`/api/user/:id`, async (req, res) => {
+            // #swagger.tags = ['User']
+            // #swagger.summary = 'Get user information.'
+            // #swagger.description = 'Get user information.'
+            // #swagger.parameters['id'] = { description: 'User ID.', type: 'number' }
+            // #swagger.responses[200] = { description: 'Returns user information.' }
+            // #swagger.responses[404] = { description: 'User not found.' }
+            // #swagger.responses[400] = { description: 'Invalid parameters.' }
             if (HTTPTools.validateNumberParameter(req.params.id)) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
@@ -42,19 +50,36 @@ export class UserRoutes {
         });
 
         this.app.get(`/api/user/:id/mods`, async (req, res) => {
-            let status = req.query.status;
+            // #swagger.tags = ['User']
+            // #swagger.summary = 'Get user information.'
+            // #swagger.description = 'Get user information.'
+            // #swagger.parameters['id'] = { description: 'User ID.', type: 'number' }
+            // #swagger.parameters['status'] = { description: 'Status of the mod.', type: 'string' }
+            // #swagger.parameters['platform'] = { description: 'Platform of the mod.', type: 'string' }
+            // #swagger.responses[200] = { description: 'Returns mods.' }
+            // #swagger.responses[404] = { description: 'User not found.' }
+            // #swagger.responses[400] = { description: 'Invalid parameters.' }
+            let status = Validator.zStatus.default(Status.Verified).safeParse(req.query.status);
             let platform = req.query.platform;
             let filteredPlatform = (platform && HTTPTools.validateStringParameter(platform) && DatabaseHelper.isValidPlatform(platform)) ? platform : undefined;
-            let onlyApproved = status === `verified`;
             if (HTTPTools.validateNumberParameter(req.params.id)) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
+
+            if (!status.success) {
+                return res.status(400).send({ error: `Invalid parameters.` });
+            }
+
+            let onlyApproved = status.data === Status.Verified;
 
             let id = HTTPTools.parseNumberParameter(req.params.id);
             let user = DatabaseHelper.cache.users.find((u) => u.id === id);
             if (user) {
                 let mods: {mod: ModAPIResponse, latest: any }[] = [];
                 for (let mod of DatabaseHelper.cache.mods) {
+                    if (mod.status !== status.data) {
+                        continue;
+                    }
                     if (mod.authorIds.includes(id)) {
                         continue;
                     }

@@ -18,6 +18,8 @@ const doc = {
         { name: `Versions`, description: `Version Management` },
         { name: `Admin`, description: `Admin related endpoints` },
         { name: `Approval`, description: `Approval related endpoints` },
+        { name: `MOTD`, description: `Message of the Day related endpoints` },
+        { name: `Users`, description: `User related endpoints` },
         { name: `BeatMods`, description: `Legacy BeatMods API endpoints` },
     ],
 };
