@@ -9,7 +9,7 @@ import { HTTPTools } from '../../shared/HTTPTools';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
 import { Op } from 'sequelize';
-import { ZodCreateMod } from '../../shared/Validator';
+import { Validator } from '../../shared/Validator';
 
 export class CreateModRoutes {
     private app: Express;
@@ -27,11 +27,11 @@ export class CreateModRoutes {
                 return;
             }
 
-            let reqBody = ZodCreateMod.safeParse(req.body);
+            let reqBody = Validator.zCreateMod.safeParse(req.body);
             let icon = req.files?.icon;
 
             if (!reqBody.success) {
-                return res.status(400).send({ message: `Invalid parameters: ${reqBody.error.name}` });
+                return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
 
             if (!icon || Array.isArray(icon) || icon.size > 8 * 1024 * 1024) {
@@ -77,28 +77,20 @@ export class CreateModRoutes {
                 return;
             }
             
-            let modId = HTTPTools.parseNumberParameter(req.params.modIdParam);
-            let gameVersions = Config.devmode ? JSON.parse(req.body.gameVersions) : req.body.gameVersions;
-            let modVersion = req.body.modVersion;
-            let dependencies = req.body.dependencies;
-            let platform = req.body.platform;
-
+            let modId = Validator.zDBID.safeParse(req.params.modIdParam);
+            let reqBody = Validator.zUploadModVersion.safeParse(req.body);
             let file = req.files?.file;
+
             //#region Request Validation
-            if (HTTPTools.validateNumberParameter(modId) == false || HTTPTools.validateStringParameter(modVersion, 3) == false || HTTPTools.validateStringParameter(platform, 3) == false || HTTPTools.validateNumberArrayParameter(gameVersions) == false || HTTPTools.validateNumberArrayParameter(dependencies) == false || DatabaseHelper.isValidPlatform(platform) == false) {
-                return res.status(400).send({ message: `Invalid parameters` });
+            if (!modId.success) {
+                return res.status(400).send({ message: `Invalid modId.` });
             }
 
-            try {
-                modVersion = new SemVer(modVersion);
-                if (!modVersion) {
-                    return res.status(400).send({ message: `Invalid modVersion.` });
-                }
-            } catch (error) {
-                return res.status(400).send({ message: `Invalid modVersion.` });
+            if (!reqBody.success) {
+                return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
 
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId.data } });
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
@@ -108,25 +100,24 @@ export class CreateModRoutes {
             }
 
             
-            for (let dependancy of dependencies) {
+            for (let dependancy of reqBody.data.dependencies) {
                 let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private}] } });
                 if (!dependancyMod) {
                     return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
                 }
             }
-            for (let version of gameVersions) {
+            for (let version of reqBody.data.supportedGameVersionIds) {
                 let gameVersionDB = await DatabaseHelper.database.GameVersions.findOne({ where: { id: version } });
                 if (!gameVersionDB) {
                     return res.status(404).send({ message: `Game version (${version}) not found.` });
                 }
             }
 
-
             if (!file || Array.isArray(file) || file.size > 75 * 1024 * 1024) {
-                return res.status(413).send({ error: `File missing or too large.` });
+                return res.status(413).send({ message: `File missing or too large.` });
             }
             //#endregion
-            let isZip = file.mimetype !== `application/zip` && file.name.endsWith(`.zip`);
+            let isZip = file.mimetype === `application/zip` && file.name.endsWith(`.zip`);
             let hashs: ContentHash[] = [];
             if (isZip) {
                 await JSZip.loadAsync(file.data).then(async (zip) => {
@@ -146,19 +137,24 @@ export class CreateModRoutes {
                     return res.status(500).send({ message: `Error reading zip file.` });
                 });
             } else {
-                return res.status(400).send({ error: `File must be a zip archive.` });
+                return res.status(400).send({ message: `File must be a zip archive.` });
             }
 
-            file.mv(`${path.resolve(Config.storage.modsDir)}/${file.md5}${path.extname(file.name)}`);
+            let filePath = `${path.resolve(Config.storage.iconsDir)}/${file.md5}${path.extname(file.name)}`;
+            if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}/`) == false) {
+                return res.status(400).send({ message: `Invalid zip file.` });
+            } else {
+                file.mv(filePath);
+            }
 
             DatabaseHelper.database.ModVersions.create({
-                modId: modId,
+                modId: modId.data,
                 authorId: session.user.id,
                 status: Status.Private,
-                supportedGameVersionIds: gameVersions,
-                modVersion: modVersion,
-                dependencies: dependencies ? dependencies : [],
-                platform: platform,
+                supportedGameVersionIds: reqBody.data.supportedGameVersionIds,
+                modVersion: new SemVer(reqBody.data.modVersion),
+                dependencies: reqBody.data.dependencies,
+                platform: reqBody.data.platform,
                 contentHashes: hashs,
                 zipHash: file.md5,
                 lastUpdatedById: session.user.id,
@@ -167,7 +163,6 @@ export class CreateModRoutes {
             }).catch((error) => {
                 res.status(500).send({ message: `Error creating mod version: ${error}` });
             });
-
         });
     }
 }

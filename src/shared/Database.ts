@@ -451,15 +451,7 @@ export class DatabaseManager {
         // #endregion
 
         // #region Hooks
-        this.Mods.beforeCreate(async (mod) => {
-            await Mod.checkForExistingMod(mod.name).then((existingMod) => {
-                if (existingMod) {
-                    throw new Error(`Mod already exists.`);
-                }
-            });
-        });
-
-        this.Mods.beforeUpdate(async (mod) => {
+        this.Mods.afterValidate(async (mod) => {
             await Mod.checkForExistingMod(mod.name).then((existingMod) => {
                 if (existingMod) {
                     if (existingMod.id != mod.id) {
@@ -469,19 +461,8 @@ export class DatabaseManager {
             });
         });
 
-        this.ModVersions.beforeCreate(async (modVersion) => {
-            await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
-                if (existingVersion) {
-                    throw new Error(`Version already exists.`);
-                }
-            });
-
-            if (modVersion.supportedGameVersionIds.length == 0) {
-                throw new Error(`ModVersion must support at least one game version.`);
-            }
-        });
-
-        this.ModVersions.beforeUpdate(async (modVersion) => {
+        this.ModVersions.afterValidate(async (modVersion) => {
+            let parentMod = await Mod.findByPk(modVersion.modId);
             await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
                 if (existingVersion) {
                     if (existingVersion.id != modVersion.id && modVersion.status == Status.Verified) {
@@ -492,6 +473,21 @@ export class DatabaseManager {
 
             if (modVersion.supportedGameVersionIds.length == 0) {
                 throw new Error(`ModVersion must support at least one game version.`);
+            }
+
+            let gameVersions = await this.GameVersions.findAll({ where: { id: modVersion.supportedGameVersionIds } });
+            if (gameVersions.length == 0) {
+                throw new Error(`No valid game versions found.`);
+            }
+
+            if (gameVersions.length != modVersion.supportedGameVersionIds.length) {
+                throw new Error(`Invalid game version(s) found.`);
+            }
+
+            for (let gameVersion of gameVersions) {
+                if (gameVersion.gameName != parentMod.gameName) {
+                    throw new Error(`ModVersion must only have game versions for the parent mod's game.`);
+                }
             }
         });
 
@@ -1009,12 +1005,8 @@ export enum Platform {
     Steam = `steampc`,
     Oculus = `oculuspc`,
     Universal = `universalpc`,
+    // Quest will be one option, as PC does not have individual options for Index, Vive, etc.
     UniversalQuest = `universalquest`,
-    Quest1 = `quest1`,
-    Quest2 = `quest2`,
-    Quest3 = `quest3`,
-    Quest3S = `quest3s`,
-    QuestPro = `questpro`,
 }
 
 export enum Status {
