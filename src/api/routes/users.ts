@@ -80,7 +80,7 @@ export class UserRoutes {
                     if (mod.status !== status.data) {
                         continue;
                     }
-                    if (mod.authorIds.includes(id)) {
+                    if (!mod.authorIds.includes(id)) {
                         continue;
                     }
                     let latest = await mod.getLatestVersion((await GameVersion.getDefaultVersionObject(mod.gameName)).id, filteredPlatform, onlyApproved);
