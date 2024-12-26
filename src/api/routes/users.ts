@@ -20,11 +20,11 @@ export class UserRoutes {
             // #swagger.responses[200] = { description: 'Returns user information.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
             // #swagger.responses[500] = { description: 'Internal server error.' }
-            let user = DatabaseHelper.cache.users.find((u) => u.id === req.session.userId);
-            if (user) {
+            let session = await validateSession(req, res, false);
+            if (session.approved === false) {
                 return res.status(401).send({ error: `Unauthorized.` });
             } else {
-                return res.status(200).send({ message: `Hello, ${user.username}!`, username: user.username, userId: user.id, roles: user.roles });
+                return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
             }
         });
 
