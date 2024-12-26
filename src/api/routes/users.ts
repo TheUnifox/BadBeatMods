@@ -36,7 +36,7 @@ export class UserRoutes {
             // #swagger.responses[200] = { description: 'Returns user information.' }
             // #swagger.responses[404] = { description: 'User not found.' }
             // #swagger.responses[400] = { description: 'Invalid parameters.' }
-            if (HTTPTools.validateNumberParameter(req.params.id)) {
+            if (!HTTPTools.validateNumberParameter(req.params.id)) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
 
@@ -62,7 +62,7 @@ export class UserRoutes {
             let status = Validator.zStatus.default(Status.Verified).safeParse(req.query.status);
             let platform = req.query.platform;
             let filteredPlatform = (platform && HTTPTools.validateStringParameter(platform) && DatabaseHelper.isValidPlatform(platform)) ? platform : undefined;
-            if (HTTPTools.validateNumberParameter(req.params.id)) {
+            if (!HTTPTools.validateNumberParameter(req.params.id)) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
 
@@ -111,7 +111,7 @@ export class UserRoutes {
                 return;
             }
 
-            if (HTTPTools.validateNumberParameter(req.params.id)) {
+            if (!HTTPTools.validateNumberParameter(req.params.id)) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
             let id = HTTPTools.parseNumberParameter(req.params.id);
