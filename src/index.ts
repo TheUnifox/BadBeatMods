@@ -55,7 +55,7 @@ app.use(fileUpload({
 }));
 
 // rate limiting
-app.use(`/cdn`, rateLimit({
+app.use(/\/cdn|\/favicon\.ico|\/banner\.png/, rateLimit({
     windowMs: 60 * 1000,
     max: 100,
     statusCode: 429,
@@ -154,5 +154,13 @@ process.on(`SIGQUIT`, () => {
     process.exit(0);
 });
 
+process.on(`unhandledRejection`, (reason: Error | any, promise: Promise<any>) => {
+    if (reason instanceof Error) {
+        Logger.error(`Unhandled promise rejection:${reason.name}\n${reason.message}\n${reason.stack}`, `node.js`);
+    } else {
+        Logger.error(`Unhandled promise rejection:${reason}\n`, `node.js`);
+    }
+    process.exit(1);
+});
 
 console.log(`Setup complete.`);

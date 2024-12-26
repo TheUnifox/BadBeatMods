@@ -3,6 +3,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && node build/index.js",
+    "start_built": "node build/index.js",
     "swagger": "ts-node src/api/generateSwagger.ts"
   },
   "dependencies": {
