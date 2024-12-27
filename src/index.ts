@@ -55,7 +55,7 @@ app.use(fileUpload({
 }));
 
 // rate limiting
-app.use(/\/cdn|\/favicon\.ico|\/banner\.png/, rateLimit({
+app.use(/\/cdn|\/favicon\.ico|\/banner\.png/i, rateLimit({
     windowMs: 60 * 1000,
     max: 100,
     statusCode: 429,
