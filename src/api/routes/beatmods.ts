@@ -112,7 +112,7 @@ export class BeatModsRoutes {
                 continue;
             }
             // hardcoded to universal for now, need to fix this
-            let modVersion = await mod.getLatestVersion(gameVersion.id, Platform.Universal, status === `approved`);
+            let modVersion = await mod.getLatestVersion(gameVersion.id, Platform.UniversalPC, status === `approved`);
             if (!modVersion) {
                 continue;
             }
@@ -131,7 +131,7 @@ export class BeatModsRoutes {
 
         if (modVersion.dependencies.length !== 0) {
             // fix this eventually
-            for (let dependancy of (await modVersion.getDependencies(gameVersion.id, Platform.Universal))) {
+            for (let dependancy of (await modVersion.getDependencies(gameVersion.id, Platform.UniversalPC))) {
                 if (doResolution) {
                     let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancy.modId);
                     if (dependancyMod) {
@@ -166,13 +166,13 @@ export class BeatModsRoutes {
                 break;
         }
         switch (modVersion.platform) {
-            case Platform.Universal:
+            case Platform.UniversalPC:
                 platform = `universal`;
                 break;
-            case Platform.Oculus:
+            case Platform.OculusPC:
                 platform = `oculus`;
                 break;
-            case Platform.Steam:
+            case Platform.SteamPC:
                 platform = `steam`;
                 break;
             default:

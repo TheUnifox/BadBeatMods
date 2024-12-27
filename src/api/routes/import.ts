@@ -224,11 +224,11 @@ export class ImportRoutes {
             let platform: Platform;
     
             if (download.type == `steam`) {
-                platform = Platform.Steam;
+                platform = Platform.SteamPC;
             } else if (download.type == `oculus`) {
-                platform = Platform.Oculus;
+                platform = Platform.OculusPC;
             } else if (download.type == `universal`) {
-                platform = Platform.Universal;
+                platform = Platform.UniversalPC;
             }
     
             // create game version if it doesn't exist

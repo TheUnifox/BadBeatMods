@@ -12,7 +12,8 @@ const DEFAULT_CONFIG = {
         github: {
             clientId: `GITHUB_CLIENT_ID`,
             clientSecret: `GITHUB_CLIENT_SECRET`
-        }
+        },
+        permittedRedirectDomains: [`http://localhost:5173`, `http://localhost:4173`, `http://localhost:5001`, `http://localhost:3000`]
     },
     database: {
         dialect: `sqlite`,
@@ -54,6 +55,7 @@ export class Config {
     private static _auth: {
         discord: AuthServiceConfig;
         github: AuthServiceConfig;
+        permittedRedirectDomains: string[];
     } = DEFAULT_CONFIG.auth;
     private static _database: {
         dialect: string;

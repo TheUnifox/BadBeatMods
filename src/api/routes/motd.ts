@@ -1,7 +1,7 @@
 import { Express } from 'express';
 import { DatabaseHelper, MOTD, SupportedGames, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
-import { HTTPTools } from '../../shared/HTTPTools';
+import { Validator } from '../../shared/Validator';
 
 export class MOTDRoutes {
     private app: Express;
@@ -13,56 +13,42 @@ export class MOTDRoutes {
     private async loadRoutes() {
         this.app.get(`/api/motd`, async (req, res) => {
             // #swagger.tags = ['MOTD']
-
-            let gameName = req.query.gameName;
-            if (gameName && (typeof gameName !== `string` || DatabaseHelper.isValidGameName(gameName) == false)) {
-                gameName = SupportedGames.BeatSaber;
+            let reqQuery = Validator.zGetMOTD.safeParse(req.query.gameName);
+            if (!reqQuery.success) {
+                return res.status(400).send({ message: `Invalid parameters.`, errors: reqQuery.error.issues });
             }
 
-            let motds = MOTD.getActiveMOTDs(gameName as SupportedGames, false);
+            let gameVersionObj = DatabaseHelper.cache.gameVersions.find(gV => gV.gameName === reqQuery.data.gameName && gV.version === reqQuery.data.gameVersion);
+            if (!gameVersionObj) {
+                return res.status(400).send({ message: `Invalid game version.` });
+            }
+
+            let motds = MOTD.getActiveMOTDs(reqQuery.data.gameName, [gameVersionObj.id], reqQuery.data.platform, reqQuery.data.getExpired);
             return res.status(200).send({ messages: motds });
         });
 
         this.app.post(`/api/motd`, async (req, res) => {
             // #swagger.tags = ['MOTD']
-            let gameName = req.query.gameName;
-            if (gameName && (typeof gameName !== `string` || DatabaseHelper.isValidGameName(gameName) == false)) {
-                return res.status(400).send({ message: `Invalid gameName.` });
+            let reqBody = Validator.zCreateMOTD.safeParse(req.body);
+            if (!reqBody.success) {
+                return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
 
-            let session = await validateSession(req, res, UserRoles.Poster, gameName as SupportedGames);
+            let session = await validateSession(req, res, UserRoles.Poster, reqBody.data.gameName);
             if (!session.approved) {
                 return;
             }
 
-            let message = req.body.message;
-            let startDate = req.body.startDate;
-            let endDate = req.body.endDate;
-            let postType = req.body.postType;
-            
-            if (!message || !HTTPTools.validateStringParameter(message, 3, 256) == false) {
-                return res.status(400).send({ message: `Invalid message.` });
-            }
-
-            if (!startDate || typeof startDate !== `string` || new Date(startDate).toString() === `Invalid Date`) {
-                return res.status(400).send({ message: `Invalid startDate.` });
-            }
-
-            if (endDate && (typeof endDate !== `string` || new Date(endDate).toString() === `Invalid Date`)) {
-                return res.status(400).send({ message: `Invalid endDate.` });
-            }
-
-            if (!postType || typeof postType !== `string` || DatabaseHelper.isValidPostType(postType) == false) {
-                return res.status(400).send({ message: `Invalid postType.` });
-            }
-
-            let motd = ({
-                gameName: gameName as SupportedGames,
-                message: message,
-                startTime: new Date(startDate),
-                endTime: endDate ? new Date(endDate) : new Date(startDate + 1000 * 60 * 60 * 24 * 7),
-                postType: postType,
+            let motd = DatabaseHelper.database.MOTDs.create({
+                gameName: reqBody.data.gameName || SupportedGames.BeatSaber,
+                gameVersionIds: reqBody.data.gameVersionIds || null,
+                message: reqBody.data.message,
+                platforms: reqBody.data.platforms || null,
+                postType: reqBody.data.postType,
+                translations: [],
                 authorId: session.user.id,
+                startTime: reqBody.data.startTime,
+                endTime: reqBody.data.endTime,
             });
 
             return res.status(200).send({ message: `MOTD added.`, motd });
@@ -70,12 +56,11 @@ export class MOTDRoutes {
 
         this.app.delete(`/api/motd/:id`, async (req, res) => {
             // #swagger.tags = ['MOTD']
-            if (HTTPTools.validateNumberParameter(req.params.id, 0) == false) {
-                return res.status(400).send({ message: `Invalid id.` });
+            let id = Validator.zDBID.safeParse(req.params.id);
+            if (!id.success) {
+                return res.status(400).send({ message: `Invalid ID.` });
             }
-
-            let id = HTTPTools.parseNumberParameter(req.params.id);
-            let motd = await DatabaseHelper.database.MOTDs.findOne({ where: { id } });
+            let motd = await DatabaseHelper.database.MOTDs.findOne({ where: { id: id.data } });
             if (!motd) {
                 return res.status(404).send({ message: `MOTD not found.` });
             }

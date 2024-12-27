@@ -1,8 +1,8 @@
 import { Express } from 'express';
 import { DatabaseHelper, GameVersion, SupportedGames, UserRoles } from '../../shared/Database';
-import { HTTPTools } from '../../shared/HTTPTools';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
+import { Validator } from '../../shared/Validator';
 
 export class VersionsRoutes {
     private app: Express;
@@ -25,7 +25,7 @@ export class VersionsRoutes {
 
         this.app.get(`/api/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            let gameName = req.query.gameName && HTTPTools.validateStringParameter(req.query.gameName) && DatabaseHelper.isValidGameName(req.query.gameName) ? req.query.gameName : undefined;
+            let gameName = Validator.zGameName.safeParse(req.query.gameName).data;
             
             let versions;
             if (gameName) {
@@ -39,26 +39,26 @@ export class VersionsRoutes {
 
         this.app.post(`/api/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            let version = req.body.version;
-            let gameName = req.body.gameName;
-        
-            if (!version || !gameName || version.length === 0 || !DatabaseHelper.isValidGameName(gameName)) {
-                return res.status(400).send({ message: `Missing version and gameName.` });
+            // #swagger.parameters['version'] = { description: 'The version to add', type: 'string' }
+            // #swagger.parameters['gameName'] = { description: 'The game name to add the version to', type: 'string' }
+            let reqBody = Validator.zCreateGameVersion.safeParse(req.body);
+            if (!reqBody.success) {
+                return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
         
-            let session = await validateSession(req, res, UserRoles.Admin, gameName);
+            let session = await validateSession(req, res, UserRoles.Admin, reqBody.data.gameName);
             if (!session.approved) {
                 return;
             }
         
-            let versions = await DatabaseHelper.database.GameVersions.findAll({ where: { version: version, gameName: gameName } });
+            let versions = await DatabaseHelper.database.GameVersions.findAll({ where: { version: reqBody.data.version, gameName: reqBody.data.gameName } });
             if (versions.length > 0) {
                 return res.status(409).send({ message: `Version already exists.` });
             }
         
             DatabaseHelper.database.GameVersions.create({
-                gameName: gameName,
-                version: version
+                gameName: reqBody.data.gameName,
+                version: reqBody.data.version
             }).then((version) => {
                 Logger.log(`Version ${version} added by ${session.user.username}.`);
                 return res.status(200).send({ version });
@@ -70,9 +70,12 @@ export class VersionsRoutes {
 
         this.app.get(`/api/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            let gameName = req.query.gameName && HTTPTools.validateStringParameter(req.query.gameName) && DatabaseHelper.isValidGameName(req.query.gameName) ? req.query.gameName : SupportedGames.BeatSaber;
+            let gameName = Validator.zGameName.default(SupportedGames.BeatSaber).safeParse(req.query.gameName);
+            if (!gameName.success) {
+                return res.status(400).send({ message: `Invalid gameName` });
+            }
             
-            let defaultVersion = await GameVersion.getDefaultVersionObject(gameName);
+            let defaultVersion = await GameVersion.getDefaultVersionObject(gameName.data);
 
             return res.status(200).send({ defaultVersion });
         });
@@ -80,13 +83,12 @@ export class VersionsRoutes {
         this.app.post(`/api/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
             // #swagger.parameters['gameVersionId'] = { description: 'The ID of the version to set as default', type: 'number' }
-            let gameVersionId = req.body.gameVersionId;
-
-            if (!gameVersionId || !HTTPTools.validateNumberParameter(gameVersionId)) {
+            let gameVersionId = Validator.zDBID.safeParse(req.body.gameVersionId);
+            if (!gameVersionId.success) {
                 return res.status(400).send({ message: `Invalid gameVersionId` });
             }
 
-            let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { id: gameVersionId } });
+            let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { id: gameVersionId.data } });
             if (!gameVersion) {
                 return res.status(404).send({ message: `GameVersion not found` });
             }

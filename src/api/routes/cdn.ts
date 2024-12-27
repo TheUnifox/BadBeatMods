@@ -37,13 +37,14 @@ export class CDNRoutes {
             immutable: true,
             index: false,
             maxAge: 1000 * 60 * 60 * 24 * 7,
-            fallthrough: false,
+            fallthrough: true,
         }));
         
         this.app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
             extensions: [`zip`],
             dotfiles: `ignore`,
             immutable: true,
+            index: false,
             maxAge: 1000 * 60 * 60 * 24 * 7,
             setHeaders: (res, file) => { // this is a hacky workaround to get code to execute when a file is served, but it should work with minimal preformance impact
                 res.set(`Content-Disposition`, `attachment`);
@@ -54,7 +55,7 @@ export class CDNRoutes {
                     Config.devmode ? Logger.warn(`Error incrementing download count: ${error}`) : null;
                 });
             },
-            fallthrough: false,
+            fallthrough: true,
         }));
 
         if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {

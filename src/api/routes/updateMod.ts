@@ -1,8 +1,7 @@
 import { Express } from 'express';
 import { DatabaseHelper, Status, UserRoles } from '../../shared/Database';
-import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
+import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
-import { HTTPTools } from '../../shared/HTTPTools';
 import { Validator } from '../../shared/Validator';
 import { SemVer } from 'semver';
 

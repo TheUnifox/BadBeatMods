@@ -1,15 +1,14 @@
 import { Express } from 'express';
 import path from 'node:path';
 import { DatabaseHelper, ContentHash, Status } from '../../shared/Database';
-import JSZip, { file } from 'jszip';
+import JSZip from 'jszip';
 import crypto from 'crypto';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
-import { HTTPTools } from '../../shared/HTTPTools';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
-import { Op } from 'sequelize';
 import { Validator } from '../../shared/Validator';
+import { UploadedFile } from 'express-fileupload';
 
 export class CreateModRoutes {
     private app: Express;
@@ -29,21 +28,26 @@ export class CreateModRoutes {
 
             let reqBody = Validator.zCreateMod.safeParse(req.body);
             let icon = req.files?.icon;
+            let iconIsValid = false;
 
             if (!reqBody.success) {
                 return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
 
-            if (!icon || Array.isArray(icon) || icon.size > 8 * 1024 * 1024) {
-                return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
-            }
-            
-            let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
+            // validate icon if it exists
+            if (icon !== undefined) {
+                if (Array.isArray(icon) || icon.size > 8 * 1024 * 1024) {
+                    return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
+                } else {
+                    let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
 
-            if (!isAcceptableImage) {
-                return res.status(400).send({ error: `Invalid file type.` });
+                    if (!isAcceptableImage) {
+                        return res.status(400).send({ error: `Invalid file type.` });
+                    } else {
+                        iconIsValid = true;
+                    }
+                }
             }
-            //#endregion
 
             DatabaseHelper.database.Mods.create({
                 name: reqBody.data.name,
@@ -53,14 +57,25 @@ export class CreateModRoutes {
                 gitUrl: reqBody.data.gitUrl,
                 category: reqBody.data.category,
                 gameName: reqBody.data.gameName,
-                iconFileName: `${icon.md5}${path.extname(icon.name)}`,
+                // this is fine because we've already validated the icon to be a single file assuming icon
+                iconFileName: iconIsValid ? `${(icon as UploadedFile).md5}${path.extname((icon as UploadedFile).name)}` : `default.png`,
                 lastUpdatedById: session.user.id,
                 status: Status.Private,
             }).then((mod) => {
-                let filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
-                if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}/`) == false) {
+                // if the icon is invalid, we don't need to do anything since it was delt with above
+                if (!iconIsValid) {
+                    return res.status(200).send({ mod });
+                }
+                // this is jsut so that the following code doesn't have to cast icon as UploadedFile every time
+                if (!icon || Array.isArray(icon)) {
                     mod.update({ iconFileName: `default.png` });
-                    res.status(200).send({ mod });
+                    return res.status(200).send({ mod });
+                }
+                // move the icon to the correct location
+                let filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
+                if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
+                    mod.update({ iconFileName: `default.png` });
+                    return res.status(200).send({ mod });
                 } else {
                     icon.mv(filePath);
                     return res.status(200).send({ mod });
@@ -99,18 +114,12 @@ export class CreateModRoutes {
                 return res.status(401).send({ message: `You cannot upload to this mod.` });
             }
 
-            
-            for (let dependancy of reqBody.data.dependencies) {
-                let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private}] } });
-                if (!dependancyMod) {
-                    return res.status(404).send({ message: `Dependancy mod (${dependancy}) not found.` });
-                }
+            if ((await Validator.validateIDArray(reqBody.data.supportedGameVersionIds, `gameVersions`, false, false)) == false) {
+                return res.status(400).send({ message: `Invalid game version.` });
             }
-            for (let version of reqBody.data.supportedGameVersionIds) {
-                let gameVersionDB = await DatabaseHelper.database.GameVersions.findOne({ where: { id: version } });
-                if (!gameVersionDB) {
-                    return res.status(404).send({ message: `Game version (${version}) not found.` });
-                }
+
+            if ((await Validator.validateIDArray(reqBody.data.dependencies, `modVersions`, true, false)) == false) {
+                return res.status(400).send({ message: `Invalid dependency.` });
             }
 
             if (!file || Array.isArray(file) || file.size > 75 * 1024 * 1024) {
@@ -141,7 +150,7 @@ export class CreateModRoutes {
             }
 
             let filePath = `${path.resolve(Config.storage.iconsDir)}/${file.md5}${path.extname(file.name)}`;
-            if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}/`) == false) {
+            if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
                 return res.status(400).send({ message: `Invalid zip file.` });
             } else {
                 file.mv(filePath);

@@ -5,6 +5,7 @@ import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 import { sendModLog, sendModVersionLog } from "./ModWebhooks";
+import { get } from "http";
 
 
 export enum SupportedGames {
@@ -420,6 +421,45 @@ export class DatabaseManager {
                 allowNull: false,
                 defaultValue: ``,
             },
+            gameVersionIds: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: null,
+                get() {
+                    // @ts-expect-error ts(2345)
+                    let value = this.getDataValue(`gameVersionIds`) as string;
+                    if (value) {
+                        return JSON.parse(value);
+                    }
+                },
+                set(value: number[] | null) {
+                    if (value) {
+                        // @ts-expect-error ts(2345)
+                        this.setDataValue(`gameVersionIds`, JSON.stringify(value));
+                    } else {
+                        this.setDataValue(`gameVersionIds`, null);
+                    }
+                }
+            },
+            platforms: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                get() {
+                    // @ts-expect-error ts(2345)
+                    let value = this.getDataValue(`platforms`) as string;
+                    if (value) {
+                        return JSON.parse(value);
+                    }
+                },
+                set(value: number[] | null) {
+                    if (value) {
+                        // @ts-expect-error ts(2345)
+                        this.setDataValue(`platforms`, JSON.stringify(value));
+                    } else {
+                        this.setDataValue(`platforms`, null);
+                    }
+                }
+            },
             message: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -428,7 +468,7 @@ export class DatabaseManager {
             translations: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                defaultValue: `{}`,
+                defaultValue: `[]`,
                 get() {
                     // @ts-expect-error s(2345)
                     return JSON.parse(this.getDataValue(`translations`));
@@ -472,6 +512,10 @@ export class DatabaseManager {
                     }
                 }
             });
+
+            if (mod.authorIds.length == 0) {
+                throw new Error(`Mod must have at least one author.`);
+            }
         });
 
         this.ModVersions.afterValidate(async (modVersion) => {
@@ -643,20 +687,36 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
-    public async getLatestVersion(gameVersion: number, platform:Platform = Platform.Universal, onlyApproved = false): Promise<ModVersion | null> {
-        let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id && (version.platform == platform || version.platform == Platform.Universal));
-        if (!versions) {
-            versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id, [Op.or]: [{ platform: platform }, { platform: Platform.Universal }] } });
-        }
-        let latestVersion: ModVersion | null = null;
-        for (let version of versions) {
-            if (version.supportedGameVersionIds.includes(gameVersion)) {
-                if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
-                    latestVersion = version;
+    public async getLatestVersion(gameVersion: number, platform:Platform = Platform.UniversalPC, onlyApproved = false): Promise<ModVersion | null> {
+        if (platform == Platform.UniversalPC || platform == Platform.SteamPC || platform == Platform.OculusPC) {
+            let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id && (version.platform == platform || version.platform == Platform.UniversalPC));
+            if (!versions) {
+                versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id, [Op.or]: [{ platform: platform }, { platform: Platform.UniversalPC }] } });
+            }
+            let latestVersion: ModVersion | null = null;
+            for (let version of versions) {
+                if (version.supportedGameVersionIds.includes(gameVersion)) {
+                    if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
+                        latestVersion = version;
+                    }
                 }
             }
+            return latestVersion;
+        } else if (platform === Platform.UniversalQuest) {
+            let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id && (version.platform == platform/* || version.platform == Platform.UniversalQuest*/));
+            if (!versions) {
+                versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id, platform: platform /*[Op.or]: [{ platform: platform }, { platform: Platform.UniversalQuest }]*/ } });
+            }
+            let latestVersion: ModVersion | null = null;
+            for (let version of versions) {
+                if (version.supportedGameVersionIds.includes(gameVersion)) {
+                    if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
+                        latestVersion = version;
+                    }
+                }
+            }
+            return latestVersion;
         }
-        return latestVersion;
     }
 
     public async setStatus(status:Status, user: User) {
@@ -847,7 +907,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         };
     }
 
-    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.Universal, onlyApproved = false): Promise<ModVersionAPIResponse> {
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.UniversalPC, onlyApproved = false): Promise<ModVersionAPIResponse> {
         return {
             id: this.id,
             modId: this.modId,
@@ -985,21 +1045,48 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
 export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<MOTD>> {
     declare readonly id: number;
     declare gameName: SupportedGames;
+    declare gameVersionIds?: number[]|null;
     declare postType: PostType;
+    declare platforms?: Platform[]|null;
     declare message: string;
-    declare translations: Translations;
+    declare translations: Translations[];
     declare authorId: number;
     declare startTime: Date;
     declare endTime: Date;
     declare readonly createdAt: Date;
     declare readonly updatedAt: Date;
 
-    public static async getActiveMOTDs(gameName: SupportedGames, getExpired = false): Promise<MOTD[]> {
-        if (getExpired == false) {
-            return MOTD.findAll({ where: { gameName, startTime: { $lt: new Date(Date.now()) }, endTime: { $gt: new Date(Date.now()) }} });
-        } else {
-            return MOTD.findAll({ where: { gameName, endTime: { $lt: new Date(Date.now()) }} });
-        }
+    public static async getActiveMOTDs(gameName: SupportedGames, versions:number[] = null, platform:Platform, getExpired = false): Promise<MOTD[]> {
+        return DatabaseHelper.cache.motd.filter((motd) => {
+            let now = new Date();
+            if (getExpired) {
+                if (motd.endTime < now) {
+                    return false;
+                }
+            }
+
+            if (motd.startTime > now) {
+                return false;
+            }
+
+            if (motd.gameName != gameName) {
+                return false;
+            }
+
+            if (motd.gameVersionIds) {
+                if (versions && !motd.gameVersionIds.some((id) => versions.includes(id))) {
+                    return false;
+                }
+            }
+
+            if (motd.platforms && platform) {
+                if (!motd.platforms.includes(platform)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
     }
 }
 // #endregion
@@ -1011,7 +1098,8 @@ export enum PostType {
 }
 
 export interface Translations {
-    [locale: string]: string;
+    lang: string;
+    message: string;
 }
 
 export interface ContentHash {
@@ -1020,9 +1108,9 @@ export interface ContentHash {
 }
 
 export enum Platform {
-    Steam = `steampc`,
-    Oculus = `oculuspc`,
-    Universal = `universalpc`,
+    SteamPC = `steampc`,
+    OculusPC = `oculuspc`,
+    UniversalPC = `universalpc`,
     // Quest will be one option, as PC does not have individual options for Index, Vive, etc.
     UniversalQuest = `universalquest`,
 }

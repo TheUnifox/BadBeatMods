@@ -1,6 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, GameVersion, ModAPIResponse, Status, User } from '../../shared/Database';
-import { HTTPTools } from '../../shared/HTTPTools';
+import { DatabaseHelper, GameVersion, ModAPIResponse, Platform, Status, User, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Validator } from '../../shared/Validator';
 
@@ -21,11 +20,10 @@ export class UserRoutes {
             // #swagger.responses[401] = { description: 'Unauthorized.' }
             // #swagger.responses[500] = { description: 'Internal server error.' }
             let session = await validateSession(req, res, false);
-            if (session.approved === false) {
-                return res.status(401).send({ error: `Unauthorized.` });
-            } else {
-                return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
+            if (!session.approved) {
+                return;
             }
+            return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
         });
 
         this.app.get(`/api/user/:id`, async (req, res) => {
@@ -36,12 +34,12 @@ export class UserRoutes {
             // #swagger.responses[200] = { description: 'Returns user information.' }
             // #swagger.responses[404] = { description: 'User not found.' }
             // #swagger.responses[400] = { description: 'Invalid parameters.' }
-            if (!HTTPTools.validateNumberParameter(req.params.id)) {
+            let id = Validator.zDBID.safeParse(req.params.id);
+            if (!id.success) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
 
-            let id = HTTPTools.parseNumberParameter(req.params.id);
-            let user = DatabaseHelper.cache.users.find((u) => u.id === id);
+            let user = DatabaseHelper.cache.users.find((u) => u.id === id.data);
             if (user) {
                 return res.status(200).send({ user: user.toAPIResponse() });
             } else {
@@ -59,31 +57,47 @@ export class UserRoutes {
             // #swagger.responses[200] = { description: 'Returns mods.' }
             // #swagger.responses[404] = { description: 'User not found.' }
             // #swagger.responses[400] = { description: 'Invalid parameters.' }
+            let session: { approved: boolean; user: User | null } = { approved: false, user: null };
+            let id = Validator.zDBID.safeParse(req.params.id);
             let status = Validator.zStatus.default(Status.Verified).safeParse(req.query.status);
-            let platform = req.query.platform;
-            let filteredPlatform = (platform && HTTPTools.validateStringParameter(platform) && DatabaseHelper.isValidPlatform(platform)) ? platform : undefined;
-            if (!HTTPTools.validateNumberParameter(req.params.id)) {
+            let platform = Validator.zPlatform.default(Platform.UniversalPC).safeParse(req.query.platform);
+            if (!id.success || !status.success || !platform.success) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
 
-            if (!status.success) {
-                return res.status(400).send({ error: `Invalid parameters.` });
-            }
-
-            let onlyApproved = status.data === Status.Verified;
-
-            let id = HTTPTools.parseNumberParameter(req.params.id);
-            let user = DatabaseHelper.cache.users.find((u) => u.id === id);
+            let user = DatabaseHelper.cache.users.find((u) => u.id === id.data);
             if (user) {
                 let mods: {mod: ModAPIResponse, latest: any }[] = [];
+                if (status.data !== Status.Verified && status.data !== Status.Unverified) {
+                    session = await validateSession(req, res, false, null, true);
+                    if (!session.approved) {
+                        return;
+                    }
+                }
+
                 for (let mod of DatabaseHelper.cache.mods) {
                     if (mod.status !== status.data) {
                         continue;
                     }
-                    if (!mod.authorIds.includes(id)) {
+                    if (!mod.authorIds.includes(id.data)) {
                         continue;
                     }
-                    let latest = await mod.getLatestVersion((await GameVersion.getDefaultVersionObject(mod.gameName)).id, filteredPlatform, onlyApproved);
+
+                    if (status.data !== Status.Verified && status.data !== Status.Unverified) {
+                        if (
+                            !session.user.roles.sitewide.includes(UserRoles.Admin) &&
+                            !session.user.roles.sitewide.includes(UserRoles.Moderator) &&
+                            !session.user.roles.sitewide.includes(UserRoles.AllPermissions) &&
+                            !session.user.roles.perGame[mod.gameName].includes(UserRoles.Admin) &&
+                            !session.user.roles.perGame[mod.gameName].includes(UserRoles.Moderator) &&
+                            !session.user.roles.perGame[mod.gameName].includes(UserRoles.AllPermissions) &&
+                            !mod.authorIds.includes(session.user.id)
+                        ) {
+                            continue;
+                        }
+                    }
+
+                    let latest = await mod.getLatestVersion((await GameVersion.getDefaultVersionObject(mod.gameName)).id, platform.data, status.data === Status.Verified);
                     if (latest) {
                         mods.push({mod: mod.toAPIResponse(), latest: latest});
                     } else {
@@ -96,6 +110,7 @@ export class UserRoutes {
             }
         });
 
+        /*
         this.app.patch(`/api/user/:id/`, async (req, res) => {
             // #swagger.tags = ['User']
             // #swagger.summary = 'Get user information.'
@@ -121,6 +136,7 @@ export class UserRoutes {
             }
             return res.status(200).send({ user: user.toAPIResponse() });
         });
+        */
     }
 }
 
@@ -135,15 +151,15 @@ async function editUser(userId: number, displayName: any, sponsorUrl:any, bio:an
         return `usererror`;
     }
 
-    if (displayName && HTTPTools.validateStringParameter(displayName, 3, 32)) {
+    if (displayName) {
         user.displayName = displayName;
     }
 
-    if (sponsorUrl && HTTPTools.validateStringParameter(sponsorUrl, 3, 256)) {
+    if (sponsorUrl) {
         user.sponsorUrl = sponsorUrl;
     }
 
-    if (bio && HTTPTools.validateStringParameter(bio, 0, 2048)) {
+    if (bio) {
         user.bio = bio;
     }
 

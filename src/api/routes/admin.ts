@@ -4,6 +4,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Validator } from '../../shared/Validator';
 
 export class AdminRoutes {
     private app: Express;
@@ -70,7 +71,7 @@ export class AdminRoutes {
                 return;
             }
 
-            let request = await fetch(`http://localhost:${Config.server.port}/api/mods`);
+            let request = await fetch(`${Config.server.url}/api/mods`);
             let mods = await request.json() as any;
             let errors = [];
             for (let mod of mods.mods) {
@@ -107,28 +108,32 @@ export class AdminRoutes {
                 return;
             }
             
-            let versionId1 = parseInt(req.body.version1, 10);
-            let versionId2 = parseInt(req.body.version2, 10);
+            let versionId1 = Validator.zDBID.safeParse(req.body.version1);
+            let versionId2 = Validator.zDBID.safeParse(req.body.version2);
 
-            if (!versionId1 || !versionId2 || isNaN(versionId1) || isNaN(versionId2)) {
+            if (!versionId1.success || !versionId2.success) {
                 return res.status(400).send({ message: `Missing version.` });
             }
 
             const modVersions = await DatabaseHelper.database.ModVersions.findAll();
-            const version1 = await DatabaseHelper.database.GameVersions.findByPk(versionId1);
-            const version2 = await DatabaseHelper.database.GameVersions.findByPk(versionId2);
+            const version1 = await DatabaseHelper.database.GameVersions.findByPk(versionId1.data);
+            const version2 = await DatabaseHelper.database.GameVersions.findByPk(versionId1.data);
             if (!version1 || !version2) {
                 return res.status(404).send({ message: `Versions not found.` });
             }
 
             for (let modVersion of modVersions) {
-                if (modVersion.supportedGameVersionIds.includes(version1.id)) {
+                if (modVersion.supportedGameVersionIds.includes(version1.id) && !modVersion.supportedGameVersionIds.includes(version2.id)) {
                     modVersion.supportedGameVersionIds = [...modVersion.supportedGameVersionIds, version2.id];
+                }
+
+                if (modVersion.supportedGameVersionIds.includes(version2.id) && !modVersion.supportedGameVersionIds.includes(version1.id)) {
+                    modVersion.supportedGameVersionIds = [...modVersion.supportedGameVersionIds, version1.id];
                 }
                 modVersion.save();
             }
 
-            return res.status(200).send({ message: `All versions are valid.` });
+            return res.status(200).send({ message: `Version ${version1.gameName} ${version1.version} & ${version2.gameName} ${version2.version} have been linked.` });
         });
     }
 }
