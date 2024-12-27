@@ -140,8 +140,8 @@ export class ImportRoutes {
 
                     existingMod = await DatabaseHelper.database.Mods.create({
                         name: mod.name,
-                        summary: mod.description,
-                        description: mod.description,
+                        summary: mod.description.length > 100 ? mod.description.substring(0, 95) + `...` : mod.description,
+                        description: `${mod.description}<br><br>This mod was imported from BeatMods, and was originally uploaded by ${mod.author.username} at ${mod.uploadDate}.`,
                         authorIds: [importAuthor.id],
                         category: category,
                         status: status,
