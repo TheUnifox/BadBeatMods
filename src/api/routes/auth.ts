@@ -152,7 +152,7 @@ export class AuthRoutes {
         if (userId) {
             this.validStates.push({stateId: state, ip: req.ip, redirectUrl: new URL(redirect.data), userId});
         } else {
-            this.validStates.push({stateId: state, ip: req.ip, redirectUrl: new URL(redirect), userId: null});
+            this.validStates.push({stateId: state, ip: req.ip, redirectUrl: new URL(redirect.data), userId: null});
         }
         setTimeout(() => {
             this.validStates = this.validStates.filter((s) => s.stateId !== state);

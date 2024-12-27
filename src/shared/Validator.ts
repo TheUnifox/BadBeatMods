@@ -45,7 +45,7 @@ export class Validator {
     public static readonly zGameName = ZodGameName;
     public static readonly zUrl = z.string().url().refine((url) => {
         let urlObj = new URL(url);
-        Config.auth.permittedRedirectDomains.includes(urlObj.origin);
+        return Config.auth.permittedRedirectDomains.includes(urlObj.origin);
     });
     public static readonly zCreateMod = ZodMod.pick({
         name: true,
