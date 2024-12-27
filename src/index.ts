@@ -124,7 +124,7 @@ HTTPTools.handleExpressShenanigans(app);
 async function startServer() {
     await database.init();
     app.listen(port, () => {
-        console.log(`Server listening @ http://localhost:${port}`);
+        console.log(`Server listening on port ${port} - Expected to be available at ${Config.server.url}`);
         Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
         Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
         Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;

@@ -56,25 +56,25 @@ export class Config {
         discord: AuthServiceConfig;
         github: AuthServiceConfig;
         permittedRedirectDomains: string[];
-    } = DEFAULT_CONFIG.auth;
+    };
     private static _database: {
         dialect: string;
         url: string;
         username: string;
         password: string;
         alter: boolean;
-    } = DEFAULT_CONFIG.database;
+    };
     private static _storage: {
         modsDir: string;
         iconsDir: string;
-    } = DEFAULT_CONFIG.storage;
+    };
     private static _server: {
         port: number;
         url: string;
         sessionSecret: string;
         iHateSecurity: boolean;
         corsOrigins: string | string[];
-    } = DEFAULT_CONFIG.server;
+    };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
     private static _webhooks: {
@@ -83,12 +83,12 @@ export class Config {
         loggingUrl: string;
         modLogUrl: string;
         publicUrl: string;
-    } = DEFAULT_CONFIG.webhooks;
+    };
     private static _bot: {
         enabled: boolean;
         clientId: string;
         token: string;
-    } = DEFAULT_CONFIG.bot;
+    };
     // #endregion
     // #region Public Static Properties
     public static get auth() {
@@ -118,12 +118,14 @@ export class Config {
     // #endregion
     constructor() {
         let success = Config.loadConfig();
-        if (!success) {
+        if (success.length > 0) {
+            console.error(`Config file is invalid at keys ${success.join(`, `)}. Attempting to load default config.`);
             if (!fs.existsSync(path.resolve(`./storage`))) {
                 fs.mkdirSync(path.resolve(`./storage`));
             }
 
             if (fs.existsSync(path.resolve(`./storage/config.json`))) {
+                console.log(`Backing up existing config file...`);
                 let generateedId = randomInt(100000, 999999);
                 if (fs.existsSync(path.resolve(`./storage/config.json-${generateedId}.bak`))) {
                     generateedId = randomInt(100000, 999999);
@@ -140,17 +142,19 @@ export class Config {
             }
 
             let successpart2 = Config.loadConfig();
-            if (!successpart2) {
-                console.error(`Config file is invalid. Please check the config file and try again.`);
+            if (successpart2.length > 0) {
+                console.error(`Config file is invalid at keys ${success.join(`, `)}. Please check the config file and try again.`);
                 process.exit(1);
             }
         }
 
         if (!fs.existsSync(path.resolve(Config.storage.modsDir))) {
+            console.log(`Creating mods directory at ${path.resolve(Config.storage.modsDir)}`);
             fs.mkdirSync(path.resolve(Config.storage.modsDir));
         }
 
         if (!fs.existsSync(path.resolve(Config.storage.iconsDir))) {
+            console.log(`Creating icons directory at ${path.resolve(Config.storage.iconsDir)}`);
             fs.mkdirSync(path.resolve(Config.storage.iconsDir));
         }
     }
@@ -160,65 +164,101 @@ export class Config {
         if (fs.existsSync(path.resolve(`./storage/config.json`))) {
             let file = fs.readFileSync(path.resolve(`./storage/config.json`), `utf8`);
             let cf = JSON.parse(file);
-            let success = true;
+            let failedToLoad: string[] = [];
             try {
                 if (`auth` in cf) {
-                    Config._auth = cf.auth;
+                    if (!doKeysMatch(cf.auth, Object.keys(DEFAULT_CONFIG.auth))) {
+                        failedToLoad.push(`auth`);
+                    } else {
+                        Config._auth = cf.auth;
+                    }
                 } else {
-                    success = false;
+                    failedToLoad.push(`auth`);
                 }
 
                 if (`database` in cf) {
-                    Config._database = cf.database;
+                    if (!doKeysMatch(cf.database, Object.keys(DEFAULT_CONFIG.database))) {
+                        failedToLoad.push(`database`);
+                    } else {
+                        Config._database = cf.database;
+                    }
                 } else {
-                    success = false;
+                    failedToLoad.push(`database`);
                 }
 
                 if (`storage` in cf) {
-                    Config._storage = cf.storage;
+                    if (!doKeysMatch(cf.storage, Object.keys(DEFAULT_CONFIG.storage))) {
+                        failedToLoad.push(`storage`);
+                    } else {
+                        Config._storage = cf.storage;
+                    }
                 } else {
-                    success = false;
+                    failedToLoad.push(`storage`);
                 }
 
                 if (`server` in cf) {
-                    Config._server = cf.server;
+                    if (!doKeysMatch(cf.server, Object.keys(DEFAULT_CONFIG.server))) {
+                        failedToLoad.push(`server`);
+                    } else {
+                        Config._server = cf.server;
+                    }
                 } else {
-                    success = false;
+                    failedToLoad.push(`server`);
                 }
 
+                //is a boolean
                 if (`devmode` in cf) {
                     Config._devmode = cf.devmode;
                 } else {
-                    success = false;
+                    failedToLoad.push(`devmode`);
                 }
 
+                //is a boolean
                 if (`authBypass` in cf) {
                     Config._authBypass = cf.authBypass;
                 } else {
-                    success = false;
+                    failedToLoad.push(`authBypass`);
                 }
 
                 if (`webhooks` in cf) {
-                    Config._webhooks = cf.webhooks;
+                    if (!doKeysMatch(cf.webhooks, Object.keys(DEFAULT_CONFIG.webhooks))) {
+                        failedToLoad.push(`webhooks`);
+                    } else {
+                        Config._webhooks = cf.webhooks;
+                    }
                 } else {
-                    success = false;
+                    failedToLoad.push(`webhooks`);
                 }
 
                 if (`bot` in cf) {
-                    Config._bot = cf.bot;
+                    if (!doKeysMatch(cf.bot, Object.keys(DEFAULT_CONFIG.bot))) {
+                        failedToLoad.push(`bot`);
+                    } else {
+                        Config._bot = cf.bot;
+                    }
                 } else {
-                    success = false;
+                    failedToLoad.push(`bot`);
                 }
-                return success;
+                return failedToLoad;
             } catch (e) {
                 console.error(`Error parsing config file: ${e}`);
-                return false;
+                return [`all`];
             }
         } else {
             console.warn(`Config file not found.`);
+            return [`all`];
+        }
+    }
+}
+
+function doKeysMatch(obj: any, keys: string[]): boolean {
+    let objKeys = Object.keys(obj);
+    for (let key of keys) {
+        if (!objKeys.includes(key)) {
             return false;
         }
     }
+    return true;
 }
 
 interface AuthServiceConfig {

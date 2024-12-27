@@ -152,7 +152,9 @@ export interface BeatSaverIdentify {
 */
 //#region Discord
 export class DiscordAuthHelper extends OAuth2Helper {
-    private static readonly callbackUrl = `${Config.server.url}/api/auth/discord/callback`;
+    private static get callbackUrl(): string {
+        return `${Config.server.url}/api/auth/discord/callback`;
+    }
     
     public static getUrl(state:string): string {
         return `https://discord.com/oauth2/authorize?client_id=${Config.auth.discord.clientId}&response_type=code&scope=identify&redirect_uri=${DiscordAuthHelper.callbackUrl}&state=${state}`;
@@ -199,7 +201,9 @@ export interface DiscordUserGuild {
 
 //#region GitHub
 export class GitHubAuthHelper extends OAuth2Helper {
-    private static readonly callbackUrl = `${Config.server.url}/api/auth/github/callback`;
+    private static get callbackUrl(): string {
+        return `${Config.server.url}/api/auth/github/callback`;
+    }
     
     public static getUrl(state:string): string {
         return `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(Config.auth.github.clientId)}&response_type=code&scope=user&redirect_uri=${encodeURIComponent(GitHubAuthHelper.callbackUrl)}&state=${encodeURIComponent(state)}`;
