@@ -157,24 +157,28 @@ export class GetModRoutes {
 
         this.app.get(`/api/hashlookup`, async (req, res) => {
             // #swagger.tags = ['Mods']
-            // #swagger.summary = 'Show a mod that has a file with the specified hash.'
-            // #swagger.description = 'Show a mod that has a file with the specified hash. This is useful for finding the mod that a file belongs to.'
-            // #swagger.responses[200] = { description: 'Returns the mod.' }
+            // #swagger.summary = 'Get a specific mod version that has a file with the specified hash.'
+            // #swagger.description = 'Get a specific mod version that has a file with the specified hash. This is useful for finding the mod that a file belongs to.'
+            // #swagger.responses[200] = { description: 'Returns the mod version.' }
             // #swagger.responses[400] = { description: 'Missing hash.' }
             // #swagger.responses[404] = { description: 'Hash not found.' }
             // #swagger.parameters['hash'] = { description: 'The hash to look up.', type: 'string', required: true }
-            let hash = Validator.zString.min(8).safeParse(req.query.hash);
+            // #swagger.parameters['raw'] = { description: 'Return the raw mod depedendcies without attempting to resolve them.', type: 'boolean' }
+
+            const hash = Validator.zString.min(8).safeParse(req.query.hash).data;
+            const raw = Validator.zBool.safeParse(req.query.raw).data;
+
             if (!hash) {
                 return res.status(400).send({ message: `Missing hash.` });
             }
 
-            for (let version of DatabaseHelper.cache.modVersions) {
-                if (version.zipHash === hash.data) {
-                    return res.status(200).send({ mod: version.modId });
+            for (const version of DatabaseHelper.cache.modVersions) {
+                if (version.zipHash === hash) {
+                    return res.status(200).send({ modVersion: await (raw ? version.toRawAPIResonse() : version.toAPIResonse()) });
                 }
-                for (let fileHash of version.contentHashes) {
-                    if (fileHash.hash === hash.data) {
-                        return res.status(200).send({ mod: version.modId });
+                for (const fileHash of version.contentHashes) {
+                    if (fileHash.hash === hash) {
+                        return res.status(200).send({ modVersion: await (raw ? version.toRawAPIResonse() : version.toAPIResonse()) });
                     }
                 }
             }
