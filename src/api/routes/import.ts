@@ -3,7 +3,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './beatmods';
-import { coerce, satisfies } from 'semver';
+import { coerce, satisfies, SemVer } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = true;
+    private readonly ENABLE_DOWNLOADS = false;
 
     constructor(app: Express) {
         this.app = app;
@@ -147,6 +147,7 @@ export class ImportRoutes {
                         status: status,
                         iconFileName: `default.png`,
                         gitUrl: mod.link,
+                        gameName: SupportedGames.BeatSaber,
                         lastApprovedById: status == Status.Verified ? importAuthor.id : null,
                         lastUpdatedById: importAuthor.id,
                         createdAt: new Date(mod.uploadDate),
@@ -170,22 +171,23 @@ export class ImportRoutes {
                     Logger.warn(`Dependancy ${record.dependancy} not found for mod ${record.modVersionId}`, `Import`);
                     continue;
                 }
-                count2 % 100 ? console.log(`Resolving dependancy #${count2++} of ${dependancyRecord.length}`) : null;
-                // dependancy mod
+                count2 % 1000 == 0 ? console.log(`Resolving dependancy #${count2} of ${dependancyRecord.length}`) : null;
+                count2++;
+                // get the mod that is being depended on
                 let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: record.dependancy.name } });
                 if (!mod) {
                     Logger.warn(`Dependancy ${record.dependancy.name} not found for mod ${record.modVersionId}`, `Import`);
                     continue;
                 }
 
-                //dependancy mod versions
+                // get all the versions of the denpendancy mod
                 let dependancyModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: mod.id } });
                 if (!Array.isArray(dependancyModVersions)) {
-                    Logger.warn(`Dependancy mod version ${record.dependancy.name} v${record.dependancy.version} not found`, `Import`);
+                    Logger.warn(`Dependancy mod version ${record.dependancy.name} v${record.dependancy.version} not found - Mod obj missing.`, `Import`);
                     continue;
                 }
 
-                //dependant modVerison
+                // get the mod that we need to add the dependancy to (the dependant)
                 let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: record.modVersionId } });
                 if (!modVersion) {
                     Logger.warn(`Mod version ${record.modVersionId} not found`, `Import`);
@@ -195,12 +197,13 @@ export class ImportRoutes {
                 //this is fucking stupid, why is typescript like this
                 let versionToCompare = record.dependancy.version;
                 // not particularly happy with this ig its fine
-                let dependancyModVersion = dependancyModVersions.find((modVersion) => {
-                    return satisfies(modVersion.modVersion, `^${versionToCompare}`) &&
-                    modVersion.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0]);
+                let dependancyModVersion = dependancyModVersions.find((mV) => {
+                    return satisfies(mV.modVersion, `^${versionToCompare}`) &&
+                    mV.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0]);
                 });
                 if (!dependancyModVersion) {
-                    Logger.warn(`No suitable version of dependancy ${record.dependancy.name} v${record.dependancy.version} found for ${record.modVersionId}`, `Import`);
+                    let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
+                    Logger.warn(`No suitable version of dependancy ${record.dependancy.name} v${record.dependancy.version} found for ${mod.name} v${modVersion.modVersion} (ID${record.modVersionId})`, `Import`);
                     continue;
                 }
 
@@ -208,6 +211,55 @@ export class ImportRoutes {
                 modVersion.dependencies = [...modVersion.dependencies, dependancyModVersion.id];
                 await modVersion.save();
             }
+
+            Logger.log(`Just one more bottle of rum`, `Import`);
+
+            await fetch(`https://alias.beatmods.com/aliases.json`).then(async (response) => {
+                if (response.status !== 200) {
+                    Logger.error(`Failed to fetch aliases`, `Import`);
+                }
+                const aliases = await response.json() as { [key: string]: string[] };
+
+                for (const alias in aliases) {
+                    let aliasVersions = aliases[alias];
+
+                    if (aliasVersions.length == 0) {
+                        continue;
+                    }
+
+                    let gameVersion1 = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName:SupportedGames.BeatSaber, version: alias } });
+                    for (const aliasVersion of aliasVersions) {
+                        Logger.log(`Checking aliases: ${alias} -> ${aliasVersion}`, `Import`);
+                        if (!gameVersion1) {
+                            Logger.warn(`Game version ${alias} not found`, `Import`);
+                        }
+
+                        let gameVersion2 = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName:SupportedGames.BeatSaber, version: aliasVersion } });
+                        if (!gameVersion2) {
+                            gameVersion2 = await DatabaseHelper.database.GameVersions.create({
+                                version: aliasVersion,
+                                gameName: SupportedGames.BeatSaber,
+                            });
+                        }
+
+                        let modVersions = await DatabaseHelper.database.ModVersions.findAll(); // i think i have to do this to refresh any edits that get made.
+                        for (let modVersion of modVersions) {
+                            if (modVersion.supportedGameVersionIds.includes(gameVersion1.id) && !modVersion.supportedGameVersionIds.includes(gameVersion2.id)) {
+                                modVersion.supportedGameVersionIds = [...modVersion.supportedGameVersionIds, gameVersion2.id];
+                                modVersion.save();
+                                continue;
+                            }
+
+                            if (modVersion.supportedGameVersionIds.includes(gameVersion2.id) && !modVersion.supportedGameVersionIds.includes(gameVersion1.id)) {
+                                modVersion.supportedGameVersionIds = [...modVersion.supportedGameVersionIds, gameVersion1.id];
+                                modVersion.save();
+                                continue;
+                            }
+                        }
+                    }
+
+                }
+            });
 
             Logger.log(`Ah-ha-ha-ha-ha-ha-ha-ha-ha-Oah, where's me rum`, `Import`);
             DatabaseHelper.refreshAllCaches();
@@ -232,9 +284,10 @@ export class ImportRoutes {
             }
     
             // create game version if it doesn't exist
-            let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { version: mod.gameVersion } });
+            let gameVersion = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName: SupportedGames.BeatSaber, version: mod.gameVersion } });
             if (!gameVersion) {
                 gameVersion = await DatabaseHelper.database.GameVersions.create({
+                    createdAt: new Date(mod.uploadDate),
                     version: mod.gameVersion,
                     gameName: SupportedGames.BeatSaber,
                 });
@@ -260,6 +313,10 @@ export class ImportRoutes {
                 if (status == Status.Verified && doesHashMatch) {
                     // hash and status match, mark as compatible and skip
                     Logger.log(`Mod ${mod.name} v${mod.version} already exists in the db, marking as compatible and skipping.`, `Import`);
+                    if (existingVersion.supportedGameVersionIds.includes(gameVersion.id)) {
+                        Logger.warn(`Mod ${mod.name} v${mod.version} attempted to add its gameversion twice.`, `Import`);
+                        continue;
+                    }
                     existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
                     // if the existing version is unverified & the incoming version is, mark as verified
                     if (existingVersion.status !== Status.Verified) {
@@ -272,6 +329,10 @@ export class ImportRoutes {
                     if (doesHashMatch) {
                         // hash matches, but status is unapproved, mark as compatible and skip
                         Logger.warn(`Mod ${mod.name} v${mod.version} already exists in the db but has unapproved status. marked compatible. Status: ${mod.status}, gV: ${mod.gameVersion}`, `Import`);
+                        if (existingVersion.supportedGameVersionIds.includes(gameVersion.id)) {
+                            Logger.warn(`Mod ${mod.name} v${mod.version} attempted to add its gameversion twice.`, `Import`);
+                            continue;
+                        }
                         existingVersion.supportedGameVersionIds = [...existingVersion.supportedGameVersionIds, gameVersion.id];
                         await existingVersion.save();
                         continue;
@@ -331,4 +392,3 @@ export class ImportRoutes {
         return dependancyRecord;
     }
 }
-

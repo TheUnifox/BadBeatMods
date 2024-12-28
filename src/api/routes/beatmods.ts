@@ -147,9 +147,9 @@ export class BeatModsRoutes {
 
         let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
         let platform = `universal`;
-        let status = `private`;
+        let status:BeatModsStatus = `declined`;
         switch (modVersion.status) {
-            case Status.Private:
+            case Status.Private: // this should never happen
                 status = `declined`;
                 break;
             case Status.Unverified:
@@ -225,7 +225,7 @@ export type BeatModsMod = {
     } | undefined,
     uploadDate: string,
     updatedDate: string,
-    status: string,
+    status: BeatModsStatus,
     description: string,
     link: string,
     category: string,
@@ -241,3 +241,5 @@ export type BeatModsMod = {
     dependencies: BeatModsMod[] | string[],
     _id: string,
 }
+
+export type BeatModsStatus = `pending` | `approved` | `declined` | `inactive`;

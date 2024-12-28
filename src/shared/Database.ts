@@ -538,7 +538,7 @@ export class DatabaseManager {
             }
 
             if (gameVersions.length != modVersion.supportedGameVersionIds.length) {
-                throw new Error(`Invalid game version(s) found.`);
+                throw new Error(`Invalid or duplicate game version(s) found.`);
             }
 
             for (let gameVersion of gameVersions) {
