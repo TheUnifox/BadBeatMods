@@ -2,7 +2,6 @@ import { z } from "zod";
 import { Categories, DatabaseHelper, GameVersion, ModVersion, Platform, Status, SupportedGames, User, Mod, PostType } from "./Database";
 import { valid } from "semver";
 import { Config } from "./Config";
-import { start } from "repl";
 
 //generic types that I use a lot
 const ZodDBID = z.number({coerce: true}).int().positive();
@@ -35,7 +34,10 @@ const ZodModVersion = z.object({
     status: ZodStatus,
 });
 
+// for things marked as optional, zod will set them to undefined if they are not present, otherwise it will validate it.
+//
 export class Validator {
+    public static readonly z = z;
     public static readonly zDBID = ZodDBID;
     public static readonly zBool = ZodBool;
     public static readonly zString = z.string();
@@ -98,8 +100,8 @@ export class Validator {
         gameVersionIds: z.array(this.zDBID).default(null),
         postType: z.nativeEnum(PostType).default(PostType.Community),
         message: z.string().min(3).max(64),
-        startTime: z.date().optional(),
-        endTime: z.date().optional(),
+        startTime: z.coerce.date().default(new Date()),
+        endTime: z.coerce.date().default(new Date(new Date().getTime() + 1000 * 60 * 60 * 24)),
     });
 
     public static readonly zGetMOTD = z.object({

@@ -194,7 +194,7 @@ export class BeatModsRoutes {
                 lastLogin: author.createdAt.toString(),
             } : undefined,
             status: status,
-            description: mod.description,
+            description: mod.summary,
             link: mod.gitUrl,
             category: mod.category.charAt(0).toUpperCase() + mod.category.slice(1),
             downloads: [{

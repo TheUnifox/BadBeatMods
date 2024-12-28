@@ -313,6 +313,7 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
+                unique: !Config.devmode, //change this, need to do feature flagging
             },
             contentHashes: {
                 type: DataTypes.STRING,
@@ -532,6 +533,8 @@ export class DatabaseManager {
                 throw new Error(`ModVersion must support at least one game version.`);
             }
 
+            //dedupe supported game versions
+            modVersion.supportedGameVersionIds = [...new Set(modVersion.supportedGameVersionIds)];
             let gameVersions = await this.GameVersions.findAll({ where: { id: modVersion.supportedGameVersionIds } });
             if (gameVersions.length == 0) {
                 throw new Error(`No valid game versions found.`);
@@ -544,6 +547,21 @@ export class DatabaseManager {
             for (let gameVersion of gameVersions) {
                 if (gameVersion.gameName != parentMod.gameName) {
                     throw new Error(`ModVersion must only have game versions for the parent mod's game.`);
+                }
+            }
+
+            if (modVersion.dependencies.length > 0) {
+                //dedupe dependencies
+                modVersion.dependencies = [...new Set(modVersion.dependencies)];
+                let dependencies = await ModVersion.findAll({ where: { id: modVersion.dependencies } });
+                if (dependencies.length != modVersion.dependencies.length) {
+                    throw new Error(`Invalid dependencies found.`);
+                }
+
+                for (let dependency of dependencies) {
+                    if (dependency.modId == modVersion.modId) {
+                        throw new Error(`ModVersion cannot depend on itself.`);
+                    }
                 }
             }
         });

@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { DatabaseHelper, UserRoles } from '../../shared/Database';
+import { DatabaseHelper, GameVersion, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
 import * as fs from 'fs';
@@ -66,22 +66,60 @@ export class AdminRoutes {
 
         this.app.get(`/api/admin/health/dependencyResolution`, async (req, res) => {
             // #swagger.tags = ['Admin']
+            // #swagger.parameters['versionId'] = { description: 'The version ID to check.', required: true }
+            // #swagger.parameters['gameName'] = { description: 'The game name to check.', required: true }
+            // #swagger.parameters['includeUnverified'] = { description: 'Include unverified mods.', required: false, type: 'boolean' }
             let session = await validateSession(req, res, UserRoles.Admin);
             if (!session.approved) {
                 return;
             }
 
-            let request = await fetch(`${Config.server.url}/api/mods`);
-            let mods = await request.json() as any;
+            let params = Validator.z.object({
+                versionId: Validator.z.number({coerce:true}).int(),
+                gameName: Validator.zGameName,
+                includeUnverified: Validator.z.boolean({coerce:true}).default(false),
+            }).required().strict().safeParse(req.query);
+
+            if (!params.success) {
+                return res.status(400).send({ message: `Invalid parameters.` });
+            }
+
+            let isSpecificVersion = params.data.versionId === 0 || params.data.versionId === -1;
+            let versions: GameVersion[] = [];
+            if (isSpecificVersion === true) {
+                if (params.data.versionId === 0) {
+                    versions = await DatabaseHelper.database.GameVersions.findAll({ where: { gameName: params.data.gameName } });
+                } else {
+                    versions.push(await GameVersion.getDefaultVersionObject(params.data.gameName));
+                }
+            } else {
+                if (params.data.versionId <= -2) {
+                    return res.status(400).send({ message: `Invalid version ID.` });
+                }
+                let version = await DatabaseHelper.database.GameVersions.findByPk(params.data.versionId as number);
+                if (!version) {
+                    return res.status(404).send({ message: `Version not found.` });
+                }
+                versions.push(version);
+            }
+
             let errors = [];
-            for (let mod of mods.mods) {
-                for (let dependancy of mod.latest.dependencies) {
-                    if (!mods.mods.find((m: any) => m.latest.id === dependancy)) {
-                        errors.push({ mod: mod.mod.name, versionId: mod.latest.id, dependency: dependancy });
+            for (let version of versions) {
+                let request = await fetch(`${Config.server.url}/api/mods?gameName=${encodeURIComponent(params.data.gameName)}&versionId=${encodeURIComponent(version.version)}&includeUnverified=${params.data.includeUnverified ? `unverified` : `verified`}`);
+                if (!request.ok) {
+                    return res.status(500).send({ message: `Unable to fetch mods.`, status: request.status, statusText: request.statusText });
+                }
+                let mods = await request.json() as any;
+                
+                for (let mod of mods.mods) {
+                    for (let dependancy of mod.latest.dependencies) {
+                        if (!mods.mods.find((m: any) => m.latest.id === dependancy)) {
+                            errors.push({ mod: mod.mod.name, versionId: mod.latest.id, dependency: dependancy });
+                        }
                     }
                 }
             }
-
+            
             if (errors.length > 0) {
                 let missingIds = Array.from(new Set(errors.map((error: any) => error.dependency)));
                 return res.status(500).send({ message: `Unable to resolve ${errors.length} dependencies.`, missingIds, errors });

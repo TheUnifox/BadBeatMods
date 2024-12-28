@@ -801,9 +801,38 @@
           "Admin"
         ],
         "description": "",
+        "parameters": [
+          {
+            "name": "versionId",
+            "description": "The version ID to check.",
+            "required": true,
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "gameName",
+            "description": "The game name to check.",
+            "required": true,
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "includeUnverified",
+            "description": "Include unverified mods.",
+            "required": false,
+            "type": "boolean",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error"

@@ -199,7 +199,7 @@ export class ImportRoutes {
                 // not particularly happy with this ig its fine
                 let dependancyModVersion = dependancyModVersions.find((mV) => {
                     return satisfies(mV.modVersion, `^${versionToCompare}`) &&
-                    mV.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0]);
+                    mV.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds.sort()[0]);
                 });
                 if (!dependancyModVersion) {
                     let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
@@ -207,6 +207,10 @@ export class ImportRoutes {
                     continue;
                 }
 
+                if (modVersion.dependencies.includes(dependancyModVersion.id)) {
+                    Logger.warn(`Mod ${modVersion.id} already has dependancy ${dependancyModVersion.id}`, `Import`);
+                    continue;
+                }
                 //you may think its stupid but they force you to do this. thanks sequelize
                 modVersion.dependencies = [...modVersion.dependencies, dependancyModVersion.id];
                 await modVersion.save();
