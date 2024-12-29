@@ -1,5 +1,5 @@
 ![BadBeatMods](https://github.com/Saeraphinx/badbeatmods/blob/main/assets/banner.png)
-A game-agnostic mod hosting platform replacement.
+A game-agnostic mod hosting platform.
 
 ## Running the Server
 Running the server is (mostly) easy to do:
@@ -12,4 +12,4 @@ The default location for anything that needs to presist is a folder called `stor
 If you are using the docker image, the storage directory will be located at `/app/storage`. The port is set to `5001` by default.
 
 ## Config
-See [`storage/config.json`](https://github.com/Saeraphinx/BadBeatMods/blob/main/src/shared/Config.ts) for more info regarding the config file. This file is created when the server starts if it does not exist. The config file should also update itself if any new options get added. It will backup the old config file and create a new one with the new options.
+See [`src/shared/config.json`](https://github.com/Saeraphinx/BadBeatMods/blob/main/src/shared/Config.ts) for more info regarding the config file. This file is created when the server starts if it does not exist. The config file should also update itself if any new options get added. It will backup the old config file and create a new one with the new options.
