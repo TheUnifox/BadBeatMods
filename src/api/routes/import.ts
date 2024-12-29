@@ -3,7 +3,7 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { BeatModsMod } from './beatmods';
-import { coerce, satisfies, SemVer } from 'semver';
+import { coerce, satisfies } from 'semver';
 import crypto from 'crypto';
 import { Config } from '../../shared/Config';
 import path from 'path';
@@ -157,7 +157,7 @@ export class ImportRoutes {
                 if (count % 100 == 0) {
                     Logger.log(`${AllBeatModsMods.length - count} mods on the endpoint left`, `Import`);
                 } else {
-                    console.log(`${AllBeatModsMods.length - count} mods on the endpoint left`);
+                    Config.devmode ? console.log(`${AllBeatModsMods.length - count} mods on the endpoint left`) : null;
                 }
 
                 let dependancies = await this.downloadBeatModsDownloads(existingMod, importAuthor.id, mod);
@@ -276,7 +276,7 @@ export class ImportRoutes {
         let dependancyRecord: { dependancy: BeatModsMod | string, modVersionId: number}[] = [];
 
         for (const download of mod.downloads) {
-            console.log(`Yo ho ho and a bottle of ${mod.name} v${mod.version} from ${download.url}`, `Import`);
+            Config.devmode ? console.log(`Yo ho ho and a bottle of ${mod.name} v${mod.version} from ${download.url}`, `Import`) : null;
             let platform: Platform;
     
             if (download.type == `steam`) {

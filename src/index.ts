@@ -32,13 +32,6 @@ const memstore = MemoryStore(session);
 const port = Config.server.port;
 let database = new DatabaseManager();
 
-if (Config.bot.enabled) {
-    const luma = new Luma({
-        intents: [],
-        presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
-    luma.login(Config.bot.token);
-}
-
 // handle parsing request bodies
 app.use(express.json({ limit: 100000 }));
 app.use(express.urlencoded({limit : 10000, parameterLimit: 10, extended: false }));
@@ -129,6 +122,13 @@ async function startServer() {
         Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
         Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
     });
+    
+    if (Config.bot.enabled) {
+        const luma = new Luma({
+            intents: [],
+            presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
+        luma.login(Config.bot.token);
+    }
 }
 startServer();
 

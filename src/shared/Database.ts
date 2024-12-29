@@ -5,8 +5,6 @@ import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 import { sendModLog, sendModVersionLog } from "./ModWebhooks";
-import { get } from "http";
-
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -31,11 +29,12 @@ export class DatabaseManager {
 
     constructor() {
         Logger.log(`Loading Database...`);
+
         this.sequelize = new Sequelize(`bbm_database`, Config.database.username, Config.database.password, {
             host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
             port: Config.database.dialect === `sqlite` ? undefined : 5432,
             dialect: isValidDialect(Config.database.dialect) ? Config.database.dialect : `sqlite`,
-            logging: false,
+            logging: Config.flags.logRawSQL ? console.log : false,
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
 
@@ -43,6 +42,27 @@ export class DatabaseManager {
     }
 
     public async init() {
+        /*if (Config.database.dialect === `postgres`) {
+            const client = new Client({
+                user: Config.database.username,
+                password: Config.database.password,
+                host: Config.database.url,
+                port: 5432,
+            });
+            client.connect();
+            client.query(`CREATE DATABASE IF NOT EXISTS bbm_database;`).catch((error) => {
+                Logger.error(`Error creating database: ${error}`);
+                client.end();
+                exit(-1);
+            });
+        }*/
+
+        if (Config.database.dialect === `postgres`) {
+            if (Config.database.alter === true) {
+                Logger.warn(`Database alterations are not supported on PostgreSQL databases and have caused a crash. Be warned.`);
+            }
+        }
+
         await this.sequelize.sync({
             alter: Config.database.alter,
         }).then(() => {
@@ -77,29 +97,39 @@ export class DatabaseManager {
             });
 
             if (Config.database.dialect === `sqlite`) {
-                DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
-                    let healthcheckString = (healthcheck[0][0] as any).integrity_check;
-                    Logger.log(`Database health check: ${healthcheckString}`);
-                }).catch((error) => {
-                    Logger.error(`Error checking database health: ${error}`);
-                });
-                setInterval(() => {
-                    DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
-                        let healthcheckString = (healthcheck[0][0] as any).integrity_check;
-                        Logger.log(`Database health check: ${healthcheckString}`);
-                    }).catch((error) => {
-                        Logger.error(`Error checking database health: ${error}`);
-                    });
-                }, 1000 * 60 * 60 * 1);
+                this.checkIntegrity();
+                setInterval(this.checkIntegrity, 1000 * 60 * 60 * 1);
             } else {
                 Logger.warn(`Database health check is only available for SQLite databases.`);
             }
         }).catch((error) => {
+            if (Config.database.dialect === `postgres`) {
+                if (error.name == `SequelizeConnectionError` && error.message.includes(`database "bbm_database" does not exist`)) {
+                    Logger.error(`Database "bbm_database" does not exist on the PostgreSQL server. Please create the database in pgAdmin and restart the server.`);
+                    exit(-1);
+                }
+            }
             Logger.error(`Error loading database: ${error}`);
             exit(-1);
         });
             
     }
+
+    public async checkIntegrity() {
+        if (Config.database.dialect === `sqlite`) {
+            this.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
+                let healthcheckString = (healthcheck[0][0] as any).integrity_check;
+                Logger.log(`Database health check: ${healthcheckString}`);
+                return healthcheckString;
+            }).catch((error) => {
+                Logger.error(`Error checking database health: ${error}`);
+                return error;
+            });
+        } else {
+            Logger.warn(`Database integrity check is only available for SQLite databases.`);
+        }
+    }
+
     
     // #region LoadTables
     private loadTables() {

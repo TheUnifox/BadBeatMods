@@ -1,4 +1,3 @@
-import { randomInt } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -50,6 +49,7 @@ const DEFAULT_CONFIG = {
     },
     flags: {
         enableBeatModsDownloads: true, // enables downloading mods from BeatMods
+        logRawSQL: false // logs raw SQL queries to the console
     }
 };
 
@@ -96,6 +96,7 @@ export class Config {
     };
     private static _flags: {
         enableBeatModsDownloads: boolean;
+        logRawSQL: boolean;
     };
     // #endregion
     // #region Public Static Properties
