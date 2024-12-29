@@ -26,26 +26,29 @@ const DEFAULT_CONFIG = {
         modsDir: `./storage/uploads`,
         iconsDir: `./storage/icons`
     },
-    devmode: false,
-    authBypass: false,
+    devmode: false, // enables devmode features + increased logging
+    authBypass: false, // bypasses auth for all routes. uses ServerAdmin user.
     server: {
         port: 5001,
-        url: `http://localhost:5001`,
+        url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
         sessionSecret: `supersecret`,
-        iHateSecurity: false,
-        corsOrigins: `*`
+        iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
+        corsOrigins: `*` //can be a string or an array of strings
     },
     webhooks: {
-        enableWebhooks: false,
-        enablePublicWebhook: true,
-        loggingUrl: `http://localhost:5001/webhooks/logging`,
-        modLogUrl: `http://localhost:5001/webhooks/modlog`,
-        publicUrl: `http://localhost:5001/webhooks/public`
+        enableWebhooks: false, // enables sending to all webhooks
+        enablePublicWebhook: true, // enables sending approved mods to the public webhook
+        loggingUrl: `http://localhost:5001/webhooks/logging`, // url for logging - sensitive data might be sent here
+        modLogUrl: `http://localhost:5001/webhooks/modlog`, // url for mod logging - new, approvals, and rejections
+        publicUrl: `http://localhost:5001/webhooks/public` // url for public webhook - approved mods only... might have a delay? hasn't been done yet.
     },
     bot: {
         enabled: false,
         clientId: `BOT_CLIENT_ID`,
         token: `BOT_TOKEN`
+    },
+    flags: {
+        enableBeatModsDownloads: true, // enables downloading mods from BeatMods and also sets unique to false in the database for zipHash. might need to remkae the database if this is changed
     }
 };
 
@@ -89,6 +92,9 @@ export class Config {
         clientId: string;
         token: string;
     };
+    private static _flags: {
+        enableBeatModsDownloads: boolean;
+    };
     // #endregion
     // #region Public Static Properties
     public static get auth() {
@@ -115,6 +121,9 @@ export class Config {
     public static get bot() {
         return this._bot;
     }
+    public static get flags() {
+        return this._flags;
+    }
     // #endregion
     constructor() {
         let success = Config.loadConfig();
@@ -134,8 +143,12 @@ export class Config {
                     }
                 }
                 fs.renameSync(path.resolve(`./storage/config.json`), path.resolve(`./storage/config.json-${generateedId}.bak`));
-                console.warn(`Config file was invalid. A new one has been created. The old one has been backed up.`);
-                fs.writeFileSync(path.resolve(`./storage/config.json`), JSON.stringify(DEFAULT_CONFIG, null, 2));
+                console.warn(`Config file was invalid. A merge will be attempted. The old config has been backed up.`);
+                let mergeResults = Config.mergeConfig(path.resolve(`./storage/config.json-${generateedId}.bak`));
+                if (!mergeResults) {
+                    console.error(`Errors occurred while merging the config file. Please check the config file and try again.`);
+                    process.exit(1);
+                }
             } else {
                 console.warn(`Config file not found. A new one has been created.`);
                 fs.writeFileSync(path.resolve(`./storage/config.json`), JSON.stringify(DEFAULT_CONFIG, null, 2));
@@ -166,8 +179,15 @@ export class Config {
             let cf = JSON.parse(file);
             let failedToLoad: string[] = [];
             try {
+                if (`flags` in cf) {
+                    if (!doObjKeysMatch(cf.flags, DEFAULT_CONFIG.flags)) {
+                        failedToLoad.push(`flags`);
+                    } else {
+                        Config._flags = cf.flags;
+                    }
+                }
                 if (`auth` in cf) {
-                    if (!doKeysMatch(cf.auth, Object.keys(DEFAULT_CONFIG.auth))) {
+                    if (!doObjKeysMatch(cf.auth, DEFAULT_CONFIG.auth)) {
                         failedToLoad.push(`auth`);
                     } else {
                         Config._auth = cf.auth;
@@ -177,7 +197,7 @@ export class Config {
                 }
 
                 if (`database` in cf) {
-                    if (!doKeysMatch(cf.database, Object.keys(DEFAULT_CONFIG.database))) {
+                    if (!doObjKeysMatch(cf.database, DEFAULT_CONFIG.database)) {
                         failedToLoad.push(`database`);
                     } else {
                         Config._database = cf.database;
@@ -187,7 +207,7 @@ export class Config {
                 }
 
                 if (`storage` in cf) {
-                    if (!doKeysMatch(cf.storage, Object.keys(DEFAULT_CONFIG.storage))) {
+                    if (!doObjKeysMatch(cf.storage, DEFAULT_CONFIG.storage)) {
                         failedToLoad.push(`storage`);
                     } else {
                         Config._storage = cf.storage;
@@ -197,7 +217,7 @@ export class Config {
                 }
 
                 if (`server` in cf) {
-                    if (!doKeysMatch(cf.server, Object.keys(DEFAULT_CONFIG.server))) {
+                    if (!doObjKeysMatch(cf.server, DEFAULT_CONFIG.server)) {
                         failedToLoad.push(`server`);
                     } else {
                         Config._server = cf.server;
@@ -221,7 +241,7 @@ export class Config {
                 }
 
                 if (`webhooks` in cf) {
-                    if (!doKeysMatch(cf.webhooks, Object.keys(DEFAULT_CONFIG.webhooks))) {
+                    if (!doObjKeysMatch(cf.webhooks, DEFAULT_CONFIG.webhooks)) {
                         failedToLoad.push(`webhooks`);
                     } else {
                         Config._webhooks = cf.webhooks;
@@ -231,7 +251,7 @@ export class Config {
                 }
 
                 if (`bot` in cf) {
-                    if (!doKeysMatch(cf.bot, Object.keys(DEFAULT_CONFIG.bot))) {
+                    if (!doObjKeysMatch(cf.bot, DEFAULT_CONFIG.bot)) {
                         failedToLoad.push(`bot`);
                     } else {
                         Config._bot = cf.bot;
@@ -249,13 +269,73 @@ export class Config {
             return [`all`];
         }
     }
+
+    private static mergeConfig(configPath: string = `./storage/config.json`): boolean {
+        let cf = JSON.parse(fs.readFileSync(path.resolve(configPath), `utf8`)) as any;
+        try {
+            for (let defaultKey of Object.keys(DEFAULT_CONFIG)) {
+                // @ts-expect-error 7053
+                let subObj = DEFAULT_CONFIG[defaultKey];
+                if (typeof subObj === `object`) {
+                    for (let subkey of Object.keys(subObj)) {
+                        if (typeof subObj === `object`) {
+                            for (let subkey2 of Object.keys(subObj[subkey])) {
+                                if (cf[defaultKey][subkey][subkey2] === undefined || cf[defaultKey][subkey][subkey2] === null) {
+                                    cf[defaultKey][subkey][subkey2] = subObj[subkey][subkey2];
+                                }
+                            }
+                        } else {
+                            if (cf[defaultKey][subkey] === undefined) {
+                                cf[defaultKey][subkey] = subObj[subkey];
+                            }
+                        }
+                    }
+                } else {
+                    if (cf[defaultKey] === undefined) {
+                        cf[defaultKey] = subObj;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(`Error merging config file: ${e}`);
+            return false;
+        }
+
+        try {
+            fs.writeFileSync(path.resolve(`./storage/config.json`), JSON.stringify(cf, null, 2));
+        } catch (e) {
+            console.error(`Error writing config file: ${e}`);
+            return false;
+        }
+
+        return true;
+    }
 }
 
-function doKeysMatch(obj: any, keys: string[]): boolean {
-    let objKeys = Object.keys(obj);
-    for (let key of keys) {
-        if (!objKeys.includes(key)) {
-            return false;
+function doObjKeysMatch(obj1: any, obj2: any): boolean {
+    for (let key of Object.keys(obj1)) {
+        if (typeof obj1[key] === `object`) {
+            let subkeys = doObjKeysMatch(obj1[key], obj2[key]);
+            if (!subkeys) {
+                return false;
+            }
+        } else {
+            if (!Object.keys(obj2).includes(key)) {
+                return false;
+            }
+        }
+    }
+
+    for (let key of Object.keys(obj2)) {
+        if (typeof obj2[key] === `object`) {
+            let subkeys = doObjKeysMatch(obj2[key], obj1[key]);
+            if (!subkeys) {
+                return false;
+            }
+        } else {
+            if (!Object.keys(obj1).includes(key)) {
+                return false;
+            }
         }
     }
     return true;

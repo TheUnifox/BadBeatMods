@@ -307,13 +307,13 @@ export class DatabaseManager {
             platform: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                defaultValue: `steam`,
+                defaultValue: Platform.UniversalPC,
             },
             zipHash: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
-                unique: !Config.devmode, //change this, need to do feature flagging
+                unique: Config.flags.enableBeatModsDownloads,
             },
             contentHashes: {
                 type: DataTypes.STRING,

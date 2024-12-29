@@ -12,7 +12,7 @@ import { exit } from 'process';
 
 export class ImportRoutes {
     private app: Express;
-    private readonly ENABLE_DOWNLOADS = true;
+    private readonly ENABLE_DOWNLOADS = Config.flags.enableBeatModsDownloads;
 
     constructor(app: Express) {
         this.app = app;
