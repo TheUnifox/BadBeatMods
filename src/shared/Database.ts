@@ -159,6 +159,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `users`,
+            paranoid: true,
         });
 
         this.GameVersions = GameVersion.init({
@@ -188,6 +189,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `gameVersions`,
+            paranoid: true,
         });
 
         this.Mods = Mod.init({
@@ -263,6 +265,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `mods`,
+            paranoid: true,
         });
 
         this.ModVersions = ModVersion.init({
@@ -365,6 +368,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `modVersions`,
+            paranoid: true,
         });
 
         this.EditApprovalQueue = EditQueue.init({
@@ -414,6 +418,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
+            paranoid: true,
         });
 
         this.MOTDs = MOTD.init({
@@ -507,6 +512,8 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `motds`,
+            paranoid: true,
+
         });
         // #endregion
 

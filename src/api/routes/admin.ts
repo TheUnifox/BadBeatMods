@@ -173,5 +173,35 @@ export class AdminRoutes {
 
             return res.status(200).send({ message: `Version ${version1.gameName} ${version1.version} & ${version2.gameName} ${version2.version} have been linked.` });
         });
+
+        /*
+        this.app.post(`/api/admin/users/addRole`, async (req, res) => {
+            // #swagger.tags = ['Admin']
+            // #swagger.summary = 'Add a role to a user.'
+            // #swagger.description = 'Add a role to a user.'
+            let session = await validateSession(req, res, UserRoles.Admin);
+            if (!session.approved) {
+                return;
+            }
+
+            let userId = Validator.zDBID.safeParse(req.body.userId);
+            let role = Validator.zUserRole.safeParse(req.body.role);
+
+            if (!userId.success || !role.success) {
+                return res.status(400).send({ message: `Invalid parameters.` });
+            }
+
+            let user = await DatabaseHelper.database.Users.findByPk(userId.data);
+            if (!user) {
+                return res.status(404).send({ message: `User not found.` });
+            }
+
+            user.roles = [...user.roles, role.data];
+            user.save();
+
+            return res.status(200).send({ message: `Role ${role.data} added to user ${user.username}.` });
+
+        });
+        */
     }
 }

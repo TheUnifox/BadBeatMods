@@ -359,6 +359,14 @@ export class ImportRoutes {
                 if (!fs.existsSync(`${path.resolve(Config.storage.modsDir)}/${result}.zip`)) {
                     fs.writeFileSync(`${path.resolve(Config.storage.modsDir)}/${result}.zip`, Buffer.from(arrayBuffer));
                 }
+            } else {
+                result = JSON.stringify(download.hashMd5);
+            }
+
+            let existingHash = await DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: result } });
+            if (existingHash) {
+                Logger.warn(`Hash ${result} already exists in the database, skipping.`, `Import`);
+                continue;
             }
     
             // create mod version

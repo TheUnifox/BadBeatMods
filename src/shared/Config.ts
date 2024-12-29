@@ -18,6 +18,7 @@ const DEFAULT_CONFIG = {
     database: {
         dialect: `sqlite`,
         url: `./storage/database.sqlite`,
+        port: 5432, // only used for postgres
         username: `user`,
         password: `password`,
         alter: false
@@ -48,7 +49,7 @@ const DEFAULT_CONFIG = {
         token: `BOT_TOKEN`
     },
     flags: {
-        enableBeatModsDownloads: true, // enables downloading mods from BeatMods and also sets unique to false in the database for zipHash. might need to remkae the database if this is changed
+        enableBeatModsDownloads: true, // enables downloading mods from BeatMods
     }
 };
 
@@ -63,6 +64,7 @@ export class Config {
     private static _database: {
         dialect: string;
         url: string;
+        port: number;
         username: string;
         password: string;
         alter: boolean;
@@ -135,12 +137,9 @@ export class Config {
 
             if (fs.existsSync(path.resolve(`./storage/config.json`))) {
                 console.log(`Backing up existing config file...`);
-                let generateedId = randomInt(100000, 999999);
+                let generateedId = new Date().getTime();
                 if (fs.existsSync(path.resolve(`./storage/config.json-${generateedId}.bak`))) {
-                    generateedId = randomInt(100000, 999999);
-                    if (fs.existsSync(path.resolve(`./storage/config.json-${generateedId}.bak`))) {
-                        fs.unlinkSync(path.resolve(`./storage/config.json-${generateedId}.bak`));
-                    }
+                    fs.unlinkSync(path.resolve(`./storage/config.json-${generateedId}.bak`));
                 }
                 fs.renameSync(path.resolve(`./storage/config.json`), path.resolve(`./storage/config.json-${generateedId}.bak`));
                 console.warn(`Config file was invalid. A merge will be attempted. The old config has been backed up.`);
@@ -185,7 +184,10 @@ export class Config {
                     } else {
                         Config._flags = cf.flags;
                     }
+                } else {
+                    failedToLoad.push(`auth`);
                 }
+
                 if (`auth` in cf) {
                     if (!doObjKeysMatch(cf.auth, DEFAULT_CONFIG.auth)) {
                         failedToLoad.push(`auth`);
@@ -278,7 +280,7 @@ export class Config {
                 let subObj = DEFAULT_CONFIG[defaultKey];
                 if (typeof subObj === `object`) {
                     for (let subkey of Object.keys(subObj)) {
-                        if (typeof subObj === `object`) {
+                        if (typeof subObj[subkey] === `object`) {
                             for (let subkey2 of Object.keys(subObj[subkey])) {
                                 if (cf[defaultKey][subkey][subkey2] === undefined || cf[defaultKey][subkey][subkey2] === null) {
                                     cf[defaultKey][subkey][subkey2] = subObj[subkey][subkey2];
