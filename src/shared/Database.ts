@@ -33,6 +33,7 @@ export class DatabaseManager {
         Logger.log(`Loading Database...`);
         this.sequelize = new Sequelize(`bbm_database`, Config.database.username, Config.database.password, {
             host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
+            port: Config.database.dialect === `sqlite` ? undefined : 5432,
             dialect: isValidDialect(Config.database.dialect) ? Config.database.dialect : `sqlite`,
             logging: false,
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
@@ -75,24 +76,29 @@ export class DatabaseManager {
                 }
             });
 
-            DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
-                let healthcheckString = (healthcheck[0][0] as any).integrity_check;
-                Logger.log(`Database health check: ${healthcheckString}`);
-            }).catch((error) => {
-                Logger.error(`Error checking database health: ${error}`);
-            });
-            setInterval(() => {
+            if (Config.database.dialect === `sqlite`) {
                 DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
                     let healthcheckString = (healthcheck[0][0] as any).integrity_check;
                     Logger.log(`Database health check: ${healthcheckString}`);
                 }).catch((error) => {
                     Logger.error(`Error checking database health: ${error}`);
                 });
-            }, 1000 * 60 * 60 * 1);
+                setInterval(() => {
+                    DatabaseHelper.database.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
+                        let healthcheckString = (healthcheck[0][0] as any).integrity_check;
+                        Logger.log(`Database health check: ${healthcheckString}`);
+                    }).catch((error) => {
+                        Logger.error(`Error checking database health: ${error}`);
+                    });
+                }, 1000 * 60 * 60 * 1);
+            } else {
+                Logger.warn(`Database health check is only available for SQLite databases.`);
+            }
         }).catch((error) => {
             Logger.error(`Error loading database: ${error}`);
             exit(-1);
         });
+            
     }
     
     // #region LoadTables
@@ -136,7 +142,7 @@ export class DatabaseManager {
                 defaultValue: ``,
             },
             roles: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `[]`,
                 get() {
@@ -217,7 +223,7 @@ export class DatabaseManager {
                 defaultValue: `other`,
             },
             authorIds: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `[]`,
                 get() {
@@ -287,7 +293,7 @@ export class DatabaseManager {
                 },
             },
             supportedGameVersionIds: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
                 get() {
@@ -313,10 +319,10 @@ export class DatabaseManager {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: ``,
-                unique: Config.flags.enableBeatModsDownloads,
+                unique: true,
             },
             contentHashes: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `[]`,
                 get() {
@@ -329,7 +335,7 @@ export class DatabaseManager {
                 },
             },
             dependencies: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `[]`,
                 get() {
@@ -423,7 +429,7 @@ export class DatabaseManager {
                 defaultValue: ``,
             },
             gameVersionIds: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: true,
                 defaultValue: null,
                 get() {
@@ -443,7 +449,7 @@ export class DatabaseManager {
                 }
             },
             platforms: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: true,
                 get() {
                     // @ts-expect-error ts(2345)
@@ -462,12 +468,12 @@ export class DatabaseManager {
                 }
             },
             message: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
             translations: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `[]`,
                 get() {
