@@ -341,8 +341,8 @@
         "tags": [
           "Mods"
         ],
-        "summary": "Show a mod that has a file with the specified hash.",
-        "description": "Show a mod that has a file with the specified hash. This is useful for finding the mod that a file belongs to.",
+        "summary": "Get a specific mod version that has a file with the specified hash.",
+        "description": "Get a specific mod version that has a file with the specified hash. This is useful for finding the mod that a file belongs to.",
         "parameters": [
           {
             "name": "hash",
@@ -350,11 +350,17 @@
             "type": "string",
             "required": true,
             "in": "query"
+          },
+          {
+            "name": "raw",
+            "description": "Return the raw mod depedendcies without attempting to resolve them.",
+            "type": "boolean",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "Returns the mod."
+            "description": "Returns the mod version."
           },
           "400": {
             "description": "Missing hash."
