@@ -172,15 +172,22 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Missing hash.` });
             }
 
+            // i'm dont have a type for the raw mod version
+            let retVal: any[] = [];
+
             for (const version of DatabaseHelper.cache.modVersions) {
                 if (version.zipHash === hash) {
-                    return res.status(200).send({ modVersion: await (raw ? version.toRawAPIResonse() : version.toAPIResonse()) });
+                    retVal.push(await (raw ? version.toRawAPIResonse() : version.toAPIResonse()));
                 }
                 for (const fileHash of version.contentHashes) {
                     if (fileHash.hash === hash) {
-                        return res.status(200).send({ modVersion: await (raw ? version.toRawAPIResonse() : version.toAPIResonse()) });
+                        retVal.push(await (raw ? version.toRawAPIResonse() : version.toAPIResonse()));
                     }
                 }
+            }
+
+            if (retVal.length > 0) {
+                return res.status(200).send({ modVersions: retVal });
             }
             return res.status(404).send({ message: `Hash not found.` });
         });
