@@ -1,4 +1,4 @@
-import e, { Express } from 'express';
+import { Express } from 'express';
 import { DatabaseHelper, GameVersion, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
-import session from 'express-session';
 
 export class AdminRoutes {
     private app: Express;
@@ -156,8 +155,8 @@ export class AdminRoutes {
             }
 
             const modVersions = await DatabaseHelper.database.ModVersions.findAll();
-            const version1 = await DatabaseHelper.database.GameVersions.findByPk(versionId1.data);
-            const version2 = await DatabaseHelper.database.GameVersions.findByPk(versionId1.data);
+            const version1 = await DatabaseHelper.database.GameVersions.findByPk(versionId1.data.toString());
+            const version2 = await DatabaseHelper.database.GameVersions.findByPk(versionId1.data.toString());
             if (!version1 || !version2) {
                 return res.status(404).send({ message: `Versions not found.` });
             }
@@ -339,7 +338,7 @@ export class AdminRoutes {
             if (!user) {
                 return res.status(404).send({ message: `User not found.` });
             }
-            
+
             let session: { approved: boolean, user: any } = { approved: false, user: null };
             if (gameName.data) {
                 switch (role.data) {

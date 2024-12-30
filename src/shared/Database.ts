@@ -844,12 +844,12 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     }
 
     public static async checkForExistingMod(name: string) {
-        let mod = await DatabaseHelper.database.Mods.findOne({ where: { name } });
+        let mod = await DatabaseHelper.database.Mods.findOne({ where: { name: name } });
         return mod;
     }
 
     public static async countExistingMods(name: string) {
-        let count = await DatabaseHelper.database.Mods.count({ where: { name } });
+        let count = await DatabaseHelper.database.Mods.count({ where: { name: name } });
         return count;
     }
 
@@ -932,12 +932,12 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
     // this function called to see if a duplicate version already exists in the database. if it does, creation of a new version should be halted.
     public static async checkForExistingVersion(modId: number, semver: SemVer, platform:Platform): Promise<ModVersion | null> {
-        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
+        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
         return modVersion;
     }
 
     public static async countExistingVersions(modId: number, semver: SemVer, platform:Platform): Promise<number> {
-        let count = DatabaseHelper.database.ModVersions.count({ where: { modId, modVersion: semver.raw, platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}] } });
+        let count = DatabaseHelper.database.ModVersions.count({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
         return count;
     }
 

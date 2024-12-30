@@ -50,8 +50,12 @@ export class Validator {
     public static readonly zPostType = ZodPostType;
     public static readonly zUserRoles = ZodUserRoles;
     public static readonly zUrl = z.string().url().refine((url) => {
-        let urlObj = new URL(url);
-        return Config.auth.permittedRedirectDomains.includes(urlObj.origin);
+        try {
+            let urlObj = new URL(url);
+            return Config.auth.permittedRedirectDomains.includes(urlObj.origin);
+        } catch (e) {
+            return false;
+        }
     });
     public static readonly zCreateMod = ZodMod.pick({
         name: true,

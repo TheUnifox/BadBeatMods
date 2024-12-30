@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from "express";
 import { Config } from "./Config";
 import { DatabaseHelper, SupportedGames, User, UserRoles } from "./Database";
 
@@ -337,7 +336,7 @@ export interface GitHubPublicUser {
     If a UserRoles, the user must have that role.
 */
 export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, gameName:SupportedGames = null, handleRequest:boolean = true): Promise<{approved: boolean, user: User|null }> {
-    let sessionId = req.session.userId;
+    let sessionId = req.session.userId as number;
     // check for devmode options
     if (Config.devmode && Config.authBypass) {
         let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });

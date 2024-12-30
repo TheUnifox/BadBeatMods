@@ -72,7 +72,7 @@ export class AuthRoutes {
             let user = await GitHubAuthHelper.getUser(token.access_token);
             if (!user) { return res.status(500).send({ error: `Internal server error.` }); }
 
-            let userDb = await DatabaseHelper.database.Users.findOne({ where: { githubId: user.id } });
+            let userDb = await DatabaseHelper.database.Users.findOne({ where: { githubId: user.id.toString() } });
             if (!userDb) {
                 userDb = await DatabaseHelper.database.Users.create({
                     username: user.login,
@@ -129,7 +129,7 @@ export class AuthRoutes {
             let user = await DiscordAuthHelper.getUser(token.access_token);
             if (!user) { return res.status(500).send({ error: `Internal server error.` }); }
 
-            let userDb = await DatabaseHelper.database.Users.findOne({ where: { githubId: stateObj.userId } });
+            let userDb = await DatabaseHelper.database.Users.findOne({ where: { githubId: stateObj.userId.toString() } });
 
             if (!userDb) {
                 return res.status(400).send({ error: `Discord auth suscessful, however user could not be found.` });

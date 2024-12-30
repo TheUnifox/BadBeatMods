@@ -22,7 +22,7 @@ module.exports = {
                 interaction.reply(`Invalid ID`);
                 return;
             }
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id } });
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: id } });
             if (!mod) {
                 interaction.reply(`Mod not found`);
                 return;

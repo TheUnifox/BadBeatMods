@@ -49,7 +49,10 @@ const DEFAULT_CONFIG = {
     },
     flags: {
         enableBeatModsDownloads: true, // enables downloading mods from BeatMods
-        logRawSQL: false // logs raw SQL queries to the console
+        logRawSQL: false, // logs raw SQL queries to the console
+        enableFavicon: true, // enables the favicon route /favicon.ico
+        enableBanner: true, // enables the banner route /banner.png
+        enableSwagger: true, // enables the swagger docs at /api/docs
     }
 };
 

@@ -70,6 +70,9 @@ export class ImportRoutes {
             if (!importAuthor) {
                 importAuthor = await DatabaseHelper.database.Users.create({
                     username: `BeatMods Import`,
+                    displayName: `BeatMods Import`,
+                    bio: `Mods imported from BeatMods`,
+                    sponsorUrl: `https://www.patreon.com/c/beatsabermods`,
                     githubId: null,
                     roles: {
                         sitewide: [],
