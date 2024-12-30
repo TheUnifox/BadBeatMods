@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated, and is available without a refrence to the file itself.
+// To add a config option, add it to the DEFAULT_CONFIG object, and add a property to the Config class with the same name. The Config class will automatically load the config from the file and map it to the static properties.
 const DEFAULT_CONFIG = {
     auth: {
         discord: {
@@ -53,6 +54,7 @@ const DEFAULT_CONFIG = {
         enableFavicon: true, // enables the favicon route /favicon.ico
         enableBanner: true, // enables the banner route /banner.png
         enableSwagger: true, // enables the swagger docs at /api/docs
+        enableDBHealthCheck: true, // enables the database health check at /api/health
     }
 };
 
@@ -100,6 +102,10 @@ export class Config {
     private static _flags: {
         enableBeatModsDownloads: boolean;
         logRawSQL: boolean;
+        enableFavicon: boolean;
+        enableBanner: boolean;
+        enableSwagger: boolean;
+        enableDBHealthCheck: boolean;
     };
     // #endregion
     // #region Public Static Properties

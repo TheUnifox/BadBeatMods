@@ -96,11 +96,15 @@ export class DatabaseManager {
                 }
             });
 
-            if (Config.database.dialect === `sqlite`) {
-                this.checkIntegrity();
-                setInterval(this.checkIntegrity, 1000 * 60 * 60 * 1);
-            } else {
-                Logger.warn(`Database health check is only available for SQLite databases.`);
+            if (Config.flags.enableDBHealthCheck) {
+                if (Config.database.dialect === `sqlite`) {
+                    this.checkIntegrity();
+                    setInterval(() => {
+                        this.checkIntegrity();
+                    }, 1000 * 60 * 60 * 1);
+                } else {
+                    Logger.warn(`Database health check is only available for SQLite databases.`);
+                }
             }
         }).catch((error) => {
             if (Config.database.dialect === `postgres`) {
@@ -112,21 +116,31 @@ export class DatabaseManager {
             Logger.error(`Error loading database: ${error}`);
             exit(-1);
         });
+
             
     }
 
     public async checkIntegrity() {
-        if (Config.database.dialect === `sqlite`) {
-            this.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
-                let healthcheckString = (healthcheck[0][0] as any).integrity_check;
-                Logger.log(`Database health check: ${healthcheckString}`);
-                return healthcheckString;
-            }).catch((error) => {
-                Logger.error(`Error checking database health: ${error}`);
-                return error;
-            });
+        if (Config.flags.enableDBHealthCheck) {
+            if (Config.database.dialect === `sqlite`) {
+                this.sequelize.query(`PRAGMA integrity_check;`).then((healthcheck) => {
+                    try {
+                        let healthcheckString = (healthcheck[0][0] as any).integrity_check;
+                        Logger.log(`Database health check: ${healthcheckString}`);
+                        return healthcheckString;
+                    } catch (error) {
+                        Logger.error(`Error checking database health: ${error}`);
+                        return error;
+                    }
+                }).catch((error) => {
+                    Logger.error(`Error checking database health: ${error}`);
+                    return error;
+                });
+            } else {
+                Logger.warn(`Database integrity check is only available for SQLite databases.`);
+            }
         } else {
-            Logger.warn(`Database integrity check is only available for SQLite databases.`);
+            Logger.warn(`Database health check is disabled.`);
         }
     }
 

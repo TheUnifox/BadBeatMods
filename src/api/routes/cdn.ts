@@ -15,21 +15,25 @@ export class CDNRoutes {
     }
 
     private async loadRoutes() {
-        this.app.get(`/favicon.ico`, (req, res) => {
-            res.sendFile(path.resolve(`./assets/favicon.png`), {
-                maxAge: 1000 * 60 * 60 * 24 * 1,
-                //immutable: true,
-                lastModified: true,
+        if (Config.flags.enableFavicon) {
+            this.app.get(`/favicon.ico`, (req, res) => {
+                res.sendFile(path.resolve(`./assets/favicon.png`), {
+                    maxAge: 1000 * 60 * 60 * 24 * 1,
+                    //immutable: true,
+                    lastModified: true,
+                });
             });
-        });
+        }
         
-        this.app.get(`/banner.png`, (req, res) => {
-            res.sendFile(path.resolve(`./assets/banner.png`), {
-                maxAge: 1000 * 60 * 60 * 24 * 1,
-                //immutable: true,
-                lastModified: true,
+        if (Config.flags.enableBanner) {
+            this.app.get(`/banner.png`, (req, res) => {
+                res.sendFile(path.resolve(`./assets/banner.png`), {
+                    maxAge: 1000 * 60 * 60 * 24 * 1,
+                    //immutable: true,
+                    lastModified: true,
+                });
             });
-        });
+        }
         
         this.app.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
             extensions: [`png`],
