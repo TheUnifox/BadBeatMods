@@ -651,6 +651,44 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
         }
     }
 
+    public addPerGameRole(game: SupportedGames, role: UserRoles) {
+        let roleObj = { ...this.roles };
+        if (!roleObj.perGame[game]) {
+            roleObj.perGame[game] = [];
+        }
+
+        if (!roleObj.perGame[game].includes(role)) {
+            roleObj.perGame[game] = [...roleObj.perGame[game], role];
+            this.roles = roleObj;
+            this.save();
+        } else {
+            Logger.warn(`User ${this.username} already has role ${role} for game ${game}`);
+        }
+    }
+
+    public removeSiteWideRole(role: UserRoles) {
+        if (this.roles.sitewide.includes(role)) {
+            this.roles = {
+                sitewide: this.roles.sitewide.filter((r) => r != role),
+                perGame: this.roles.perGame,
+            };
+            this.save();
+        } else {
+            Logger.warn(`User ${this.username} does not have role ${role}`);
+        }
+    }
+
+    public removePerGameRole(game: SupportedGames, role: UserRoles) {
+        let roleObj = { ...this.roles };
+        if (roleObj.perGame[game] && roleObj.perGame[game].includes(role)) {
+            roleObj.perGame[game] = roleObj.perGame[game].filter((r) => r != role);
+            this.roles = roleObj;
+            this.save();
+        } else {
+            Logger.warn(`User ${this.username} does not have role ${role} for game ${game}`);
+        }
+    }
+
     public toAPIResponse(): UserAPIResponse {
         return {
             id: this.id,
@@ -658,6 +696,7 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
             githubId: this.githubId,
             sponsorUrl: this.sponsorUrl,
             displayName: this.displayName,
+            roles: this.roles,
             bio: this.bio,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
@@ -687,6 +726,7 @@ export interface UserAPIResponse {
     githubId: string;
     sponsorUrl: string;
     displayName: string;
+    roles: UserRolesObject;
     bio: string;
     createdAt?: Date;
     updatedAt?: Date;

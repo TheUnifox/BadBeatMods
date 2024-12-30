@@ -1,10 +1,12 @@
-import { Express } from 'express';
+import e, { Express } from 'express';
 import { DatabaseHelper, GameVersion, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
+import { Logger } from '../../shared/Logger';
+import session from 'express-session';
 
 export class AdminRoutes {
     private app: Express;
@@ -75,9 +77,9 @@ export class AdminRoutes {
             }
 
             let params = Validator.z.object({
-                versionId: Validator.z.number({coerce:true}).int(),
+                versionId: Validator.z.number({ coerce: true }).int(),
                 gameName: Validator.zGameName,
-                includeUnverified: Validator.z.boolean({coerce:true}).default(false),
+                includeUnverified: Validator.z.boolean({ coerce: true }).default(false),
             }).required().strict().safeParse(req.query);
 
             if (!params.success) {
@@ -110,7 +112,7 @@ export class AdminRoutes {
                     return res.status(500).send({ message: `Unable to fetch mods.`, status: request.status, statusText: request.statusText });
                 }
                 let mods = await request.json() as any;
-                
+
                 for (let mod of mods.mods) {
                     for (let dependancy of mod.latest.dependencies) {
                         if (!mods.mods.find((m: any) => m.latest.id === dependancy)) {
@@ -119,7 +121,7 @@ export class AdminRoutes {
                     }
                 }
             }
-            
+
             if (errors.length > 0) {
                 let missingIds = Array.from(new Set(errors.map((error: any) => error.dependency)));
                 return res.status(500).send({ message: `Unable to resolve ${errors.length} dependencies.`, missingIds, errors });
@@ -145,7 +147,7 @@ export class AdminRoutes {
             if (!session.approved) {
                 return;
             }
-            
+
             let versionId1 = Validator.zDBID.safeParse(req.body.version1);
             let versionId2 = Validator.zDBID.safeParse(req.body.version2);
 
@@ -174,20 +176,27 @@ export class AdminRoutes {
             return res.status(200).send({ message: `Version ${version1.gameName} ${version1.version} & ${version2.gameName} ${version2.version} have been linked.` });
         });
 
-        /*
         this.app.post(`/api/admin/users/addRole`, async (req, res) => {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Add a role to a user.'
             // #swagger.description = 'Add a role to a user.'
-            let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
-                return;
+            /* #swagger.parameters['body'] = {
+                    in: 'body',
+                    description: 'The role to add.',
+                    required: true,
+                    schema: {
+                      userId: 1,
+                      role: 'string',
+                      gameName: 'string'
+                  }
             }
+            */
 
             let userId = Validator.zDBID.safeParse(req.body.userId);
-            let role = Validator.zUserRole.safeParse(req.body.role);
+            let gameName = Validator.zGameName.optional().safeParse(req.body.gameName);
+            let role = Validator.zUserRoles.safeParse(req.body.role);
 
-            if (!userId.success || !role.success) {
+            if (!userId.success || !role.success || !gameName.success) {
                 return res.status(400).send({ message: `Invalid parameters.` });
             }
 
@@ -196,12 +205,225 @@ export class AdminRoutes {
                 return res.status(404).send({ message: `User not found.` });
             }
 
-            user.roles = [...user.roles, role.data];
-            user.save();
+            let sessionId = req.session.userId;
+            if (!sessionId) {
+                return res.status(400).send({ message: `You cannot modify your own roles.` });
+            } else {
+                if (sessionId === user.id) {
+                    return res.status(400).send({ message: `You cannot modify your own roles.` });
+                }
+            }
 
-            return res.status(200).send({ message: `Role ${role.data} added to user ${user.username}.` });
+            let session: { approved: boolean, user: any } = { approved: false, user: null };
+            if (gameName.data) {
+                switch (role.data) {
+                    case UserRoles.Admin:
+                        session = await validateSession(req, res, UserRoles.AllPermissions, gameName.data);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addPerGameRole(gameName.data, UserRoles.Admin);
+                        break;
+                    case UserRoles.Moderator:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addPerGameRole(gameName.data, UserRoles.Moderator);
+                        break;
+                    case UserRoles.Approver:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addPerGameRole(gameName.data, UserRoles.Approver);
+                        break;
+                    case UserRoles.Poster:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addPerGameRole(gameName.data, UserRoles.Poster);
+                        break;
+                    case UserRoles.Banned:
+                        session = await validateSession(req, res, UserRoles.Approver);
+                        if (!session.approved) {
+                            return;
+                        }
+
+                        if (user.roles.perGame[gameName.data].length > 0) {
+                            return res.status(400).send({ message: `User cannot be banned due to already having roles.`, user });
+                        }
+
+                        user.addPerGameRole(gameName.data, UserRoles.Banned);
+                        break;
+                    default:
+                        return res.status(400).send({ message: `Invalid role.` });
+                }
+                Logger.log(`User ${session.user.username} added role ${role.data} to user ${user.username} for game ${gameName.data} by ${session.user?.id}.`);
+            } else {
+                switch (role.data) {
+                    case UserRoles.Admin:
+                        session = await validateSession(req, res, UserRoles.AllPermissions);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addSiteWideRole(UserRoles.Admin);
+                        break;
+                    case UserRoles.Moderator:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addSiteWideRole(UserRoles.Moderator);
+                        break;
+                    case UserRoles.Approver:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addSiteWideRole(UserRoles.Approver);
+                        break;
+                    case UserRoles.Poster:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.addSiteWideRole(UserRoles.Poster);
+                        break;
+                    case UserRoles.Banned:
+                        session = await validateSession(req, res, UserRoles.Approver);
+                        if (!session.approved) {
+                            return;
+                        }
+                        if (user.roles.sitewide.length > 0) {
+                            return res.status(400).send({ message: `User cannot be banned due to already having roles.`, user });
+                        }
+                        user.addSiteWideRole(UserRoles.Banned);
+                        break;
+                    default:
+                        return res.status(400).send({ message: `Invalid role.` });
+                }
+                Logger.log(`User ${session.user.username} added role ${role.data} to user ${user.username} by ${session.user?.id}.`);
+            }
+
+            return res.status(200).send({ message: gameName.data ? `Role ${role.data} added to user ${user.username} for game ${gameName.data}.` : `Role ${role.data} added to user ${user.username}`, user });
 
         });
-        */
+
+        this.app.post(`/api/admin/users/removeRole`, async (req, res) => {
+            // #swagger.tags = ['Admin']
+            // #swagger.summary = 'Remove a role from a user.'
+            // #swagger.description = 'Remove a role from a user.'
+            /* #swagger.parameters['body'] = {
+                    in: 'body',
+                    description: 'The role to remove.',
+                    required: true,
+                    schema: {
+                      userId: 1,
+                      role: 'string',
+                      gameName: 'string'
+                  }
+            }
+            */
+
+            let userId = Validator.zDBID.safeParse(req.body.userId);
+            let gameName = Validator.zGameName.optional().safeParse(req.body.gameName);
+            let role = Validator.zUserRoles.safeParse(req.body.role);
+
+            if (!userId.success || !role.success || !gameName.success) {
+                return res.status(400).send({ message: `Invalid parameters.` });
+            }
+
+            let user = await DatabaseHelper.database.Users.findByPk(userId.data);
+            if (!user) {
+                return res.status(404).send({ message: `User not found.` });
+            }
+            
+            let session: { approved: boolean, user: any } = { approved: false, user: null };
+            if (gameName.data) {
+                switch (role.data) {
+                    case UserRoles.Admin:
+                        session = await validateSession(req, res, UserRoles.AllPermissions, gameName.data);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.Admin);
+                        break;
+                    case UserRoles.Moderator:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.Moderator);
+                        break;
+                    case UserRoles.Approver:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.Approver);
+                        break;
+                    case UserRoles.Poster:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.Poster);
+                        break;
+                    case UserRoles.Banned:
+                        session = await validateSession(req, res, UserRoles.Approver);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.Banned);
+                        break;
+                    default:
+                        return res.status(400).send({ message: `Invalid role.` });
+                }
+            } else {
+                switch (role.data) {
+                    case UserRoles.Admin:
+                        session = await validateSession(req, res, UserRoles.AllPermissions);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.Admin);
+                        break;
+                    case UserRoles.Moderator:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.Moderator);
+                        break;
+                    case UserRoles.Approver:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.Approver);
+                        break;
+                    case UserRoles.Poster:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.Poster);
+                        break;
+                    case UserRoles.Banned:
+                        session = await validateSession(req, res, UserRoles.Approver);
+                        if (!session.approved) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.Banned);
+                        break;
+                    default:
+                        return res.status(400).send({ message: `Invalid role.` });
+                }
+            }
+            Logger.log(`User ${session.user.username} removed role ${role.data} from user ${user.username} for game ${gameName.data} by ${session.user?.id}.`);
+            return res.status(200).send({ message: gameName.data ? `Role ${role.data} removed from user ${user.username} for game ${gameName.data}.` : `Role ${role.data} removed from user ${user.username}`, user });
+        });
     }
 }

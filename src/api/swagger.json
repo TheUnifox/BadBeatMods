@@ -887,6 +887,96 @@
         }
       }
     },
+    "/api/admin/users/addRole": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Add a role to a user.",
+        "description": "Add a role to a user.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "The role to add.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "number",
+                  "example": 1
+                },
+                "role": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/admin/users/removeRole": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Remove a role from a user.",
+        "description": "Remove a role from a user.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "The role to remove.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "number",
+                  "example": 1
+                },
+                "role": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/approval/new": {
       "get": {
         "tags": [

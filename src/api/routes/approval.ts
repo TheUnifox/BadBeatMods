@@ -530,6 +530,7 @@ export class ApprovalRoutes {
             console.log(`Revoked IDs:`, revokedIds);
             return res.status(200).send({ message: `Mod version revoked.`, revokedIds: revokedIds });
         });
+        // #endregion
     }
 }
 

@@ -279,9 +279,9 @@ export class Config {
             for (let defaultKey of Object.keys(DEFAULT_CONFIG)) {
                 // @ts-expect-error 7053
                 let subObj = DEFAULT_CONFIG[defaultKey];
-                if (typeof subObj === `object`) {
+                if (typeof subObj === `object` && Array.isArray(subObj) === false) {
                     for (let subkey of Object.keys(subObj)) {
-                        if (typeof subObj[subkey] === `object`) {
+                        if (typeof subObj[subkey] === `object` && Array.isArray(subObj[subkey]) === false) {
                             for (let subkey2 of Object.keys(subObj[subkey])) {
                                 if (cf[defaultKey][subkey][subkey2] === undefined || cf[defaultKey][subkey][subkey2] === null) {
                                     cf[defaultKey][subkey][subkey2] = subObj[subkey][subkey2];
@@ -317,7 +317,7 @@ export class Config {
 
 function doObjKeysMatch(obj1: any, obj2: any): boolean {
     for (let key of Object.keys(obj1)) {
-        if (typeof obj1[key] === `object`) {
+        if (typeof obj1[key] === `object` && Array.isArray(obj1[key]) === false) {
             let subkeys = doObjKeysMatch(obj1[key], obj2[key]);
             if (!subkeys) {
                 return false;
@@ -330,7 +330,7 @@ function doObjKeysMatch(obj1: any, obj2: any): boolean {
     }
 
     for (let key of Object.keys(obj2)) {
-        if (typeof obj2[key] === `object`) {
+        if (typeof obj2[key] === `object` && Array.isArray(obj1[key]) === false) {
             let subkeys = doObjKeysMatch(obj2[key], obj1[key]);
             if (!subkeys) {
                 return false;

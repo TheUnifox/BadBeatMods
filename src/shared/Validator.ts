@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Categories, DatabaseHelper, GameVersion, ModVersion, Platform, Status, SupportedGames, User, Mod, PostType } from "./Database";
+import { Categories, DatabaseHelper, GameVersion, ModVersion, Platform, Status, SupportedGames, User, Mod, PostType, UserRoles } from "./Database";
 import { valid } from "semver";
 import { Config } from "./Config";
 
@@ -10,6 +10,8 @@ const ZodStatus = z.nativeEnum(Status);
 const ZodPlatform = z.nativeEnum(Platform);
 const ZodCategory = z.nativeEnum(Categories);
 const ZodGameName = z.nativeEnum(SupportedGames);
+const ZodPostType = z.nativeEnum(PostType);
+const ZodUserRoles = z.nativeEnum(UserRoles);
 
 // from ./Database.ts
 const ZodMod = z.object({
@@ -45,6 +47,8 @@ export class Validator {
     public static readonly zPlatform = ZodPlatform;
     public static readonly zCategory = ZodCategory;
     public static readonly zGameName = ZodGameName;
+    public static readonly zPostType = ZodPostType;
+    public static readonly zUserRoles = ZodUserRoles;
     public static readonly zUrl = z.string().url().refine((url) => {
         let urlObj = new URL(url);
         return Config.auth.permittedRedirectDomains.includes(urlObj.origin);
