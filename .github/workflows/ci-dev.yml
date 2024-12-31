@@ -1,4 +1,4 @@
-name: Build for Docker
+name: Build DEV for Docker
 on:  
   push:
     branches: [ dev ]
