@@ -15,7 +15,7 @@ export class AdminRoutes {
     }
 
     private async loadRoutes() {
-        this.router.get(`/api/admin/health/hashCheck`, async (req, res) => {
+        this.router.get(`/admin/health/hashCheck`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
             if (!session.approved) {
@@ -40,7 +40,7 @@ export class AdminRoutes {
             return res.status(200).send({ message: `All hashes are valid.` });
         });
 
-        this.router.get(`/api/admin/health/missingIcons`, async (req, res) => {
+        this.router.get(`/admin/health/missingIcons`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
             if (!session.approved) {
@@ -65,7 +65,7 @@ export class AdminRoutes {
             return res.status(200).send({ message: `All icons are valid.` });
         });
 
-        this.router.get(`/api/admin/health/dependencyResolution`, async (req, res) => {
+        this.router.get(`/admin/health/dependencyResolution`, async (req, res) => {
             // #swagger.tags = ['Admin']
             // #swagger.parameters['versionId'] = { description: 'The version ID to check.', required: true }
             // #swagger.parameters['gameName'] = { description: 'The game name to check.', required: true }
@@ -106,7 +106,7 @@ export class AdminRoutes {
 
             let errors = [];
             for (let version of versions) {
-                let request = await fetch(`${Config.server.url}/api/mods?gameName=${encodeURIComponent(params.data.gameName)}&versionId=${encodeURIComponent(version.version)}&includeUnverified=${params.data.includeUnverified ? `unverified` : `verified`}`);
+                let request = await fetch(`${Config.server.url}${Config.server.apiRoute}/mods?gameName=${encodeURIComponent(params.data.gameName)}&versionId=${encodeURIComponent(version.version)}&includeUnverified=${params.data.includeUnverified ? `unverified` : `verified`}`);
                 if (!request.ok) {
                     return res.status(500).send({ message: `Unable to fetch mods.`, status: request.status, statusText: request.statusText });
                 }
@@ -129,7 +129,7 @@ export class AdminRoutes {
             return res.status(200).send({ message: `All dependencies are valid.` });
         });
 
-        this.router.post(`/api/admin/linkversions`, async (req, res) => {
+        this.router.post(`/admin/linkversions`, async (req, res) => {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Mark all versions as compatible with another gameversion.'
             // #swagger.description = 'Link two versions together.'
@@ -175,7 +175,7 @@ export class AdminRoutes {
             return res.status(200).send({ message: `Version ${version1.gameName} ${version1.version} & ${version2.gameName} ${version2.version} have been linked.` });
         });
 
-        this.router.post(`/api/admin/users/addRole`, async (req, res) => {
+        this.router.post(`/admin/users/addRole`, async (req, res) => {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Add a role to a user.'
             // #swagger.description = 'Add a role to a user.'
@@ -310,7 +310,7 @@ export class AdminRoutes {
 
         });
 
-        this.router.post(`/api/admin/users/removeRole`, async (req, res) => {
+        this.router.post(`/admin/users/removeRole`, async (req, res) => {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Remove a role from a user.'
             // #swagger.description = 'Remove a role from a user.'

@@ -15,27 +15,7 @@ export class CDNRoutes {
     }
 
     private async loadRoutes() {
-        if (Config.flags.enableFavicon) {
-            this.router.get(`/favicon.ico`, (req, res) => {
-                res.sendFile(path.resolve(`./assets/favicon.png`), {
-                    maxAge: 1000 * 60 * 60 * 24 * 1,
-                    //immutable: true,
-                    lastModified: true,
-                });
-            });
-        }
-        
-        if (Config.flags.enableBanner) {
-            this.router.get(`/banner.png`, (req, res) => {
-                res.sendFile(path.resolve(`./assets/banner.png`), {
-                    maxAge: 1000 * 60 * 60 * 24 * 1,
-                    //immutable: true,
-                    lastModified: true,
-                });
-            });
-        }
-        
-        this.router.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
+        this.router.use(`/icon`, express.static(path.resolve(Config.storage.iconsDir), {
             extensions: [`png`],
             dotfiles: `ignore`,
             immutable: true,
@@ -44,7 +24,7 @@ export class CDNRoutes {
             fallthrough: true,
         }));
         
-        this.router.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
+        this.router.use(`/mod`, express.static(path.resolve(Config.storage.modsDir), {
             extensions: [`zip`],
             dotfiles: `ignore`,
             immutable: true,
@@ -61,15 +41,5 @@ export class CDNRoutes {
             },
             fallthrough: true,
         }));
-
-        if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
-            this.router.use(`/`, express.static(path.resolve(`./storage/frontend`), {
-                dotfiles: `ignore`,
-                immutable: false,
-                index: true,
-                maxAge: 1000 * 60 * 60 * 1,
-                fallthrough: true,
-            }));
-        }
     }
 }

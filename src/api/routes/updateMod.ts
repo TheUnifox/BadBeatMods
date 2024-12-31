@@ -16,7 +16,7 @@ export class UpdateModRoutes {
     // Routes with optional parameters will return a 400 if the parameter is present but invalid
     private async loadRoutes() {
         // #region Update Mod
-        this.router.patch(`/api/mods/:modIdParam`, async (req, res) => {
+        this.router.patch(`/mods/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let modId = Validator.zDBID.safeParse(req.params.modIdParam);
             let reqBody = Validator.zUpdateMod.safeParse(req.body);
@@ -116,7 +116,7 @@ export class UpdateModRoutes {
         // #endregion Update Mod
 
         // #region Update Mod Version
-        this.router.patch(`/api/modversion/:modVersionIdParam`, async (req, res) => {
+        this.router.patch(`/modversion/:modVersionIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             let reqBody = Validator.zUpdateModVersion.safeParse(req.body);
@@ -211,7 +211,7 @@ export class UpdateModRoutes {
         });
         // #endregion Update Mod Version
         // #region Submit to Approval
-        this.router.post(`/api/mods/:modIdParam/submit`, async (req, res) => {
+        this.router.post(`/mods/:modIdParam/submit`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             if (!session.approved) {
@@ -239,7 +239,7 @@ export class UpdateModRoutes {
             });
         });
 
-        this.router.post(`/api/modVersions/:modVersionIdParam/submit`, async (req, res) => {
+        this.router.post(`/modVersions/:modVersionIdParam/submit`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             if (!session.approved) {

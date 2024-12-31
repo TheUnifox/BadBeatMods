@@ -20,7 +20,7 @@ export class ImportRoutes {
     }
 
     private async loadRoutes() {
-        this.router.post(`/api/beatmods/importAll`, async (req, res) => {
+        this.router.post(`/beatmods/importAll`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin, null);
             if (!session.approved) {

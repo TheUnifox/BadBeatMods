@@ -15,7 +15,7 @@ export class BeatModsRoutes {
 
     // Yes, I am aware that this is a mess. You can thank swagger-autogen for that. I'm not going to clean it up because it's not really necessary for deprecated endpoints.
     private async loadRoutes() {
-        this.router.get(`/api/beatmods/mod`, async (req, res) => {
+        this.router.get(`/beatmods/mod`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.summary = 'Legacy BeatMods API endpoint.'
             // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
@@ -41,7 +41,7 @@ export class BeatModsRoutes {
             });
         }
 
-        this.router.get(`/api/beatmods/versions`, async (req, res) => {
+        this.router.get(`/beatmods/versions`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.summary = 'Legacy BeatMods API Version endpoint.'
             // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
@@ -63,7 +63,7 @@ export class BeatModsRoutes {
             });
         }
 
-        this.router.get(`/api/beatmods/aliases`, async (req, res) => {
+        this.router.get(`/beatmods/aliases`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.produces = ['application/json']
             // #swagger.consumes = ['application/json']

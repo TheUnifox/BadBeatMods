@@ -24,6 +24,8 @@ import { CDNRoutes } from './api/routes/cdn';
 import cors from 'cors';
 import { MOTDRoutes } from './api/routes/motd';
 import { UserRoutes } from './api/routes/users';
+import path from 'node:path';
+import fs from 'node:fs';
 
 console.log(`Starting setup...`);
 new Config();
@@ -121,7 +123,37 @@ new UserRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
     swaggerDocument.host = `${Config.server.url.replace(`http://`, ``).replace(`https://`, ``)}${Config.server.apiRoute}`;
-    apiRouter.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    apiRouter.use(`/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
+
+if (Config.flags.enableFavicon) {
+    app.get(`/favicon.ico`, (req, res) => {
+        res.sendFile(path.resolve(`./assets/favicon.png`), {
+            maxAge: 1000 * 60 * 60 * 24 * 1,
+            //immutable: true,
+            lastModified: true,
+        });
+    });
+}
+        
+if (Config.flags.enableBanner) {
+    app.get(`/banner.png`, (req, res) => {
+        res.sendFile(path.resolve(`./assets/banner.png`), {
+            maxAge: 1000 * 60 * 60 * 24 * 1,
+            //immutable: true,
+            lastModified: true,
+        });
+    });
+}
+
+if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
+    app.use(`/`, express.static(path.resolve(`./storage/frontend`), {
+        dotfiles: `ignore`,
+        immutable: false,
+        index: true,
+        maxAge: 1000 * 60 * 60 * 1,
+        fallthrough: true,
+    }));
 }
 
 new CDNRoutes(cdnRouter);

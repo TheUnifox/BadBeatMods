@@ -16,7 +16,7 @@ export class ApprovalRoutes {
 
     private async loadRoutes() {
         // #region Get Approvals
-        this.router.get(`/api/approval/new`, async (req, res) => {
+        this.router.get(`/approval/new`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Get new mods & modVersions pending approval.'
             // #swagger.description = 'Get a list of mods & modVersions pending their first approval.'
@@ -56,7 +56,7 @@ export class ApprovalRoutes {
             res.status(200).send({ mods: newMods, modVersions: modVersions });
         });
 
-        this.router.get(`/api/approval/edits`, async (req, res) => {
+        this.router.get(`/approval/edits`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Get edits pending approval.'
             // #swagger.description = 'Get a list of already existing mod & modVersions that are pending approval.'
@@ -99,7 +99,7 @@ export class ApprovalRoutes {
         });
         // #endregion
         // #region Accept/Reject Approvals
-        this.router.post(`/api/approval/mod/:modIdParam/approve`, async (req, res) => {
+        this.router.post(`/approval/mod/:modIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Approve a mod.'
             // #swagger.description = 'Approve a mod for public visibility.'
@@ -134,7 +134,7 @@ export class ApprovalRoutes {
             });
         });
 
-        this.router.post(`/api/approval/modversion/:modVersionIdParam/approve`, async (req, res) => {
+        this.router.post(`/approval/modversion/:modVersionIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Approve a modVersion.'
             // #swagger.description = 'Approve a modVersion for public visibility.'
@@ -175,7 +175,7 @@ export class ApprovalRoutes {
             });
         });
 
-        this.router.post(`/api/approval/edit/:editIdParam/approve`, async (req, res) => {
+        this.router.post(`/approval/edit/:editIdParam/approve`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Approve an edit.'
             // #swagger.description = 'Approve an edit for public visibility.'
@@ -235,7 +235,7 @@ export class ApprovalRoutes {
         });
         // #endregion
         // #region Edit Approvals
-        this.router.patch(`/api/approval/mod/:modIdParam`, async (req, res) => {
+        this.router.patch(`/approval/mod/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Edit a mod in the approval queue.'
             // #swagger.description = 'Edit a mod in the approval queue.'
@@ -302,7 +302,7 @@ export class ApprovalRoutes {
             });
         });
 
-        this.router.patch(`/api/approval/modversion/:modVersionIdParam`, async (req, res) => {
+        this.router.patch(`/approval/modversion/:modVersionIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Edit a modVersion in the approval queue.'
             // #swagger.description = 'Edit a modVersion in the approval queue.'
@@ -362,7 +362,7 @@ export class ApprovalRoutes {
             });
         });
 
-        this.router.patch(`/api/approval/edit/:editIdParam`, async (req, res) => {
+        this.router.patch(`/approval/edit/:editIdParam`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Edit an edit in the approval queue.'
             // #swagger.description = 'Edit an edit in the approval queue.'
@@ -485,7 +485,7 @@ export class ApprovalRoutes {
         });
         // #endregion
         // #region Revoke Approvals
-        this.router.post(`/api/approval/modVersion/:modVersionIdParam/revoke`, async (req, res) => {
+        this.router.post(`/approval/modVersion/:modVersionIdParam/revoke`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Revoke a modVersion's verification.'
             // #swagger.description = 'Revoke a modVersion\'s verification status.\n\nThis will also revoke the verification status of any modVersions that depend on this modVersion.'

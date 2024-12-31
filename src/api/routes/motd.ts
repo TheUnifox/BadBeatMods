@@ -11,7 +11,7 @@ export class MOTDRoutes {
     }
 
     private async loadRoutes() {
-        this.router.get(`/api/motd`, async (req, res) => {
+        this.router.get(`/motd`, async (req, res) => {
             // #swagger.tags = ['MOTD']
             let reqQuery = Validator.zGetMOTD.safeParse(req.query.gameName);
             if (!reqQuery.success) {
@@ -27,7 +27,7 @@ export class MOTDRoutes {
             return res.status(200).send({ messages: motds });
         });
 
-        this.router.post(`/api/motd`, async (req, res) => {
+        this.router.post(`/motd`, async (req, res) => {
             // #swagger.tags = ['MOTD']
             let reqBody = Validator.zCreateMOTD.safeParse(req.body);
             if (!reqBody.success) {
@@ -54,7 +54,7 @@ export class MOTDRoutes {
             return res.status(200).send({ message: `MOTD added.`, motd });
         });
 
-        this.router.delete(`/api/motd/:id`, async (req, res) => {
+        this.router.delete(`/motd/:id`, async (req, res) => {
             // #swagger.tags = ['MOTD']
             let id = Validator.zDBID.safeParse(req.params.id);
             if (!id.success) {

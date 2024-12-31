@@ -19,7 +19,7 @@ export class CreateModRoutes {
     }
 
     private async loadRoutes() {
-        this.router.post(`/api/mods/create`, async (req, res) => {
+        this.router.post(`/mods/create`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             if (!session.approved) {
@@ -85,7 +85,7 @@ export class CreateModRoutes {
             });
         });
 
-        this.router.post(`/api/mods/:modIdParam/upload`, async (req, res) => {
+        this.router.post(`/mods/:modIdParam/upload`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             if (!session.approved) {
