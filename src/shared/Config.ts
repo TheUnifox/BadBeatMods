@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { HTTPTools } from './HTTPTools';
 
 // This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated, and is available without a refrence to the file itself.
 // To add a config option, add it to the DEFAULT_CONFIG object, and add a property to the Config class with the same name. The Config class will automatically load the config from the file and map it to the static properties.
@@ -14,15 +15,15 @@ const DEFAULT_CONFIG = {
             clientId: `GITHUB_CLIENT_ID`,
             clientSecret: `GITHUB_CLIENT_SECRET`
         },
-        permittedRedirectDomains: [`http://localhost:5173`, `http://localhost:4173`, `http://localhost:5001`, `http://localhost:3000`]
+        permittedRedirectDomains: [`http://localhost:5173`, `http://localhost:4173`, `http://localhost:5001`, `http://localhost:3000`] // urls that are allowed to redirect to after auth
     },
     database: {
-        dialect: `sqlite`,
+        dialect: `sqlite`, // sqlite or postgres
         url: `./storage/database.sqlite`, // path to sqlite database, or host of the postgres database
         port: 5432, // only used for postgres
         username: `user`,
         password: `password`,
-        alter: false
+        alter: false // alters the database schema on startup. i dont think this works with postgres. is not recommended for production.
     },
     storage: {
         modsDir: `./storage/uploads`,
@@ -31,13 +32,13 @@ const DEFAULT_CONFIG = {
     devmode: false, // enables devmode features + increased logging
     authBypass: false, // bypasses auth for all routes. uses ServerAdmin user.
     server: {
-        port: 5001,
+        port: 5001, // port to run the server on
         url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
-        sessionSecret: `supersecret`,
+        sessionSecret: `supersecret`, // secret for the session cookie
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
-        corsOrigins: `*`, //can be a string or an array of strings
-        apiRoute: `/api`, // the base route for the api
-        cdnRoute: `/cdn` // the base route for the cdn
+        corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
+        apiRoute: `/api`, // the base route for the api. no trailing slash
+        cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
     },
     webhooks: {
         enableWebhooks: false, // enables sending to all webhooks
@@ -318,6 +319,8 @@ export class Config {
             // @ts-expect-error 7046
             Config[`_${key}`] = DEFAULT_CONFIG[key];
         }
+
+        Config._server.sessionSecret = HTTPTools.createRandomString(64);
 
         try {
             // #region Auth
