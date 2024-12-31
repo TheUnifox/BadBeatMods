@@ -3,6 +3,7 @@ import * as path from 'path';
 
 // This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated, and is available without a refrence to the file itself.
 // To add a config option, add it to the DEFAULT_CONFIG object, and add a property to the Config class with the same name. The Config class will automatically load the config from the file and map it to the static properties.
+const CONFIG_PATH = path.resolve(`./storage/config.json`);
 const DEFAULT_CONFIG = {
     auth: {
         discord: {
@@ -38,7 +39,7 @@ const DEFAULT_CONFIG = {
     },
     webhooks: {
         enableWebhooks: false, // enables sending to all webhooks
-        enablePublicWebhook: true, // enables sending approved mods to the public webhook
+        enablePublicWebhook: false, // enables sending approved mods to the public webhook
         loggingUrl: `http://localhost:5001/webhooks/logging`, // url for logging - sensitive data might be sent here
         modLogUrl: `http://localhost:5001/webhooks/modlog`, // url for mod logging - new, approvals, and rejections
         publicUrl: `http://localhost:5001/webhooks/public` // url for public webhook - approved mods only... might have a delay? hasn't been done yet.
@@ -49,12 +50,12 @@ const DEFAULT_CONFIG = {
         token: `BOT_TOKEN`
     },
     flags: {
-        enableBeatModsDownloads: true, // enables downloading mods from BeatMods
+        enableBeatModsDownloads: false, // enables downloading mods from BeatMods
         logRawSQL: false, // logs raw SQL queries to the console
-        enableFavicon: true, // enables the favicon route /favicon.ico
-        enableBanner: true, // enables the banner route /banner.png
-        enableSwagger: true, // enables the swagger docs at /api/docs
-        enableDBHealthCheck: true, // enables the database health check at /api/health
+        enableFavicon: false, // enables the favicon route /favicon.ico
+        enableBanner: false, // enables the banner route /banner.png
+        enableSwagger: false, // enables the swagger docs at /api/docs
+        enableDBHealthCheck: false, // enables the database health check at /api/health
     }
 };
 
@@ -138,37 +139,55 @@ export class Config {
     }
     // #endregion
     constructor() {
-        let success = Config.loadConfig();
-        if (success.length > 0) {
-            console.error(`Config file is invalid at keys ${success.join(`, `)}. Attempting to load default config.`);
-            if (!fs.existsSync(path.resolve(`./storage`))) {
-                fs.mkdirSync(path.resolve(`./storage`));
-            }
-
-            if (fs.existsSync(path.resolve(`./storage/config.json`))) {
-                console.log(`Backing up existing config file...`);
-                let generateedId = new Date().getTime();
-                if (fs.existsSync(path.resolve(`./storage/config.json-${generateedId}.bak`))) {
-                    fs.unlinkSync(path.resolve(`./storage/config.json-${generateedId}.bak`));
+        if (process.env.USE_CONFIG_FILE === `true` && process.env.IS_DOCKER !== `true`) {
+            let success = Config.loadConfigFromFile(CONFIG_PATH);
+            if (success.length > 0) {
+                console.error(`Config file is invalid at keys ${success.join(`, `)}.`);
+                if (!fs.existsSync(path.resolve(`./storage`))) {
+                    fs.mkdirSync(path.resolve(`./storage`));
                 }
-                fs.renameSync(path.resolve(`./storage/config.json`), path.resolve(`./storage/config.json-${generateedId}.bak`));
-                console.warn(`Config file was invalid. A merge will be attempted. The old config has been backed up.`);
-                let mergeResults = Config.mergeConfig(path.resolve(`./storage/config.json-${generateedId}.bak`));
-                if (!mergeResults) {
-                    console.error(`Errors occurred while merging the config file. Please check the config file and try again.`);
+    
+                if (fs.existsSync(path.resolve(`./storage/config.json`))) {
+                    console.log(`Backing up existing config file...`);
+                    let generateedId = new Date().getTime();
+                    if (fs.existsSync(path.resolve(`./storage/config.json-${generateedId}.bak`))) {
+                        fs.unlinkSync(path.resolve(`./storage/config.json-${generateedId}.bak`));
+                    }
+                    fs.renameSync(path.resolve(`./storage/config.json`), path.resolve(`./storage/config.json-${generateedId}.bak`));
+                    console.warn(`Config file was invalid. A merge will be attempted. The old config has been backed up.`);
+                    let mergeResults = Config.mergeConfig(path.resolve(`./storage/config.json-${generateedId}.bak`));
+                    if (!mergeResults) {
+                        console.error(`Errors occurred while merging the config file. Please check the config file and try again.`);
+                        process.exit(1);
+                    }
+                } else {
+                    console.warn(`Config file not found. A new one has been created.`);
+                    fs.writeFileSync(path.resolve(`./storage/config.json`), JSON.stringify(DEFAULT_CONFIG, null, 2));
+                }
+    
+                let successpart2 = Config.loadConfigFromFile(CONFIG_PATH);
+                if (successpart2.length > 0) {
+                    console.error(`Config file is invalid at keys ${success.join(`, `)}. Please check the config file and try again.`);
                     process.exit(1);
                 }
-            } else {
-                console.warn(`Config file not found. A new one has been created.`);
-                fs.writeFileSync(path.resolve(`./storage/config.json`), JSON.stringify(DEFAULT_CONFIG, null, 2));
             }
+        } else {
+            let disableDefaults = process.env.DISABLE_DEFAULTS === `true`;
+            let success = Config.loadConfigFromEnv();
+            if (success.length > 0) {
+                if (success.includes(`all`)) {
+                    console.error(`Error loading config from environment variables. Please check the environment variables and try again.`);
+                    process.exit(1);
+                }
 
-            let successpart2 = Config.loadConfig();
-            if (successpart2.length > 0) {
-                console.error(`Config file is invalid at keys ${success.join(`, `)}. Please check the config file and try again.`);
-                process.exit(1);
+                console.warn(`Config file is invalid at keys ${success.join(`, `)}.`);
+                if (disableDefaults) {
+                    console.error(`Defaults are disabled, and the config file was invalid. Please check the config file and try again.`);
+                    process.exit(1);
+                }
             }
         }
+        
 
         if (!fs.existsSync(path.resolve(Config.storage.modsDir))) {
             console.log(`Creating mods directory at ${path.resolve(Config.storage.modsDir)}`);
@@ -181,10 +200,10 @@ export class Config {
         }
     }
 
-    private static loadConfig() {
-        console.log(`Loading config file from ${path.resolve(`./storage/config.json`)}`);
-        if (fs.existsSync(path.resolve(`./storage/config.json`))) {
-            let file = fs.readFileSync(path.resolve(`./storage/config.json`), `utf8`);
+    private static loadConfigFromFile(configPath: string = CONFIG_PATH): string[] {
+        console.log(`Loading config file from ${configPath}`);
+        if (fs.existsSync(configPath)) {
+            let file = fs.readFileSync(configPath, `utf8`);
             let cf = JSON.parse(file);
             let failedToLoad: string[] = [];
             try {
@@ -279,6 +298,228 @@ export class Config {
         } else {
             console.warn(`Config file not found.`);
             return [`all`];
+        }
+    }
+
+    private static loadConfigFromEnv(): string[] {
+        let failedToLoad: string[] = [];
+
+        for (let key of Object.keys(DEFAULT_CONFIG)) {
+            // @ts-expect-error 7046
+            Config[`_${key}`] = DEFAULT_CONFIG[key];
+        }
+
+        try {
+            // #region Auth
+            if (process.env.AUTH_DISCORD_CLIENT_ID && process.env.AUTH_DISCORD_CLIENT_SECRET) {
+                Config._auth.discord = {
+                    clientId: process.env.AUTH_DISCORD_CLIENT_ID,
+                    clientSecret: process.env.AUTH_DISCORD_CLIENT_SECRET
+                };
+            } else {
+                failedToLoad.push(`auth.discord`);
+            }
+
+            if (process.env.AUTH_GITHUB_CLIENT_ID && process.env.AUTH_GITHUB_CLIENT_SECRET) {
+                Config._auth.github = {
+                    clientId: process.env.AUTH_GITHUB_CLIENT_ID,
+                    clientSecret: process.env.AUTH_GITHUB_CLIENT_SECRET
+                };
+            } else {
+                failedToLoad.push(`auth.github`);
+            }
+
+            if (process.env.AUTH_PERMITTEDREDIRECTDOMAINS) {
+                Config._auth.permittedRedirectDomains = process.env.AUTH_PERMITTEDREDIRECTDOMAINS.split(`,`);
+            } else {
+                failedToLoad.push(`auth.permittedRedirectDomains`);
+            }
+            // #endregion
+            // #region Database
+            if (process.env.DATABASE_DIALECT) {
+                Config._database.dialect = process.env.DATABASE_DIALECT;
+            } else {
+                failedToLoad.push(`database.dialect`);
+            }
+
+            if (process.env.DATABASE_URL) {
+                Config._database.url = process.env.DATABASE_URL;
+            } else {
+                failedToLoad.push(`database.url`);
+            }
+
+            if (process.env.DATABASE_PORT) {
+                Config._database.port = parseInt(process.env.DATABASE_PORT);
+            } else {
+                failedToLoad.push(`database.port`);
+            }
+
+            if (process.env.DATABASE_USERNAME) {
+                Config._database.username = process.env.DATABASE_USERNAME;
+            } else {
+                failedToLoad.push(`database.username`);
+            }
+
+            if (process.env.DATABASE_PASSWORD) {
+                Config._database.password = process.env.DATABASE_PASSWORD;
+            } else {
+                failedToLoad.push(`database.password`);
+            }
+
+            if (process.env.DATABASE_ALTER) {
+                Config._database.alter = process.env.DATABASE_ALTER === `true`;
+            } else {
+                failedToLoad.push(`database.alter`);
+            }
+            // #endregion
+            // #region Storage
+            if (process.env.STORAGE_MODSDIR) {
+                Config._storage.modsDir = process.env.STORAGE_MODSDIR;
+            } else {
+                failedToLoad.push(`storage.modsDir`);
+            }
+
+            if (process.env.STORAGE_ICONSDIR) {
+                Config._storage.iconsDir = process.env.STORAGE_ICONSDIR;
+            } else {
+                failedToLoad.push(`storage.iconsDir`);
+            }
+            // #endregion
+            // #region Server & Devmode & authBypass
+            if (process.env.DEVMODE) {
+                Config._devmode = process.env.DEVMODE === `true`;
+            } else {
+                failedToLoad.push(`devmode`);
+            }
+
+            if (process.env.AUTH_BYPASS) {
+                Config._authBypass = process.env.AUTH_BYPASS === `true`;
+            } else {
+                failedToLoad.push(`authBypass`);
+            }
+
+            if (process.env.SERVER_PORT) {
+                Config._server.port = parseInt(process.env.SERVER_PORT, 10);
+            } else {
+                failedToLoad.push(`server.port`);
+            }
+
+            if (process.env.SERVER_URL) {
+                Config._server.url = process.env.SERVER_URL;
+            } else {
+                failedToLoad.push(`server.url`);
+            }
+
+            if (process.env.SERVER_SESSION_SECRET) {
+                Config._server.sessionSecret = process.env.SERVER_SESSION_SECRET;
+            } else {
+                failedToLoad.push(`server.sessionSecret`);
+            }
+
+            if (process.env.SERVER_IHATESECURITY) {
+                Config._server.iHateSecurity = process.env.SERVER_IHATESECURITY === `true`;
+            } else {
+                failedToLoad.push(`server.iHateSecurity`);
+            }
+
+            if (process.env.SERVER_CORSORIGINS) {
+                Config._server.corsOrigins = process.env.SERVER_CORSORIGINS.split(`,`);
+            } else {
+                failedToLoad.push(`server.corsOrigins`);
+            }
+            // #endregion
+            // #region Webhooks
+            if (process.env.WEBHOOKS_ENABLEWEBHOOKS) {
+                Config._webhooks.enableWebhooks = process.env.WEBHOOKS_ENABLEWEBHOOKS === `true`;
+            } else {
+                failedToLoad.push(`webhooks.enableWebhooks`);
+            }
+
+            if (process.env.WEBHOOKS_ENABLEPUBLICWEBHOOK) {
+                Config._webhooks.enablePublicWebhook = process.env.WEBHOOKS_ENABLEPUBLICWEBHOOK === `true`;
+            } else {
+                failedToLoad.push(`webhooks.enablePublicWebhook`);
+            }
+
+            if (process.env.WEBHOOKS_LOGGINGURL) {
+                Config._webhooks.loggingUrl = process.env.WEBHOOKS_LOGGINGURL;
+            } else {
+                failedToLoad.push(`webhooks.loggingUrl`);
+            }
+
+            if (process.env.WEBHOOKS_MODLOGURL) {
+                Config._webhooks.modLogUrl = process.env.WEBHOOKS_MODLOGURL;
+            } else {
+                failedToLoad.push(`webhooks.modLogUrl`);
+            }
+
+            if (process.env.WEBHOOKS_PUBLICURL) {
+                Config._webhooks.publicUrl = process.env.WEBHOOKS_PUBLICURL;
+            } else {
+                failedToLoad.push(`webhooks.publicUrl`);
+            }
+            // #endregion
+            // #region Bot
+            if (process.env.BOT_ENABLED) {
+                Config._bot.enabled = process.env.BOT_ENABLED === `true`;
+            } else {
+                failedToLoad.push(`bot.enabled`);
+            }
+
+            if (process.env.BOT_CLIENT_ID) {
+                Config._bot.clientId = process.env.BOT_CLIENT_ID;
+            } else {
+                failedToLoad.push(`bot.clientId`);
+            }
+
+            if (process.env.BOT_TOKEN) {
+                Config._bot.token = process.env.BOT_TOKEN;
+            } else {
+                failedToLoad.push(`bot.token`);
+            }
+            // #endregion
+            // #region Flags
+            if (process.env.FLAGS_ENABLEBEATMODSDOWNLOADS) {
+                Config._flags.enableBeatModsDownloads = process.env.FLAGS_ENABLEBEATMODSDOWNLOADS === `true`;
+            } else {
+                failedToLoad.push(`flags.enableBeatModsDownloads`);
+            }
+
+            if (process.env.FLAGS_LOGRAWSQL) {
+                Config._flags.logRawSQL = process.env.FLAGS_LOGRAWSQL === `true`;
+            } else {
+                failedToLoad.push(`flags.logRawSQL`);
+            }
+
+            if (process.env.FLAGS_ENABLEFAVICON) {
+                Config._flags.enableFavicon = process.env.FLAGS_ENABLEFAVICON === `true`;
+            } else {
+                failedToLoad.push(`flags.enableFavicon`);
+            }
+
+            if (process.env.FLAGS_ENABLEBANNER) {
+                Config._flags.enableBanner = process.env.FLAGS_ENABLEBANNER === `true`;
+            } else {
+                failedToLoad.push(`flags.enableBanner`);
+            }
+
+            if (process.env.FLAGS_ENABLESWAGGER) {
+                Config._flags.enableSwagger = process.env.FLAGS_ENABLESWAGGER === `true`;
+            } else {
+                failedToLoad.push(`flags.enableSwagger`);
+            }
+
+            if (process.env.FLAGS_ENABLEDBHEALTHCHECK) {
+                Config._flags.enableDBHealthCheck = process.env.FLAGS_ENABLEDBHEALTHCHECK === `true`;
+            } else {
+                failedToLoad.push(`flags.enableDBHealthCheck`);
+            }
+            // #endregion
+
+            return failedToLoad;
+        } catch (e) {
+            console.error(`Error parsing environment variables: ${e}`);
+            return [... failedToLoad, `all`];
         }
     }
 

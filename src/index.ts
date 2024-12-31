@@ -107,8 +107,10 @@ new VersionsRoutes(app);
 new MOTDRoutes(app);
 new UserRoutes(app);
 
-swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
-app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+if (Config.flags.enableSwagger) {
+    swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
+    app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 new CDNRoutes(app);
 
