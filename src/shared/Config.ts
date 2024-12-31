@@ -140,6 +140,7 @@ export class Config {
     // #endregion
     constructor() {
         if (process.env.USE_CONFIG_FILE === `true` && process.env.IS_DOCKER !== `true`) {
+            console.log(`Loading config using config file.`);
             let success = Config.loadConfigFromFile(CONFIG_PATH);
             if (success.length > 0) {
                 console.error(`Config file is invalid at keys ${success.join(`, `)}.`);
@@ -172,6 +173,7 @@ export class Config {
                 }
             }
         } else {
+            console.log(`Loading config using environment variables.`);
             let disableDefaults = process.env.DISABLE_DEFAULTS === `true`;
             let success = Config.loadConfigFromEnv();
             if (success.length > 0) {
