@@ -18,7 +18,7 @@ const DEFAULT_CONFIG = {
     },
     database: {
         dialect: `sqlite`,
-        url: `./storage/database.sqlite`,
+        url: `./storage/database.sqlite`, // path to sqlite database, or host of the postgres database
         port: 5432, // only used for postgres
         username: `user`,
         password: `password`,
@@ -35,7 +35,9 @@ const DEFAULT_CONFIG = {
         url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
         sessionSecret: `supersecret`,
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
-        corsOrigins: `*` //can be a string or an array of strings
+        corsOrigins: `*`, //can be a string or an array of strings
+        apiRoute: `/api`, // the base route for the api
+        cdnRoute: `/cdn` // the base route for the cdn
     },
     webhooks: {
         enableWebhooks: false, // enables sending to all webhooks
@@ -51,6 +53,8 @@ const DEFAULT_CONFIG = {
     },
     flags: {
         enableBeatModsDownloads: false, // enables downloading mods from BeatMods
+        enableBeatModsCompatibility: false, // enables all of the endpoints structured to be compatible with BeatMods
+        enableBeatModsRouteCompatibility: false, // enables the BeatMods route compatibility (e.g. force hosts /api/v1/mods, /versions.json, and /aliases.json). enableBeatModsCompatibility must be enabled for this to work.
         logRawSQL: false, // logs raw SQL queries to the console
         enableFavicon: false, // enables the favicon route /favicon.ico
         enableBanner: false, // enables the banner route /banner.png
@@ -85,6 +89,8 @@ export class Config {
         sessionSecret: string;
         iHateSecurity: boolean;
         corsOrigins: string | string[];
+        apiRoute: string;
+        cdnRoute: string;
     };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
@@ -102,6 +108,8 @@ export class Config {
     };
     private static _flags: {
         enableBeatModsDownloads: boolean;
+        enableBeatModsCompatibility: boolean;
+        enableBeatModsRouteCompatibility: boolean;
         logRawSQL: boolean;
         enableFavicon: boolean;
         enableBanner: boolean;
@@ -139,7 +147,7 @@ export class Config {
     }
     // #endregion
     constructor() {
-        if (process.env.USE_CONFIG_FILE === `true` && process.env.IS_DOCKER !== `true`) {
+        if (process.env.IS_DOCKER !== `true` && fs.existsSync(CONFIG_PATH)) {
             console.log(`Loading config using config file.`);
             let success = Config.loadConfigFromFile(CONFIG_PATH);
             if (success.length > 0) {
@@ -429,6 +437,18 @@ export class Config {
             } else {
                 failedToLoad.push(`server.corsOrigins`);
             }
+
+            if (process.env.SERVER_APIROUTE) {
+                Config._server.apiRoute = process.env.SERVER_APIROUTE;
+            } else {
+                failedToLoad.push(`server.apiRoute`);
+            }
+
+            if (process.env.SERVER_CDNROUTE) {
+                Config._server.cdnRoute = process.env.SERVER_CDNROUTE;
+            } else {
+                failedToLoad.push(`server.cdnRoute`);
+            }
             // #endregion
             // #region Webhooks
             if (process.env.WEBHOOKS_ENABLEWEBHOOKS) {
@@ -485,6 +505,18 @@ export class Config {
                 Config._flags.enableBeatModsDownloads = process.env.FLAGS_ENABLEBEATMODSDOWNLOADS === `true`;
             } else {
                 failedToLoad.push(`flags.enableBeatModsDownloads`);
+            }
+
+            if (process.env.FLAGS_ENABLEBEATMODSCOMPATIBILITY) {
+                Config._flags.enableBeatModsCompatibility = process.env.FLAGS_ENABLEBEATMODSCOMPATIBILITY === `true`;
+            } else {
+                failedToLoad.push(`flags.enableBeatModsCompatibility`);
+            }
+
+            if (process.env.FLAGS_ENABLEBEATMODSROUTECOMPATIBILITY) {
+                Config._flags.enableBeatModsCompatibility = process.env.FLAGS_ENABLEBEATMODSROUTECOMPATIBILITY === `true`;
+            } else {
+                failedToLoad.push(`flags.enableBeatModsCompatibility`);
             }
 
             if (process.env.FLAGS_LOGRAWSQL) {

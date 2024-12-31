@@ -43,13 +43,13 @@ services:
       - BOT_TOKEN=YOUR_DISCORD_BOT_TOKEN
 
       - FLAGS_ENABLEBEATMODSDOWNLOADS=false
+      - FLAGS_ENABLEBEATMODSCOMPATIBILITY=false
       - FLAGS_LOGRAWSQL=false
       - FLAGS_ENABLEFAVICON=false
       - FLAGS_ENABLEBANNER=false
       - FLAGS_ENABLESWAGGER=false
       - FLAGS_ENABLEDBHEALTHCHECK=false
 
-      - USE_CONFIG_FILE=false
       - DISABLE_DEFAULTS=false
     volumes:
       - ./storage:/app/storage

@@ -1,18 +1,21 @@
-import { Express, Request, Response } from 'express';
+import { Request, Express, Response, Router } from 'express';
 import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, SupportedGames, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
+import { Config } from '../../shared/Config';
 
 export class BeatModsRoutes {
+    private router: Router;
     private app: Express;
 
-    constructor(app: Express) {
+    constructor(app: Express, router: Router) {
         this.app = app;
+        this.router = router;
         this.loadRoutes();
     }
 
     // Yes, I am aware that this is a mess. You can thank swagger-autogen for that. I'm not going to clean it up because it's not really necessary for deprecated endpoints.
     private async loadRoutes() {
-        this.app.get(`/api/beatmods/mod`, async (req, res) => {
+        this.router.get(`/api/beatmods/mod`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.summary = 'Legacy BeatMods API endpoint.'
             // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
@@ -24,7 +27,8 @@ export class BeatModsRoutes {
             await this.Api_Beatmods_Mod(req, res);
         });
 
-        this.app.get(`/api/v1/mod`, async (req, res) => {
+        if (Config.flags.enableBeatModsRouteCompatibility) {
+            this.app.get(`/api/v1/mod`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.summary = 'Legacy BeatMods API endpoint.'
             // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
@@ -33,10 +37,11 @@ export class BeatModsRoutes {
             // #swagger.parameters['gameVersion'] = { description: 'The game version as a string (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
             // #swagger.parameters['status'] = { in: 'query', description: 'The statuses to return. Available statuses are: \`approved\` & \`all\`', format: 'string' }
             // #swagger.deprecated = true
-            await this.Api_Beatmods_Mod(req, res);
-        });
+                await this.Api_Beatmods_Mod(req, res);
+            });
+        }
 
-        this.app.get(`/api/beatmods/versions`, async (req, res) => {
+        this.router.get(`/api/beatmods/versions`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.summary = 'Legacy BeatMods API Version endpoint.'
             // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
@@ -46,17 +51,19 @@ export class BeatModsRoutes {
             return res.status(200).send(versions);
         });
 
-        this.app.get(`/versions.json`, async (req, res) => {
-            // #swagger.tags = ['BeatMods']
-            // #swagger.summary = 'Legacy BeatMods API Version endpoint.'
-            // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
-            // #swagger.deprecated = true
-            // #swagger.responses[200] = { description: 'Returns all versions.' }
-            let versions = DatabaseHelper.cache.gameVersions.filter(gV => gV.gameName == SupportedGames.BeatSaber).flatMap((gameVersion) => gameVersion.version);
-            return res.status(200).send(versions);
-        });
+        if (Config.flags.enableBeatModsRouteCompatibility) {
+            this.app.get(`/versions.json`, async (req, res) => {
+                // #swagger.tags = ['BeatMods']
+                // #swagger.summary = 'Legacy BeatMods API Version endpoint.'
+                // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
+                // #swagger.deprecated = true
+                // #swagger.responses[200] = { description: 'Returns all versions.' }
+                let versions = DatabaseHelper.cache.gameVersions.filter(gV => gV.gameName == SupportedGames.BeatSaber).flatMap((gameVersion) => gameVersion.version);
+                return res.status(200).send(versions);
+            });
+        }
 
-        this.app.get(`/api/beatmods/aliases`, async (req, res) => {
+        this.router.get(`/api/beatmods/aliases`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.produces = ['application/json']
             // #swagger.consumes = ['application/json']
@@ -72,7 +79,8 @@ export class BeatModsRoutes {
             return res.status(200).send(aliases);
         });
 
-        this.app.get(`/aliases.json`, async (req, res) => {
+        if (Config.flags.enableBeatModsRouteCompatibility) {
+            this.app.get(`/aliases.json`, async (req, res) => {
             // #swagger.tags = ['BeatMods']
             // #swagger.produces = ['application/json']
             // #swagger.consumes = ['application/json']
@@ -80,13 +88,14 @@ export class BeatModsRoutes {
             // #swagger.description = 'Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.'
             // #swagger.responses[200] = { description: 'Returns all aliases.' }
             // #swagger.deprecated = true
-            let aliases: any = {};
-            let versions = DatabaseHelper.cache.gameVersions.filter(gV => gV.gameName == SupportedGames.BeatSaber);
-            for (let version of versions) {
-                aliases[version.version] = [];
-            }
-            return res.status(200).send(aliases);
-        });
+                let aliases: any = {};
+                let versions = DatabaseHelper.cache.gameVersions.filter(gV => gV.gameName == SupportedGames.BeatSaber);
+                for (let version of versions) {
+                    aliases[version.version] = [];
+                }
+                return res.status(200).send(aliases);
+            });
+        }
     }
     private async Api_Beatmods_Mod(req: Request, res: Response) {
         let version = req.query.gameVersion;

@@ -1,4 +1,4 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import express from 'express';
 import path from 'path';
 import { Config } from '../../shared/Config';
@@ -7,16 +7,16 @@ import { DatabaseHelper } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 
 export class CDNRoutes {
-    private app: Express;
+    private router: Router;
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
         if (Config.flags.enableFavicon) {
-            this.app.get(`/favicon.ico`, (req, res) => {
+            this.router.get(`/favicon.ico`, (req, res) => {
                 res.sendFile(path.resolve(`./assets/favicon.png`), {
                     maxAge: 1000 * 60 * 60 * 24 * 1,
                     //immutable: true,
@@ -26,7 +26,7 @@ export class CDNRoutes {
         }
         
         if (Config.flags.enableBanner) {
-            this.app.get(`/banner.png`, (req, res) => {
+            this.router.get(`/banner.png`, (req, res) => {
                 res.sendFile(path.resolve(`./assets/banner.png`), {
                     maxAge: 1000 * 60 * 60 * 24 * 1,
                     //immutable: true,
@@ -35,7 +35,7 @@ export class CDNRoutes {
             });
         }
         
-        this.app.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
+        this.router.use(`/cdn/icon`, express.static(path.resolve(Config.storage.iconsDir), {
             extensions: [`png`],
             dotfiles: `ignore`,
             immutable: true,
@@ -44,7 +44,7 @@ export class CDNRoutes {
             fallthrough: true,
         }));
         
-        this.app.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
+        this.router.use(`/cdn/mod`, express.static(path.resolve(Config.storage.modsDir), {
             extensions: [`zip`],
             dotfiles: `ignore`,
             immutable: true,
@@ -63,7 +63,7 @@ export class CDNRoutes {
         }));
 
         if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
-            this.app.use(`/`, express.static(path.resolve(`./storage/frontend`), {
+            this.router.use(`/`, express.static(path.resolve(`./storage/frontend`), {
                 dotfiles: `ignore`,
                 immutable: false,
                 index: true,

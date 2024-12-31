@@ -47,23 +47,6 @@ app.use(fileUpload({
     abortOnLimit: true,
 }));
 
-// rate limiting
-app.use(/\/cdn|\/favicon\.ico|\/banner\.png/i, rateLimit({
-    windowMs: 60 * 1000,
-    max: 100,
-    statusCode: 429,
-    message: `Rate limit exceeded.`,
-    skipSuccessfulRequests: false,
-}));
-
-app.use(`/api`, rateLimit({
-    windowMs: 60 * 1000,
-    max: 100,
-    statusCode: 429,
-    message: `Rate limit exceeded.`,
-    skipSuccessfulRequests: false,
-}));
-
 // session handling
 app.use(session({
     secret: Config.server.sessionSecret,
@@ -93,26 +76,58 @@ app.use((req, res, next) => {
     next();
 });
 
-//app.use(`/api`, Validator.runValidator);
+let apiRouter = express.Router({
+    caseSensitive: false,
+    mergeParams: false,
+    strict: false,
+});
 
-new BeatModsRoutes(app);
-new CreateModRoutes(app);
-new GetModRoutes(app);
-new UpdateModRoutes(app);
-new ApprovalRoutes(app);
-new AuthRoutes(app);
-new ImportRoutes(app);
-new AdminRoutes(app);
-new VersionsRoutes(app);
-new MOTDRoutes(app);
-new UserRoutes(app);
+let cdnRouter = express.Router({
+    caseSensitive: false,
+    mergeParams: false,
+    strict: false,
+});
+
+apiRouter.use(rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    statusCode: 429,
+    message: `Rate limit exceeded.`,
+    skipSuccessfulRequests: false,
+}));
+
+cdnRouter.use(rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    statusCode: 429,
+    message: `Rate limit exceeded.`,
+    skipSuccessfulRequests: false,
+}));
+
+//app.use(`/api`, Validator.runValidator);
+if (Config.flags.enableBeatModsCompatibility) {
+    new BeatModsRoutes(app, apiRouter);
+}
+new CreateModRoutes(apiRouter);
+new GetModRoutes(apiRouter);
+new UpdateModRoutes(apiRouter);
+new ApprovalRoutes(apiRouter);
+new AuthRoutes(apiRouter);
+new ImportRoutes(apiRouter);
+new AdminRoutes(apiRouter);
+new VersionsRoutes(apiRouter);
+new MOTDRoutes(apiRouter);
+new UserRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
-    swaggerDocument.host = Config.server.url.replace(`http://`, ``).replace(`https://`, ``);
-    app.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    swaggerDocument.host = `${Config.server.url.replace(`http://`, ``).replace(`https://`, ``)}${Config.server.apiRoute}`;
+    apiRouter.use(`/api/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 }
 
-new CDNRoutes(app);
+new CDNRoutes(cdnRouter);
+
+app.use(Config.server.apiRoute, apiRouter);
+app.use(Config.server.cdnRoute, cdnRouter);
 
 HTTPTools.handleExpressShenanigans(app);
 
