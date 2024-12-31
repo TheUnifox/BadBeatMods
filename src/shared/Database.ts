@@ -244,12 +244,12 @@ export class DatabaseManager {
                 unique: true,
             },
             name: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
             summary: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
@@ -264,7 +264,7 @@ export class DatabaseManager {
                 defaultValue: SupportedGames.BeatSaber,
             },
             category: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `other`,
             },
@@ -282,12 +282,12 @@ export class DatabaseManager {
                 },
             },
             iconFileName: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
             gitUrl: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
             },
@@ -328,7 +328,7 @@ export class DatabaseManager {
                 allowNull: false,
             },
             modVersion: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
                 get() {
@@ -363,7 +363,7 @@ export class DatabaseManager {
                 defaultValue: Platform.UniversalPC,
             },
             zipHash: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
                 unique: true,
@@ -431,7 +431,7 @@ export class DatabaseManager {
                 allowNull: false,
             },
             objectTableName: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
             },
             object: {
@@ -543,7 +543,7 @@ export class DatabaseManager {
                 allowNull: false,
             },
             postType: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: `community`,
             },
