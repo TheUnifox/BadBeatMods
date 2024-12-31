@@ -53,13 +53,13 @@ const DEFAULT_CONFIG = {
         token: `BOT_TOKEN`
     },
     flags: {
-        enableBeatModsDownloads: false, // enables downloading mods from BeatMods
-        enableBeatModsCompatibility: false, // enables all of the endpoints structured to be compatible with BeatMods
-        enableBeatModsRouteCompatibility: false, // enables the BeatMods route compatibility (e.g. force hosts /api/v1/mods, /versions.json, and /aliases.json). enableBeatModsCompatibility must be enabled for this to work.
+        enableBeatModsDownloads: true, // enables downloading mods from BeatMods
+        enableBeatModsCompatibility: true, // enables all of the endpoints structured to be compatible with BeatMods
+        enableBeatModsRouteCompatibility: true, // enables the BeatMods route compatibility (e.g. force hosts /api/v1/mods, /versions.json, and /aliases.json). enableBeatModsCompatibility must be enabled for this to work.
         logRawSQL: false, // logs raw SQL queries to the console
         enableFavicon: false, // enables the favicon route /favicon.ico
         enableBanner: false, // enables the banner route /banner.png
-        enableSwagger: false, // enables the swagger docs at /api/docs
+        enableSwagger: true, // enables the swagger docs at /api/docs
         enableDBHealthCheck: false, // enables the database health check at /api/health
     }
 };
