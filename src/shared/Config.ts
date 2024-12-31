@@ -139,7 +139,7 @@ export class Config {
     }
     // #endregion
     constructor() {
-        if (process.env.USE_CONFIG_FILE === `true`) {
+        if (process.env.USE_CONFIG_FILE === `true` || process.env.IS_DOCKER === `true`) {
             let success = Config.loadConfigFromFile(CONFIG_PATH);
             if (success.length > 0) {
                 console.error(`Config file is invalid at keys ${success.join(`, `)}.`);
