@@ -16,7 +16,8 @@ ARG GIT_REPO
 ARG GIT_VERSION
 LABEL org.opencontainers.image.source=${GIT_REPO}
 ENV GIT_VERSION=${GIT_VERSION}
+ENV USE_CONFIG_FILE=false
 
 EXPOSE 5001
 
-CMD ["npm", "run", "start_built"]
+CMD ["npm", "run", "start"]
