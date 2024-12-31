@@ -366,7 +366,6 @@ export class DatabaseManager {
                 type: DataTypes.TEXT,
                 allowNull: false,
                 defaultValue: ``,
-                unique: true,
             },
             contentHashes: {
                 type: DataTypes.TEXT,
