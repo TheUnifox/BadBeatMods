@@ -1,0 +1,56 @@
+version: '3.8'
+name: bbm
+
+services:
+  bbm:
+    image: badbeatmods
+    ports:
+      - "5001:5001"
+    environment:
+      - AUTH_DISCORD_CLIENT_ID=YOUR_DISCORD_CLIENT_ID
+      - AUTH_DISCORD_CLIENT_SECRET=YOUR_DISCORD_CLIENT_SECRET
+      - AUTH_GITHUB_CLIENT_ID=YOUR_GITHUB_CLIENT_ID
+      - AUTH_GITHUB_CLIENT_SECRET=YOUR_GITHUB_CLIENT_SECRET
+      - AUTH_PERMITTEDREDIRECTDOMAINS= http://localhost:5173, http://localhost:4173, http://localhost:5001, http://localhost:3000
+
+      - DATABASE_DIALECT=sqlite
+      - DATABASE_URL=./storage/database.sqlite
+      - DATABASE_PORT=5432
+      - DATABASE_USERNAME=user
+      - DATABASE_PASSWORD=password
+      - DATABASE_ALTER=false
+
+      - STORAGE_MODSDIR=./storage/uploads
+      - STORAGE_ICONSDIR=./storage/icons
+      
+      - DEVMODE=false
+      - AUTH_BYPASS=false
+
+      - SERVER_PORT=5001
+      - SERVER_URL=http://localhost:5001
+      - SERVER_SESSION_SECRET=YOUR_SESSION_SECRET
+      - SERVER_IHATESECURITY=false
+      - SERVER_CORSORIGINS=*
+
+      - WEBHOOKS_ENABLEWEBHOOKS=false
+      - WEBHOOKS_ENABLEPUBLICWEBHOOK=YOUR_DISCORD_WEBHOOK_URL
+      - WEBHOOKS_LOGGINGURL=YOUR_WEBHOOK_URL
+      - WEBHOOKS_MODLOGURL=YOUR_WEBHOOK_URL
+      - WEBHOOKS_PUBLICURL=YOUR_WEBHOOK_URL
+
+      - BOT_ENABLED=false
+      - BOT_CLIENT_ID=YOUR_DISCORD_BOT_CLIENT_ID
+      - BOT_TOKEN=YOUR_DISCORD_BOT_TOKEN
+
+      - FLAGS_ENABLEBEATMODSDOWNLOADS=false
+      - FLAGS_LOGRAWSQL=false
+      - FLAGS_ENABLEFAVICON=false
+      - FLAGS_ENABLEBANNER=false
+      - FLAGS_ENABLESWAGGER=false
+      - FLAGS_ENABLEDBHEALTHCHECK=false
+
+      - USE_CONFIG_FILE=false
+      - DISABLE_DEFAULTS=false
+    volumes:
+      - ./storage:/app/storage
+

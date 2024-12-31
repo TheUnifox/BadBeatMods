@@ -5,7 +5,7 @@ A game-agnostic mod hosting platform.
 Running the server is (mostly) easy to do:
 1. Clone the Repo.
 2. Run `npm i` to install packages.
-3. Run `npm run start` to start the server.
+3. Run `npm run build_start` to build & start the server.
 
 The default location for anything that needs to presist is a folder called `storage`. This will includes the database and user uploads. This should be automatically created when the server starts. You can find the config file at `storage/config.json`.
 
