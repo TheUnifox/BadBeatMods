@@ -399,7 +399,7 @@ export class Config {
             }
 
             if (process.env.SERVER_PORT) {
-                Config._server.port = parseInt(process.env.SERVER_PORT);
+                Config._server.port = parseInt(process.env.SERVER_PORT, 10);
             } else {
                 failedToLoad.push(`server.port`);
             }
