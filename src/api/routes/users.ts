@@ -1,18 +1,18 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import { DatabaseHelper, GameVersion, ModAPIResponse, Platform, Status, User, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Validator } from '../../shared/Validator';
 
 export class UserRoutes {
-    private app: Express;
+    private router: Router;
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.get(`/api/user`, async (req, res) => {
+        this.router.get(`/user`, async (req, res) => {
             // #swagger.tags = ['User']
             // #swagger.summary = 'Get user information.'
             // #swagger.description = 'Get user information.'
@@ -26,7 +26,7 @@ export class UserRoutes {
             return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
         });
 
-        this.app.get(`/api/user/:id`, async (req, res) => {
+        this.router.get(`/user/:id`, async (req, res) => {
             // #swagger.tags = ['User']
             // #swagger.summary = 'Get user information.'
             // #swagger.description = 'Get user information.'
@@ -47,7 +47,7 @@ export class UserRoutes {
             }
         });
 
-        this.app.get(`/api/user/:id/mods`, async (req, res) => {
+        this.router.get(`/user/:id/mods`, async (req, res) => {
             // #swagger.tags = ['User']
             // #swagger.summary = 'Get user information.'
             // #swagger.description = 'Get user information.'
@@ -111,7 +111,7 @@ export class UserRoutes {
         });
 
         /*
-        this.app.patch(`/api/user/:id/`, async (req, res) => {
+        this.app.patch(`/user/:id/`, async (req, res) => {
             // #swagger.tags = ['User']
             // #swagger.summary = 'Get user information.'
             // #swagger.description = 'Get user information.'

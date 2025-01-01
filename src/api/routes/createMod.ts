@@ -1,4 +1,4 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import path from 'node:path';
 import { DatabaseHelper, ContentHash, Status } from '../../shared/Database';
 import JSZip from 'jszip';
@@ -11,15 +11,15 @@ import { Validator } from '../../shared/Validator';
 import { UploadedFile } from 'express-fileupload';
 
 export class CreateModRoutes {
-    private app: Express;
+    private router: Router;
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.post(`/api/mods/create`, async (req, res) => {
+        this.router.post(`/mods/create`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             if (!session.approved) {
@@ -85,7 +85,7 @@ export class CreateModRoutes {
             });
         });
 
-        this.app.post(`/api/mods/:modIdParam/upload`, async (req, res) => {
+        this.router.post(`/mods/:modIdParam/upload`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
             if (!session.approved) {

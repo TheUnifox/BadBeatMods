@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { HTTPTools } from './HTTPTools';
 
 // This is a simple config loader that reads from a JSON file and maps the values to a static class. It's a little excessive but this way the config is clearly communicated, and is available without a refrence to the file itself.
 // To add a config option, add it to the DEFAULT_CONFIG object, and add a property to the Config class with the same name. The Config class will automatically load the config from the file and map it to the static properties.
@@ -14,15 +15,15 @@ const DEFAULT_CONFIG = {
             clientId: `GITHUB_CLIENT_ID`,
             clientSecret: `GITHUB_CLIENT_SECRET`
         },
-        permittedRedirectDomains: [`http://localhost:5173`, `http://localhost:4173`, `http://localhost:5001`, `http://localhost:3000`]
+        permittedRedirectDomains: [`http://localhost:5173`, `http://localhost:4173`, `http://localhost:5001`, `http://localhost:3000`] // urls that are allowed to redirect to after auth
     },
     database: {
-        dialect: `sqlite`,
-        url: `./storage/database.sqlite`,
+        dialect: `sqlite`, // sqlite or postgres
+        url: `./storage/database.sqlite`, // path to sqlite database, or host of the postgres database
         port: 5432, // only used for postgres
         username: `user`,
         password: `password`,
-        alter: false
+        alter: false // alters the database schema on startup. i dont think this works with postgres. is not recommended for production.
     },
     storage: {
         modsDir: `./storage/uploads`,
@@ -31,11 +32,13 @@ const DEFAULT_CONFIG = {
     devmode: false, // enables devmode features + increased logging
     authBypass: false, // bypasses auth for all routes. uses ServerAdmin user.
     server: {
-        port: 5001,
+        port: 5001, // port to run the server on
         url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
-        sessionSecret: `supersecret`,
+        sessionSecret: `supersecret`, // secret for the session cookie
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
-        corsOrigins: `*` //can be a string or an array of strings
+        corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
+        apiRoute: `/api`, // the base route for the api. no trailing slash
+        cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
     },
     webhooks: {
         enableWebhooks: false, // enables sending to all webhooks
@@ -50,11 +53,13 @@ const DEFAULT_CONFIG = {
         token: `BOT_TOKEN`
     },
     flags: {
-        enableBeatModsDownloads: false, // enables downloading mods from BeatMods
+        enableBeatModsDownloads: true, // enables downloading mods from BeatMods
+        enableBeatModsCompatibility: true, // enables all of the endpoints structured to be compatible with BeatMods
+        enableBeatModsRouteCompatibility: true, // enables the BeatMods route compatibility (e.g. force hosts /api/v1/mods, /versions.json, and /aliases.json). enableBeatModsCompatibility must be enabled for this to work.
         logRawSQL: false, // logs raw SQL queries to the console
         enableFavicon: false, // enables the favicon route /favicon.ico
         enableBanner: false, // enables the banner route /banner.png
-        enableSwagger: false, // enables the swagger docs at /api/docs
+        enableSwagger: true, // enables the swagger docs at /api/docs
         enableDBHealthCheck: false, // enables the database health check at /api/health
     }
 };
@@ -85,6 +90,8 @@ export class Config {
         sessionSecret: string;
         iHateSecurity: boolean;
         corsOrigins: string | string[];
+        apiRoute: string;
+        cdnRoute: string;
     };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
@@ -102,6 +109,8 @@ export class Config {
     };
     private static _flags: {
         enableBeatModsDownloads: boolean;
+        enableBeatModsCompatibility: boolean;
+        enableBeatModsRouteCompatibility: boolean;
         logRawSQL: boolean;
         enableFavicon: boolean;
         enableBanner: boolean;
@@ -139,7 +148,8 @@ export class Config {
     }
     // #endregion
     constructor() {
-        if (process.env.USE_CONFIG_FILE === `true` && process.env.IS_DOCKER !== `true`) {
+        if (process.env.IS_DOCKER !== `true` && fs.existsSync(CONFIG_PATH)) {
+            console.log(`Loading config using config file.`);
             let success = Config.loadConfigFromFile(CONFIG_PATH);
             if (success.length > 0) {
                 console.error(`Config file is invalid at keys ${success.join(`, `)}.`);
@@ -172,6 +182,7 @@ export class Config {
                 }
             }
         } else {
+            console.log(`Loading config using environment variables.`);
             let disableDefaults = process.env.DISABLE_DEFAULTS === `true`;
             let success = Config.loadConfigFromEnv();
             if (success.length > 0) {
@@ -309,6 +320,8 @@ export class Config {
             Config[`_${key}`] = DEFAULT_CONFIG[key];
         }
 
+        Config._server.sessionSecret = HTTPTools.createRandomString(64);
+
         try {
             // #region Auth
             if (process.env.AUTH_DISCORD_CLIENT_ID && process.env.AUTH_DISCORD_CLIENT_SECRET) {
@@ -427,6 +440,18 @@ export class Config {
             } else {
                 failedToLoad.push(`server.corsOrigins`);
             }
+
+            if (process.env.SERVER_APIROUTE) {
+                Config._server.apiRoute = process.env.SERVER_APIROUTE;
+            } else {
+                failedToLoad.push(`server.apiRoute`);
+            }
+
+            if (process.env.SERVER_CDNROUTE) {
+                Config._server.cdnRoute = process.env.SERVER_CDNROUTE;
+            } else {
+                failedToLoad.push(`server.cdnRoute`);
+            }
             // #endregion
             // #region Webhooks
             if (process.env.WEBHOOKS_ENABLEWEBHOOKS) {
@@ -483,6 +508,18 @@ export class Config {
                 Config._flags.enableBeatModsDownloads = process.env.FLAGS_ENABLEBEATMODSDOWNLOADS === `true`;
             } else {
                 failedToLoad.push(`flags.enableBeatModsDownloads`);
+            }
+
+            if (process.env.FLAGS_ENABLEBEATMODSCOMPATIBILITY) {
+                Config._flags.enableBeatModsCompatibility = process.env.FLAGS_ENABLEBEATMODSCOMPATIBILITY === `true`;
+            } else {
+                failedToLoad.push(`flags.enableBeatModsCompatibility`);
+            }
+
+            if (process.env.FLAGS_ENABLEBEATMODSROUTECOMPATIBILITY) {
+                Config._flags.enableBeatModsCompatibility = process.env.FLAGS_ENABLEBEATMODSROUTECOMPATIBILITY === `true`;
+            } else {
+                failedToLoad.push(`flags.enableBeatModsCompatibility`);
             }
 
             if (process.env.FLAGS_LOGRAWSQL) {

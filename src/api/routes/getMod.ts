@@ -1,18 +1,18 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import { DatabaseHelper, Status, ModAPIResponse, GameVersion, UserRoles, User } from '../../shared/Database';
 import { Validator } from '../../shared/Validator';
 import { validateSession } from '../../shared/AuthHelper';
 
 export class GetModRoutes {
-    private app: Express;
+    private router: Router;
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.get(`/api/mods`, async (req, res) => {
+        this.router.get(`/mods`, async (req, res) => {
             // #swagger.tags = ['Mods']
             // #swagger.summary = 'Get all mods for a specified version.'
             // #swagger.description = 'Get all mods.<br><br>If gameName is not provided, it will default to Beat Saber.<br>If gameVersion is not provided, it will default to whatever is set as the lastest version for the selected game.'
@@ -75,7 +75,7 @@ export class GetModRoutes {
             return res.status(200).send({ mods });
         });
 
-        this.app.get(`/api/mods/:modIdParam`, async (req, res) => {
+        this.router.get(`/mods/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
             // #swagger.summary = 'Get a specific mod by ID.'
             // #swagger.description = 'Get a specific mod by ID. This will also return every version of the mod.'
@@ -123,7 +123,7 @@ export class GetModRoutes {
             return res.status(200).send({ mod: { info: raw ? mod : mod.toAPIResponse(), versions: returnVal } });
         });
 
-        this.app.get(`/api/modversions/:modVersionIdParam`, async (req, res) => {
+        this.router.get(`/modversions/:modVersionIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
             // #swagger.summary = 'Get a specific mod version by ID.'
             // #swagger.description = 'Get a specific mod version by ID.'
@@ -155,7 +155,7 @@ export class GetModRoutes {
             }
         });
 
-        this.app.get(`/api/hashlookup`, async (req, res) => {
+        this.router.get(`/hashlookup`, async (req, res) => {
             // #swagger.tags = ['Mods']
             // #swagger.summary = 'Get a specific mod version that has a file with the specified hash.'
             // #swagger.description = 'Get a specific mod version that has a file with the specified hash. This is useful for finding the mod that a file belongs to.'

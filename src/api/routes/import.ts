@@ -1,4 +1,4 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
@@ -11,16 +11,16 @@ import fs from 'fs';
 import { exit } from 'process';
 
 export class ImportRoutes {
-    private app: Express;
+    private router: Router;
     private readonly ENABLE_DOWNLOADS = Config.flags.enableBeatModsDownloads;
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.post(`/api/beatmods/importAll`, async (req, res) => {
+        this.router.post(`/beatmods/importAll`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin, null);
             if (!session.approved) {

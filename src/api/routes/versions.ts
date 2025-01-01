@@ -1,19 +1,19 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import { DatabaseHelper, GameVersion, SupportedGames, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { Validator } from '../../shared/Validator';
 
 export class VersionsRoutes {
-    private app: Express;
+    private router: Router;
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(app: Router) {
+        this.router = app;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.get(`/api/games`, async (req, res) => {
+        this.router.get(`/games`, async (req, res) => {
             // #swagger.tags = ['Versions']
             const deduplicatedArray = Array.from(new Set(DatabaseHelper.cache.gameVersions.map(a => a.gameName)));
             let games = [];
@@ -23,7 +23,7 @@ export class VersionsRoutes {
             return res.status(200).send({ games });
         });
 
-        this.app.get(`/api/versions`, async (req, res) => {
+        this.router.get(`/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
             let gameName = Validator.zGameName.safeParse(req.query.gameName).data;
             
@@ -37,7 +37,7 @@ export class VersionsRoutes {
             return res.status(200).send({ versions });
         });
 
-        this.app.post(`/api/versions`, async (req, res) => {
+        this.router.post(`/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
             // #swagger.parameters['version'] = { description: 'The version to add', type: 'string' }
             // #swagger.parameters['gameName'] = { description: 'The game name to add the version to', type: 'string' }
@@ -68,7 +68,7 @@ export class VersionsRoutes {
             });
         });
 
-        this.app.get(`/api/versions/default`, async (req, res) => {
+        this.router.get(`/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
             let gameName = Validator.zGameName.default(SupportedGames.BeatSaber).safeParse(req.query.gameName);
             if (!gameName.success) {
@@ -80,7 +80,7 @@ export class VersionsRoutes {
             return res.status(200).send({ defaultVersion });
         });
 
-        this.app.post(`/api/versions/default`, async (req, res) => {
+        this.router.post(`/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
             // #swagger.parameters['gameVersionId'] = { description: 'The ID of the version to set as default', type: 'number' }
             let gameVersionId = Validator.zDBID.safeParse(req.body.gameVersionId);

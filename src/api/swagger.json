@@ -54,7 +54,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/beatmods/mod": {
+    "/beatmods/mod": {
       "get": {
         "tags": [
           "BeatMods"
@@ -120,7 +120,7 @@
         "deprecated": true
       }
     },
-    "/api/beatmods/versions": {
+    "/beatmods/versions": {
       "get": {
         "tags": [
           "BeatMods"
@@ -150,7 +150,7 @@
         "deprecated": true
       }
     },
-    "/api/beatmods/aliases": {
+    "/beatmods/aliases": {
       "get": {
         "tags": [
           "BeatMods"
@@ -192,7 +192,7 @@
         "deprecated": true
       }
     },
-    "/api/mods": {
+    "/mods": {
       "get": {
         "tags": [
           "Mods"
@@ -235,7 +235,7 @@
         }
       }
     },
-    "/api/mods/{modIdParam}": {
+    "/mods/{modIdParam}": {
       "get": {
         "tags": [
           "Mods"
@@ -301,7 +301,7 @@
         }
       }
     },
-    "/api/modversions/{modVersionIdParam}": {
+    "/modversions/{modVersionIdParam}": {
       "get": {
         "tags": [
           "Mods"
@@ -336,7 +336,7 @@
         }
       }
     },
-    "/api/hashlookup": {
+    "/hashlookup": {
       "get": {
         "tags": [
           "Mods"
@@ -371,7 +371,7 @@
         }
       }
     },
-    "/api/mods/create": {
+    "/mods/create": {
       "post": {
         "tags": [
           "Mods"
@@ -393,7 +393,7 @@
         }
       }
     },
-    "/api/mods/{modIdParam}/upload": {
+    "/mods/{modIdParam}/upload": {
       "post": {
         "tags": [
           "Mods"
@@ -429,7 +429,7 @@
         }
       }
     },
-    "/api/modversion/{modVersionIdParam}": {
+    "/modversion/{modVersionIdParam}": {
       "patch": {
         "tags": [
           "Mods"
@@ -462,7 +462,7 @@
         }
       }
     },
-    "/api/mods/{modIdParam}/submit": {
+    "/mods/{modIdParam}/submit": {
       "post": {
         "tags": [
           "Mods"
@@ -495,7 +495,7 @@
         }
       }
     },
-    "/api/modVersions/{modVersionIdParam}/submit": {
+    "/modVersions/{modVersionIdParam}/submit": {
       "post": {
         "tags": [
           "Mods"
@@ -528,7 +528,7 @@
         }
       }
     },
-    "/api/auth": {
+    "/auth": {
       "get": {
         "tags": [
           "Auth"
@@ -545,7 +545,7 @@
         }
       }
     },
-    "/api/auth/logout": {
+    "/auth/logout": {
       "get": {
         "tags": [
           "Auth"
@@ -562,7 +562,7 @@
         }
       }
     },
-    "/api/auth/github": {
+    "/auth/github": {
       "get": {
         "tags": [
           "Auth"
@@ -575,39 +575,7 @@
         }
       }
     },
-    "/api/auth/github/callback": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/api/link/discord": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/api/link/discord/callback": {
+    "/auth/github/callback": {
       "get": {
         "tags": [
           "Auth"
@@ -626,7 +594,39 @@
         }
       }
     },
-    "/api/games": {
+    "/link/discord": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "",
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/link/discord/callback": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/games": {
       "get": {
         "tags": [
           "Versions"
@@ -639,7 +639,7 @@
         }
       }
     },
-    "/api/versions": {
+    "/versions": {
       "get": {
         "tags": [
           "Versions"
@@ -693,7 +693,7 @@
         }
       }
     },
-    "/api/versions/default": {
+    "/versions/default": {
       "get": {
         "tags": [
           "Versions"
@@ -753,7 +753,7 @@
         }
       }
     },
-    "/api/beatmods/importAll": {
+    "/beatmods/importAll": {
       "post": {
         "tags": [
           "Admin"
@@ -769,7 +769,7 @@
         }
       }
     },
-    "/api/admin/health/hashCheck": {
+    "/admin/health/hashCheck": {
       "get": {
         "tags": [
           "Admin"
@@ -785,7 +785,7 @@
         }
       }
     },
-    "/api/admin/health/missingIcons": {
+    "/admin/health/missingIcons": {
       "get": {
         "tags": [
           "Admin"
@@ -801,7 +801,7 @@
         }
       }
     },
-    "/api/admin/health/dependencyResolution": {
+    "/admin/health/dependencyResolution": {
       "get": {
         "tags": [
           "Admin"
@@ -846,7 +846,7 @@
         }
       }
     },
-    "/api/admin/linkversions": {
+    "/admin/linkversions": {
       "post": {
         "tags": [
           "Admin"
@@ -887,7 +887,7 @@
         }
       }
     },
-    "/api/admin/users/addRole": {
+    "/admin/users/addRole": {
       "post": {
         "tags": [
           "Admin"
@@ -932,7 +932,7 @@
         }
       }
     },
-    "/api/admin/users/removeRole": {
+    "/admin/users/removeRole": {
       "post": {
         "tags": [
           "Admin"
@@ -977,7 +977,7 @@
         }
       }
     },
-    "/api/approval/new": {
+    "/approval/new": {
       "get": {
         "tags": [
           "Approval"
@@ -1026,7 +1026,7 @@
         }
       }
     },
-    "/api/approval/edits": {
+    "/approval/edits": {
       "get": {
         "tags": [
           "Approval"
@@ -1070,7 +1070,7 @@
         }
       }
     },
-    "/api/approval/mod/{modIdParam}/approve": {
+    "/approval/mod/{modIdParam}/approve": {
       "post": {
         "tags": [
           "Approval"
@@ -1123,7 +1123,7 @@
         }
       }
     },
-    "/api/approval/modversion/{modVersionIdParam}/approve": {
+    "/approval/modversion/{modVersionIdParam}/approve": {
       "post": {
         "tags": [
           "Approval"
@@ -1176,7 +1176,7 @@
         }
       }
     },
-    "/api/approval/edit/{editIdParam}/approve": {
+    "/approval/edit/{editIdParam}/approve": {
       "post": {
         "tags": [
           "Approval"
@@ -1229,7 +1229,7 @@
         }
       }
     },
-    "/api/approval/mod/{modIdParam}": {
+    "/approval/mod/{modIdParam}": {
       "patch": {
         "tags": [
           "Approval"
@@ -1312,7 +1312,7 @@
         }
       }
     },
-    "/api/approval/modversion/{modVersionIdParam}": {
+    "/approval/modversion/{modVersionIdParam}": {
       "patch": {
         "tags": [
           "Approval"
@@ -1389,7 +1389,7 @@
         }
       }
     },
-    "/api/approval/edit/{editIdParam}": {
+    "/approval/edit/{editIdParam}": {
       "patch": {
         "tags": [
           "Approval"
@@ -1511,7 +1511,7 @@
         }
       }
     },
-    "/api/approval/modVersion/{modVersionIdParam}/revoke": {
+    "/approval/modVersion/{modVersionIdParam}/revoke": {
       "post": {
         "tags": [
           "Approval"
@@ -1559,7 +1559,7 @@
         }
       }
     },
-    "/api/motd": {
+    "/motd": {
       "get": {
         "tags": [
           "MOTD"
@@ -1596,7 +1596,7 @@
         }
       }
     },
-    "/api/motd/{id}": {
+    "/motd/{id}": {
       "delete": {
         "tags": [
           "MOTD"
@@ -1623,7 +1623,7 @@
         }
       }
     },
-    "/api/user": {
+    "/user": {
       "get": {
         "tags": [
           "User"
@@ -1643,7 +1643,7 @@
         }
       }
     },
-    "/api/user/{id}": {
+    "/user/{id}": {
       "get": {
         "tags": [
           "User"
@@ -1672,7 +1672,7 @@
         }
       }
     },
-    "/api/user/{id}/mods": {
+    "/user/{id}/mods": {
       "get": {
         "tags": [
           "User"
@@ -1709,55 +1709,6 @@
           },
           "404": {
             "description": "User not found."
-          }
-        }
-      }
-    },
-    "/api/user/{id}/": {
-      "patch": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Get user information.",
-        "description": "Get user information.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "displayName": {
-                  "example": "any"
-                },
-                "sponsorUrl": {
-                  "example": "any"
-                },
-                "bio": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns user information."
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized."
-          },
-          "500": {
-            "description": "Internal server error."
           }
         }
       }

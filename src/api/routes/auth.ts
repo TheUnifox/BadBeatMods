@@ -1,4 +1,4 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import { DiscordAuthHelper, GitHubAuthHelper, validateSession } from '../../shared/AuthHelper';
 import { HTTPTools } from '../../shared/HTTPTools';
 import { DatabaseHelper } from '../../shared/Database';
@@ -7,16 +7,16 @@ import { Config } from '../../shared/Config';
 import { Validator } from '../../shared/Validator';
 
 export class AuthRoutes {
-    private app: Express;
+    private router: Router;
     private validStates: {stateId: string, ip: string, redirectUrl: URL, userId: number}[] = [];
 
-    constructor(app: Express) {
-        this.app = app;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.get(`/api/auth`, async (req, res) => {
+        this.router.get(`/auth`, async (req, res) => {
             // #swagger.tags = ['Auth']
             // #swagger.summary = 'Get logged in user information.'
             // #swagger.description = 'Get user information.'
@@ -29,7 +29,7 @@ export class AuthRoutes {
             return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
         });
 
-        this.app.get(`/api/auth/logout`, async (req, res) => {
+        this.router.get(`/auth/logout`, async (req, res) => {
             // #swagger.tags = ['Auth']
             // #swagger.summary = 'Logout.'
             // #swagger.description = 'Logout.'
@@ -43,7 +43,7 @@ export class AuthRoutes {
             });
         });
 
-        this.app.get(`/api/auth/github`, async (req, res) => {
+        this.router.get(`/auth/github`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let state = this.prepAuth(req);
             if (!state) {
@@ -52,7 +52,7 @@ export class AuthRoutes {
             return res.redirect(302, GitHubAuthHelper.getUrl(state));
         });
 
-        this.app.get(`/api/auth/github/callback`, async (req, res) => {
+        this.router.get(`/auth/github/callback`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let reqQuery = Validator.zOAuth2Callback.safeParse(req.query);
             if (!reqQuery.success) {
@@ -96,7 +96,7 @@ export class AuthRoutes {
             return res.status(200).send(`<head><meta http-equiv="refresh" content="0; url=${stateObj.redirectUrl.href}" /></head><body style="background-color: black;"><a style="color:white;" href="${stateObj.redirectUrl.href}">Click here if you are not redirected...</a></body>`); // i need to double check that this is the correct way to redirect
         });
 
-        this.app.get(`/api/link/discord`, async (req, res) => {
+        this.router.get(`/link/discord`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
             if (!session.approved) {
@@ -109,7 +109,7 @@ export class AuthRoutes {
             return res.redirect(302, DiscordAuthHelper.getUrl(state));
         });
 
-        this.app.get(`/api/link/discord/callback`, async (req, res) => {
+        this.router.get(`/link/discord/callback`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let reqQuery = Validator.zOAuth2Callback.safeParse(req.query);
             if (!reqQuery.success) {

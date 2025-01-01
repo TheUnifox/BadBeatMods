@@ -37,7 +37,6 @@ const ZodModVersion = z.object({
 });
 
 // for things marked as optional, zod will set them to undefined if they are not present, otherwise it will validate it.
-//
 export class Validator {
     public static readonly z = z;
     public static readonly zDBID = ZodDBID;

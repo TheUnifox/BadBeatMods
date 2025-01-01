@@ -1,17 +1,17 @@
-import { Express } from 'express';
+import { Router } from 'express';
 import { DatabaseHelper, MOTD, SupportedGames, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Validator } from '../../shared/Validator';
 
 export class MOTDRoutes {
-    private app: Express;
-    constructor(app: Express) {
-        this.app = app;
+    private router: Router;
+    constructor(router: Router) {
+        this.router = router;
         this.loadRoutes();
     }
 
     private async loadRoutes() {
-        this.app.get(`/api/motd`, async (req, res) => {
+        this.router.get(`/motd`, async (req, res) => {
             // #swagger.tags = ['MOTD']
             let reqQuery = Validator.zGetMOTD.safeParse(req.query.gameName);
             if (!reqQuery.success) {
@@ -27,7 +27,7 @@ export class MOTDRoutes {
             return res.status(200).send({ messages: motds });
         });
 
-        this.app.post(`/api/motd`, async (req, res) => {
+        this.router.post(`/motd`, async (req, res) => {
             // #swagger.tags = ['MOTD']
             let reqBody = Validator.zCreateMOTD.safeParse(req.body);
             if (!reqBody.success) {
@@ -54,7 +54,7 @@ export class MOTDRoutes {
             return res.status(200).send({ message: `MOTD added.`, motd });
         });
 
-        this.app.delete(`/api/motd/:id`, async (req, res) => {
+        this.router.delete(`/motd/:id`, async (req, res) => {
             // #swagger.tags = ['MOTD']
             let id = Validator.zDBID.safeParse(req.params.id);
             if (!id.success) {
