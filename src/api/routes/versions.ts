@@ -82,7 +82,11 @@ export class VersionsRoutes {
 
         this.router.post(`/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            // #swagger.parameters['gameVersionId'] = { description: 'The ID of the version to set as default', type: 'number' }
+            //
+            /* #swagger.parameters['body'] = { description: 'The ID of the version to set as default', required: true, type: 'object', schema: {
+              gameVersionId: 1
+            }
+            */
             let gameVersionId = Validator.zDBID.safeParse(req.body.gameVersionId);
             if (!gameVersionId.success) {
                 return res.status(400).send({ message: `Invalid gameVersionId` });
@@ -100,8 +104,18 @@ export class VersionsRoutes {
 
             let previousDefault = await GameVersion.getDefaultVersionObject(gameVersion.gameName);
 
-            previousDefault.defaultVersion = false;
-            await previousDefault.save();
+            if (previousDefault.id === gameVersion.id) {
+                return res.status(400).send({ message: `Version is already default` });
+            }
+
+            if (previousDefault.gameName !== gameVersion.gameName) {
+                return res.status(400).send({ message: `Version is for a different game` });
+            }
+
+            if (previousDefault) {
+                previousDefault.defaultVersion = false;
+                await previousDefault.save();
+            }
             gameVersion.defaultVersion = true;
             await gameVersion.save();
             DatabaseHelper.refreshCache(`gameVersions`);

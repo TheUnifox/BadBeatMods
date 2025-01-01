@@ -545,23 +545,6 @@
         }
       }
     },
-    "/auth/logout": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Logout.",
-        "description": "Logout.",
-        "responses": {
-          "200": {
-            "description": "Logout successful."
-          },
-          "500": {
-            "description": "Internal server error."
-          }
-        }
-      }
-    },
     "/auth/github": {
       "get": {
         "tags": [
@@ -590,6 +573,49 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/auth/discord": {
+      "get": {
+        "description": "",
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/auth/discord/callback": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout.",
+        "description": "Logout.",
+        "responses": {
+          "200": {
+            "description": "Logout successful."
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal server error."
           }
         }
       }
@@ -721,12 +747,6 @@
         ],
         "description": "",
         "parameters": [
-          {
-            "name": "gameVersionId",
-            "description": "The ID of the version to set as default",
-            "type": "number",
-            "in": "query"
-          },
           {
             "name": "body",
             "in": "body",
@@ -1628,7 +1648,7 @@
         "tags": [
           "User"
         ],
-        "summary": "Get user information.",
+        "summary": "Get logged in user information.",
         "description": "Get user information.",
         "responses": {
           "200": {
