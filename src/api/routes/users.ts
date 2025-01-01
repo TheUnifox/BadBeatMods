@@ -14,7 +14,7 @@ export class UserRoutes {
     private async loadRoutes() {
         this.router.get(`/user`, async (req, res) => {
             // #swagger.tags = ['User']
-            // #swagger.summary = 'Get user information.'
+            // #swagger.summary = 'Get logged in user information.'
             // #swagger.description = 'Get user information.'
             // #swagger.responses[200] = { description: 'Returns user information.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -23,7 +23,7 @@ export class UserRoutes {
             if (!session.approved) {
                 return;
             }
-            return res.status(200).send({ message: `Hello, ${session.user.username}!`, username: session.user.username, userId: session.user.id, roles: session.user.roles });
+            return res.status(200).send({ user: session.user.toAPIResponse() });
         });
 
         this.router.get(`/user/:id`, async (req, res) => {

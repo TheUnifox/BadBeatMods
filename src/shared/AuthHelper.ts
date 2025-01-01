@@ -7,7 +7,7 @@ declare module 'express-session' {
         userId: number;
     }
 }
-
+/*
 class OAuth2Helper {
     public static async getToken(url:string, code: string, oAuth2Data:{clientId:string, clientSecret:string}, callbackUrl:string): Promise<OAuth2Response | null> {
         if (!code || !oAuth2Data.clientId || !oAuth2Data.clientSecret || !callbackUrl || !url) {
@@ -57,7 +57,7 @@ export interface OAuth2Response {
     refresh_token?: string,
     scope: string,
 }
-/*
+
 //#region BeatLeader
 export class BeatLeaderAuthHelper extends OAuth2Helper {
     private static readonly callbackUrl = `${server.url}/api/auth/beatleader/callback`;
@@ -148,7 +148,7 @@ export interface BeatSaverIdentify {
     avatar: string;
 }
 //#endregion
-*/
+
 //#region Discord
 export class DiscordAuthHelper extends OAuth2Helper {
     private static get callbackUrl(): string {
@@ -224,7 +224,6 @@ export class GitHubAuthHelper extends OAuth2Helper {
     }
 }
 
-/*
 Pretty sure I dont need this but keeping it around just in case
 export interface GitHubPrivateUser {
   login: string;
@@ -277,7 +276,7 @@ export interface GitHubPrivateUser {
   business_plus?: boolean;
   ldap_dn?: string;
   [k: string]: unknown;
-}*/
+}
 
 export interface GitHubPublicUser {
   login: string;
@@ -327,6 +326,7 @@ export interface GitHubPublicUser {
   disk_usage?: number;
   collaborators?: number;
 }
+*/
 
 //#endregion
 
