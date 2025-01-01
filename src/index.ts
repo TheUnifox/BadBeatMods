@@ -161,7 +161,24 @@ new CDNRoutes(cdnRouter);
 app.use(Config.server.apiRoute, apiRouter);
 app.use(Config.server.cdnRoute, cdnRouter);
 
-HTTPTools.handleExpressShenanigans(app);
+app.disable(`x-powered-by`);
+apiRouter.use((req, res, next) => {
+    return res.status(404).send({message: `Unknown route.`});
+});
+
+cdnRouter.use((req, res, next) => {
+    return res.status(404).send({message: `Unknown route.`});
+});
+          
+apiRouter.use((err:any, req:any, res:any, next:any) => {
+    console.error(err.stack);
+    return res.status(500).send({message: `Server error`});
+});
+
+cdnRouter.use((err:any, req:any, res:any, next:any) => {
+    console.error(err.stack);
+    return res.status(500).send({message: `Server error`});
+});
 
 async function startServer() {
     await database.init();
