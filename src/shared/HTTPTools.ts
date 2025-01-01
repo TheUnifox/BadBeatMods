@@ -1,13 +1,8 @@
-import { randomInt } from 'crypto';
-import { Express } from 'express';
+import { randomBytes } from 'crypto';
 
 export class HTTPTools {
-    public static createRandomString(length:number): string {
-        const CharSet = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789`;
-        let key = ``;
-        for (let i = 0; i < length; i++) {
-            key += CharSet[Math.floor(randomInt(8192) * (Date.now() / 100000)) % CharSet.length];
-        }
+    public static createRandomString(byteCount:number): string {
+        let key = randomBytes(byteCount).toString(`base64url`);
         return key;
     }
 
