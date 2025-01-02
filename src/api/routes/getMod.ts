@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { DatabaseHelper, Status, ModAPIResponse, GameVersion, UserRoles, User } from '../../shared/Database';
 import { Validator } from '../../shared/Validator';
 import { validateSession } from '../../shared/AuthHelper';
+import { Config } from '../../shared/Config';
+import { Logger } from '../../shared/Logger';
 
 export class GetModRoutes {
     private router: Router;
@@ -46,6 +48,7 @@ export class GetModRoutes {
             let mods:{mod: ModAPIResponse, latest: any}[] = [];
             let showUnverified = reqQuery.data.status !== `verified`;
             for (let mod of DatabaseHelper.cache.mods) {
+                // if the mod isn't for the selected game, don't show it
                 if (mod.gameName !== reqQuery.data.gameName) {
                     continue;
                 }
@@ -64,11 +67,20 @@ export class GetModRoutes {
                 // get the lastest mod for the selected platform (by default, universalpc. if another pc platform is selected, use that, but fallback to universalpc). inverted the showUnverified flag since the function operates on the opposite
                 let latest = await mod.getLatestVersion(gameVersion.id, reqQuery.data.platform, !showUnverified);
                 if (latest) {
+                    if (Config.devmode && latest.id === 2206) {
+                        // eslint-disable-next-line no-debugger
+                        debugger;
+                    }
                     // if the modVersion isn't verified or unverified, don't show it
                     if (latest.status != Status.Unverified && latest.status != Status.Verified) {
                         continue;
                     }
-                    mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified) });
+                    let latestModVersion = await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified);
+                    if (latestModVersion) {
+                        mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified) });
+                    } else {
+                        Config.devmode ? Logger.warn(`Failed to get latest mod version for mod ${mod.id}`) : null;
+                    }
                 }
             }
 
@@ -116,7 +128,12 @@ export class GetModRoutes {
                 if (raw) {
                     returnVal.push(await version.toRawAPIResonse());
                 } else {
-                    returnVal.push(await version.toAPIResonse());
+                    let resolvedVersion = await version.toAPIResonse();
+                    if (resolvedVersion) {
+                        returnVal.push(resolvedVersion);
+                    } else {
+                        Config.devmode ? console.log(`Failed to get mod version ${version.id} for mod ${mod.id}`) : null;
+                    }
                 }
             }
 

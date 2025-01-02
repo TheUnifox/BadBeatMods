@@ -84,7 +84,11 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
         let mod = modObj ? modObj : await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
         let gameVersions = await modVersion.getSupportedGameVersions();
         let dependancies: string[] = [];
-        for (let dependancy of (await modVersion.getDependencies(gameVersions[0].id, Platform.UniversalPC, false))) {
+        let resolvedDependancies = await modVersion.getDependencies(gameVersions[0].id, Platform.UniversalPC, false);
+        if (!resolvedDependancies.didResolutionFail) {
+            return Logger.warn(`Dependancies not found for mod version ${modVersion.id}`);
+        }
+        for (let dependancy of resolvedDependancies.dependencies) {
             let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy.modId } });
             if (!dependancyMod) {
                 return Logger.warn(`Dependancy mod ${dependancy.modId} not found for mod version ${modVersion.id}`);

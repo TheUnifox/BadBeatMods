@@ -129,18 +129,27 @@ export class BeatModsRoutes {
                 continue;
             }
 
-            modArray.push(await this.convertToBeatmodsMod(mod, modVersion, gameVersion));
+            let convertedMod = await this.convertToBeatmodsMod(mod, modVersion, gameVersion);
+            if (!convertedMod) {
+                Config.devmode ? Logger.warn(`Failed to convert mod ${mod.name} v${modVersion.modVersion.raw} to BeatMods format.`, `getMod`) : null;
+                continue;
+            }
+            modArray.push(convertedMod);
         }
 
         return res.status(200).send(modArray);
     }
 
-    private async convertToBeatmodsMod(mod: Mod, modVersion: ModVersion, gameVersion: GameVersion, doResolution: boolean = true): Promise<BeatModsMod> {
+    private async convertToBeatmodsMod(mod: Mod, modVersion: ModVersion, gameVersion: GameVersion, doResolution: boolean = true): Promise<BeatModsMod|null> {
         let dependencies: (BeatModsMod | string)[] = [];
 
         if (modVersion.dependencies.length !== 0) {
             // fix this eventually
-            for (let dependancy of (await modVersion.getDependencies(gameVersion.id, Platform.UniversalPC))) {
+            let dependancies = await modVersion.getDependencies(gameVersion.id, Platform.UniversalPC);
+            if (dependancies.didResolutionFail) {
+                return null;
+            }
+            for (let dependancy of dependancies.dependencies) {
                 if (doResolution) {
                     let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancy.modId);
                     if (dependancyMod) {
