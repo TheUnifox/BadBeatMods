@@ -2,6 +2,7 @@ import { Request, Express, Response, Router } from 'express';
 import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, SupportedGames, Status } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 import { Config } from '../../shared/Config';
+import { coerce } from 'semver';
 
 export class BeatModsRoutes {
     private router: Router;
@@ -48,6 +49,15 @@ export class BeatModsRoutes {
             // #swagger.deprecated = true
             // #swagger.responses[200] = { description: 'Returns all versions.' }
             let versions = DatabaseHelper.cache.gameVersions.filter(gV => gV.gameName == SupportedGames.BeatSaber).flatMap((gameVersion) => gameVersion.version);
+            versions.sort((a, b) => {
+                let verA = coerce(a, { loose: true });
+                let verB = coerce(b, { loose: true });
+                if (verA && verB) {
+                    return verB.compare(verA); // this is reversed so that the latest version is first in the array
+                } else {
+                    return b.localeCompare(a);
+                }
+            });
             return res.status(200).send(versions);
         });
 
@@ -59,6 +69,15 @@ export class BeatModsRoutes {
                 // #swagger.deprecated = true
                 // #swagger.responses[200] = { description: 'Returns all versions.' }
                 let versions = DatabaseHelper.cache.gameVersions.filter(gV => gV.gameName == SupportedGames.BeatSaber).flatMap((gameVersion) => gameVersion.version);
+                versions.sort((a, b) => {
+                    let verA = coerce(a, { loose: true });
+                    let verB = coerce(b, { loose: true });
+                    if (verA && verB) {
+                        return verB.compare(verA); // this is reversed so that the latest version is first in the array
+                    } else {
+                        return b.localeCompare(a);
+                    }
+                });
                 return res.status(200).send(versions);
             });
         }
