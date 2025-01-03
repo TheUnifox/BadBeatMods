@@ -123,12 +123,14 @@ export class BeatModsRoutes {
         let modArray: BeatModsMod[] = [];
 
         if (!version || typeof version !== `string`) {
-            version = await GameVersion.getDefaultVersion(SupportedGames.BeatSaber);
+            version = null;
         }
 
         let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === version && gameVersion.gameName === SupportedGames.BeatSaber);
-        if (!gameVersion) {
-            return res.status(400).send({ message: `No valid game version.` });
+        if (!gameVersion && !version) {
+            gameVersion = null;
+        } else if (!gameVersion) {
+            return res.status(400).send({ message: `Missing Game Version.`});
         }
 
         let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName === SupportedGames.BeatSaber);
@@ -140,7 +142,7 @@ export class BeatModsRoutes {
                 continue;
             }
             // hardcoded to universal for now, need to fix this
-            let modVersion = await mod.getLatestVersion(gameVersion.id, Platform.UniversalPC, status === `approved`);
+            let modVersion = await mod.getLatestVersion(gameVersion?.id, Platform.UniversalPC, status === `approved`);
             if (!modVersion) {
                 continue;
             }
@@ -159,14 +161,21 @@ export class BeatModsRoutes {
         return res.status(200).send(modArray);
     }
 
-    private async convertToBeatmodsMod(mod: Mod, modVersion: ModVersion, gameVersion: GameVersion, doResolution: boolean = true): Promise<BeatModsMod|null> {
+    private async convertToBeatmodsMod(mod: Mod, modVersion: ModVersion, gameVersion: GameVersion|null, doResolution: boolean = true): Promise<BeatModsMod|null> {
         let dependencies: (BeatModsMod | string)[] = [];
 
         if (modVersion.dependencies.length !== 0) {
-            // fix this eventually
-            let dependancies = await modVersion.getDependencies(gameVersion.id, Platform.UniversalPC);
+            
+            let dependancies;
+            if (!gameVersion) {
+                dependancies = await modVersion.getDependencies(null, Platform.UniversalPC);
+            } else {
+                // fix this eventually
+                dependancies = await modVersion.getDependencies(gameVersion.id, Platform.UniversalPC);
+            }
+
             if (dependancies.didResolutionFail) {
-                return null;
+                doResolution = false;
             }
             for (let dependancy of dependancies.dependencies) {
                 if (doResolution) {
@@ -217,11 +226,22 @@ export class BeatModsRoutes {
                 break;
         }
 
+        let gameVersionInternal;
+        if (!gameVersion) {
+            let gVs = await modVersion.getSupportedGameVersions();
+            if (gVs.length === 0) {
+                return null;
+            }
+            gameVersionInternal = gVs[0];
+        } else {
+            gameVersionInternal = gameVersion;
+        }
+
         return {
             _id: modVersion.id.toString(),
             name: mod.name.toString(),
             version: modVersion.modVersion.raw,
-            gameVersion: gameVersion.version,
+            gameVersion: gameVersionInternal.version,
             authorId: author.id.toString(),
             updatedDate: modVersion.updatedAt.toUTCString(),
             uploadDate: modVersion.createdAt.toUTCString(),

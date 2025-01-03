@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
+import { coerce } from 'semver';
 
 export class AdminRoutes {
     private router: Router;
@@ -90,6 +91,15 @@ export class AdminRoutes {
             if (isSpecificVersion === true) {
                 if (params.data.versionId === 0) {
                     versions = await DatabaseHelper.database.GameVersions.findAll({ where: { gameName: params.data.gameName } });
+                    /*versions.sort((a, b) => {
+                        let verA = coerce(a.version, { loose: true });
+                        let verB = coerce(b.version, { loose: true });
+                        if (verA && verB) {
+                            return verB.compare(verA); // this is reversed so that the latest version is first in the array
+                        } else {
+                            return b.version.localeCompare(a.version);
+                        }
+                    });*/
                 } else {
                     versions.push(await GameVersion.getDefaultVersionObject(params.data.gameName));
                 }
@@ -137,6 +147,9 @@ export class AdminRoutes {
 
             if (errors.length > 0) {
                 let missingIds = Array.from(new Set(errors.map((error: any) => error.dependency.versionId)));
+                errors.sort((a, b) => {
+                    return b.dependency.versionId - a.dependency.versionId;
+                });
                 return res.status(500).send({ message: `Unable to resolve ${errors.length} dependencies.`, missingIds, errors });
             }
 
