@@ -84,6 +84,7 @@ export class GetModRoutes {
                 }
             }
 
+            let preLength = mods.length;
             mods = mods.filter((mod) => {
                 if (!mod?.latest) {
                     return false;
@@ -97,7 +98,9 @@ export class GetModRoutes {
 
                 return true;
             });
-
+            if (mods.length !== preLength) {
+                Config.devmode ? Logger.warn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength})`, `getMod`) : null;
+            }
             return res.status(200).send({ mods });
         });
 

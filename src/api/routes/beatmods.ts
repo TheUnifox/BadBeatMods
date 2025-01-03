@@ -157,7 +157,7 @@ export class BeatModsRoutes {
             }
             modArray.push(convertedMod);
         }
-
+        let preLength = modArray.length;
         modArray = modArray.filter((mod) => {
             if (!mod) {
                 return false;
@@ -178,6 +178,9 @@ export class BeatModsRoutes {
             return true;
         });
 
+        if (modArray.length !== preLength) {
+            Config.devmode ? Logger.warn(`Some mods were removed due to missing dependencies. (${modArray.length} out of ${preLength})`, `getMod`) : null;
+        }
         return res.status(200).send(modArray);
     }
 
