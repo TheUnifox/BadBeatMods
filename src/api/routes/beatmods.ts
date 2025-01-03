@@ -158,6 +158,26 @@ export class BeatModsRoutes {
             modArray.push(convertedMod);
         }
 
+        modArray = modArray.filter((mod) => {
+            if (!mod) {
+                return false;
+            }
+
+            for (let dependency of mod.dependencies) {
+                if (typeof dependency === `string`) {
+                    if (!mods.find((mod) => mod.id === parseInt(dependency))) {
+                        return false;
+                    }
+                } else {
+                    if (!mods.find((mod) => mod.id === parseInt(dependency._id))) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        });
+
         return res.status(200).send(modArray);
     }
 

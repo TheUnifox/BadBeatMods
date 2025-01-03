@@ -84,6 +84,20 @@ export class GetModRoutes {
                 }
             }
 
+            mods = mods.filter((mod) => {
+                if (!mod?.latest) {
+                    return false;
+                }
+
+                for (let dependency of mod.latest.dependencies) {
+                    if (!mods.find((mod) => mod.latest.id === dependency.id)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
             return res.status(200).send({ mods });
         });
 
