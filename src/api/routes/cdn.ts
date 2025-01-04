@@ -2,7 +2,6 @@ import { Router } from 'express';
 import express from 'express';
 import path from 'path';
 import { Config } from '../../shared/Config';
-import fs from 'fs';
 import { DatabaseHelper } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 

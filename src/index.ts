@@ -1,7 +1,6 @@
 import express from 'express';
 import session from 'express-session';
 import MemoryStore from 'memorystore';
-import { HTTPTools } from './shared/HTTPTools';
 import { DatabaseHelper, DatabaseManager } from './shared/Database';
 import fileUpload from 'express-fileupload';
 import { CreateModRoutes } from './api/routes/createMod';

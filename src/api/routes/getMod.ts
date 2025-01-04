@@ -71,9 +71,9 @@ export class GetModRoutes {
                     if (latest.status != Status.Unverified && latest.status != Status.Verified) {
                         continue;
                     }
-                    let latestModVersion = await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified);
+                    let latestModVersion = await latest.toAPIResonse(gameVersion.id, !showUnverified);
                     if (latestModVersion) {
-                        mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified) });
+                        mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, !showUnverified) });
                     } else {
                         Logger.debugWarn(`Failed to get latest mod version for mod ${mod.id}`);
                     }

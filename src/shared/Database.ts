@@ -1033,7 +1033,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         };
     }
 
-    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.UniversalPC, onlyApproved = false): Promise<ModVersionAPIResponse|null> {
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], onlyApproved = false): Promise<ModVersionAPIResponse|null> {
         let dependencies = await this.getUpdatedDependencies(gameVersionId, onlyApproved);
         if (!dependencies) {
             return null;
