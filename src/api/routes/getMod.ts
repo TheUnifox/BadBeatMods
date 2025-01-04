@@ -67,10 +67,6 @@ export class GetModRoutes {
                 // get the lastest mod for the selected platform (by default, universalpc. if another pc platform is selected, use that, but fallback to universalpc). inverted the showUnverified flag since the function operates on the opposite
                 let latest = await mod.getLatestVersion(gameVersion.id, reqQuery.data.platform, !showUnverified);
                 if (latest) {
-                    if (Config.devmode && latest.id === 1267) {
-                        // eslint-disable-next-line no-debugger
-                        //debugger;
-                    }
                     // if the modVersion isn't verified or unverified, don't show it
                     if (latest.status != Status.Unverified && latest.status != Status.Verified) {
                         continue;
@@ -91,7 +87,7 @@ export class GetModRoutes {
                 }
 
                 for (let dependency of mod.latest.dependencies) {
-                    if (!mods.find((mod) => mod.latest.id === dependency.id)) {
+                    if (!mods.find((mod) => mod.latest.id === dependency)) {
                         return false;
                     }
                 }
@@ -99,7 +95,7 @@ export class GetModRoutes {
                 return true;
             });
             if (mods.length !== preLength) {
-                Config.devmode ? Logger.warn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength})`, `getMod`) : null;
+                Config.devmode ? Logger.warn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength} sent)`, `getMod`) : null;
             }
             return res.status(200).send({ mods });
         });

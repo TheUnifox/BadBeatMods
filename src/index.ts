@@ -73,7 +73,9 @@ app.use((req, res, next) => {
         if (Config.authBypass) {
             req.session.userId = 1;
         }
-        console.log(req.url);
+        if (!req.url.includes(`hashlookup`)) {
+            console.log(req.url);
+        }
     }
     next();
 });

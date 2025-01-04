@@ -801,52 +801,45 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
-    public async getLatestVersion(gameVersion: number|null, platform:Platform = Platform.UniversalPC, onlyApproved = false): Promise<ModVersion | null> {
-        // if the platform is PC
-        if (platform == Platform.UniversalPC || platform == Platform.SteamPC || platform == Platform.OculusPC) {
-            // get all versions of the mod for the specified platform or universal
-            let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id && (version.platform == platform || version.platform == Platform.UniversalPC) && (version.status == Status.Verified || version.status == Status.Unverified));
-            // if there are no versions in the cache, get them from the database
-            if (!versions) {
-                // fuck it i do not care i am stressed out
-                // versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id, [Op.or]: [{ platform: platform }, { platform: Platform.UniversalPC }] } });
-                let internalVersions = await DatabaseHelper.database.ModVersions.findAll({where: { modId: this.id, [Op.or]: [{ platform: platform }, { platform: Platform.UniversalPC }] } });
-                versions = internalVersions.filter(mV => mV.status == Status.Verified || mV.status == Status.Unverified);
+    public async getLatestVersion(gameVersionId: number, platform: Platform, onlyVerified: boolean = true): Promise<ModVersion | null> {
+        let versions = DatabaseHelper.cache.modVersions.filter((version) => {
+            // if the version is not for the correct platform
+            if (version.modId !== this.id) {
+                return false;
             }
 
-            let latestVersion: ModVersion | null = null;
-            for (let version of versions) {
-                // if the version supports the game version
-                if (gameVersion) {
-                    if (version.supportedGameVersionIds.includes(gameVersion)) {
-                        // if there is no latest version yet or the version is newer than the latest version
-                        if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
-                            latestVersion = version;
-                        }
-                    }
+            if (version.status !== Status.Verified) {
+                if (onlyVerified) {
+                    return false;
                 } else {
-                    // if there is no latest version yet or the version is newer than the latest version
-                    if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
-                        latestVersion = version;
+                    if (version.status === Status.Removed || version.status === Status.Private) {
+                        return false;
                     }
                 }
             }
-            return latestVersion;
-        } else if (platform === Platform.UniversalQuest) {
-            let versions = DatabaseHelper.cache.modVersions.filter((version) => version.modId == this.id && (version.platform == platform/* || version.platform == Platform.UniversalQuest*/));
-            if (!versions) {
-                versions = await DatabaseHelper.database.ModVersions.findAll({ where: { modId: this.id, platform: platform /*[Op.or]: [{ platform: platform }, { platform: Platform.UniversalQuest }]*/ } });
+
+            // if the version is not for the correct game
+            if (!version.supportedGameVersionIds.includes(gameVersionId)) {
+                return false;
             }
-            let latestVersion: ModVersion | null = null;
-            for (let version of versions) {
-                if (version.supportedGameVersionIds.includes(gameVersion)) {
-                    if ((!latestVersion || version.modVersion.compare(latestVersion.modVersion) > 0) && (!onlyApproved || version.status == Status.Verified)) {
-                        latestVersion = version;
-                    }
+
+            if (version.platform === Platform.UniversalQuest) {
+                return platform === Platform.UniversalQuest;
+            } else {
+                if (version.platform === Platform.UniversalPC || version.platform === platform) {
+                    return true;
                 }
             }
-            return latestVersion;
+        });
+
+        let latest = null;
+        for (let version of versions) {
+            if (!latest || version.modVersion.compare(latest.modVersion) > 0) {
+                latest = version;
+            }
         }
+
+        return latest;
     }
 
     public async setStatus(status:Status, user: User) {
@@ -986,52 +979,29 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getDependencies(gameVersionId: number|null, platform: Platform, onlyApproved = false): Promise<{didResolutionFail:boolean, dependencies: ModVersion[], culprits: ModVersion[]}> {
-        let dependencies: ModVersion[] = [];
-        let culprits: ModVersion[] = [];
-        let didResolutionFail = false;
-        // for each dependancy
-        for (let dependancyId of this.dependencies) {
-            if (Config.devmode && this.id == 111 && this.dependencies.includes(70)) {
-                // eslint-disable-next-line no-debugger
-                //debugger;
-            }
-            // get the mod version object
-            let dependancy = DatabaseHelper.cache.modVersions.find((version) => version.id == dependancyId);
-            if (!dependancy) {
-                dependancy = await DatabaseHelper.database.ModVersions.findByPk(dependancyId);
+    public async getUpdatedDependencies(gameVersionId: number, onlyVerified: boolean = true): Promise<ModVersion[]> {
+        let dependencies = [];
+
+        for (let dependencyId of this.dependencies) {
+            let dependency = DatabaseHelper.cache.modVersions.find((version) => version.id == dependencyId);
+            if (!dependency) {
+                dependency = await DatabaseHelper.database.ModVersions.findByPk(dependencyId);
             }
 
-            // if the dependancy exists
-            if (dependancy) {
-                // get the all versions of the dependancy
-                let allVersionsOfDependancy = DatabaseHelper.cache.modVersions.filter((version) => version.modId == dependancy.modId);
-                // compat for when the beatmods endpoint is used without a version
-                if (!gameVersionId) {
-                    dependencies.push(dependancy);
-                    continue;
-                }
-                
-                let latestCompatable = null;
-                for (let version of allVersionsOfDependancy) {
-                    if (version.supportedGameVersionIds.includes(gameVersionId) && (!onlyApproved || version.status == Status.Verified)) {
-                        if (!latestCompatable || version.modVersion.compare(latestCompatable.modVersion) > 0) {
-                            latestCompatable = version;
-                        }
-                    }
-                }
-                if (latestCompatable) {
-                    dependencies.push(latestCompatable);
-                } else {
-                    didResolutionFail = true;
-                    culprits.push(dependancy);
-                    dependencies.push(dependancy);
-                }
+            let parentMod = DatabaseHelper.cache.mods.find((mod) => mod.id == dependency.modId);
+            if (!parentMod) {
+                parentMod = await DatabaseHelper.database.Mods.findByPk(dependency.modId);
+            }
+
+            let latestVersion = await parentMod.getLatestVersion(gameVersionId, dependency.platform, onlyVerified);
+            if (latestVersion) {
+                dependencies.push(latestVersion);
             } else {
-                Logger.warn(`ModVersion ${dependancyId} not found in cache or database.`);
+                Logger.debugWarn(`Failed to find latest version for dependency ${dependency.id} (Req by ${this.id})`);
             }
         }
-        return {didResolutionFail, dependencies, culprits};
+
+        return dependencies;
     }
     // this function is for when a mod supports a newer version but the dependancy does not. (uses ^x.x.x for comparison)
     public static async isValidDependancySucessor(originalVersion:ModVersion, newVersion:ModVersion, forVersion: number): Promise<boolean> {
@@ -1063,11 +1033,11 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     }
 
     public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], platform = Platform.UniversalPC, onlyApproved = false): Promise<ModVersionAPIResponse|null> {
-        let dependencies = await this.getDependencies(gameVersionId, platform, onlyApproved);
-        if (dependencies.didResolutionFail) {
-            Config.devmode ? Logger.warn(`Failed to resolve dependencies for mod version ${this.id}. Culprit: ${dependencies.culprits.flatMap(mV => mV.id)}`) : null;
+        let dependencies = await this.getUpdatedDependencies(gameVersionId, onlyApproved);
+        if (!dependencies) {
             return null;
         }
+
         return {
             id: this.id,
             modId: this.modId,
@@ -1076,7 +1046,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             platform: this.platform,
             zipHash: this.zipHash,
             status: this.status,
-            dependencies: dependencies.dependencies.flatMap((dependancy) => dependancy.id),
+            dependencies: dependencies.flatMap((dependancy) => dependancy.id),
             contentHashes: this.contentHashes,
             downloadCount: this.downloadCount,
             supportedGameVersions: await this.getSupportedGameVersions(),

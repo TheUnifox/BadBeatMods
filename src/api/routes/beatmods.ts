@@ -191,16 +191,14 @@ export class BeatModsRoutes {
             
             let dependancies;
             if (!gameVersion) {
-                dependancies = await modVersion.getDependencies(null, Platform.UniversalPC);
+                let idToUse = modVersion.supportedGameVersionIds[0];
+                dependancies = await modVersion.getUpdatedDependencies(idToUse, true);
             } else {
                 // fix this eventually
-                dependancies = await modVersion.getDependencies(gameVersion.id, Platform.UniversalPC);
+                dependancies = await modVersion.getUpdatedDependencies(gameVersion.id, true);
             }
 
-            if (dependancies.didResolutionFail) {
-                doResolution = false;
-            }
-            for (let dependancy of dependancies.dependencies) {
+            for (let dependancy of dependancies) {
                 if (doResolution) {
                     let dependancyMod = DatabaseHelper.cache.mods.find((mod) => mod.id === dependancy.modId);
                     if (dependancyMod) {
