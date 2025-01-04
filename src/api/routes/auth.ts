@@ -57,7 +57,7 @@ export class AuthRoutes {
                             perGame: {},
                         },
                         discordId: null,
-                        displayName: profile.displayName,
+                        displayName: profile.displayName ? profile.displayName : profile.username,
                         bio: `${profile._json.bio}`,
                     }).then((user) => {
                         Logger.log(`User ${profile.username} signed up.`, `Auth`);
@@ -81,7 +81,7 @@ export class AuthRoutes {
         ));
 
         this.router.get(`/auth/github`, async (req, res, next) => {
-            let state = this.prepAuth(req, undefined);
+            let state = this.prepAuth(req, undefined, 10);
             if (!state) {
                 return res.status(400).send({ error: `Invalid parameters.` });
             }
@@ -282,7 +282,7 @@ export class AuthRoutes {
         */
     }
     
-    private prepAuth(req: any, userId?: number): string|null {
+    private prepAuth(req: any, userId?: number, minsToTimeout = 5): string|null {
         let redirect = Validator.zUrl.default(Config.server.url).safeParse(req.query[`redirect`]);
         if (!redirect.success) {
             return null;
@@ -295,7 +295,7 @@ export class AuthRoutes {
         }
         setTimeout(() => {
             this.validStates = this.validStates.filter((s) => s.stateId !== state);
-        }, 1000 * 60 * 3);
+        }, 1000 * 60 * minsToTimeout);
         return state;
     }
 }

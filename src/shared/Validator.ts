@@ -5,6 +5,24 @@ import { Config } from "./Config";
 
 //generic types that I use a lot
 const ZodDBID = z.number({coerce: true}).int().positive();
+const ZodDBIDArray = z.preprocess((id) => {
+    if (Array.isArray(id)) {
+        return id;
+    } else {
+        if (typeof id === `string` && id.length > 0) {
+            let ids = id.split(`,`);
+            let retVal = ids.map(id => parseInt(id, 10));
+            for (let iid of retVal) {
+                if (isNaN(iid)) {
+                    return id;
+                }
+            }
+            return retVal;
+        } else {
+            return id;
+        }
+    }
+}, z.array(ZodDBID));
 const ZodBool = z.boolean({coerce: true});
 const ZodStatus = z.nativeEnum(Status);
 const ZodPlatform = z.nativeEnum(Platform);
@@ -22,16 +40,16 @@ const ZodMod = z.object({
     category: ZodCategory,
     gitUrl: z.string().min(5).max(256).url(),
     gameName: ZodGameName, //z.string().min(3).max(256),
-    authorIds: z.array(ZodDBID)
+    authorIds: ZodDBIDArray
 });
 
 // from ./Database.ts
 const ZodModVersion = z.object({
     id: ZodDBID,
     modId: ZodDBID,
-    supportedGameVersionIds: z.array(ZodDBID),
+    supportedGameVersionIds: ZodDBIDArray,
     modVersion: z.string().refine(valid, { message: `Invalid SemVer` }),
-    dependencies: z.array(ZodDBID),
+    dependencies: ZodDBIDArray,
     platform: ZodPlatform,
     status: ZodStatus,
 });

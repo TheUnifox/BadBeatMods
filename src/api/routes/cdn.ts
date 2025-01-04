@@ -2,7 +2,6 @@ import { Router } from 'express';
 import express from 'express';
 import path from 'path';
 import { Config } from '../../shared/Config';
-import fs from 'fs';
 import { DatabaseHelper } from '../../shared/Database';
 import { Logger } from '../../shared/Logger';
 
@@ -36,7 +35,7 @@ export class CDNRoutes {
                 DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
                     version.increment(`downloadCount`);
                 }).catch((error) => {
-                    Config.devmode ? Logger.warn(`Error incrementing download count: ${error}`) : null;
+                    Logger.debugWarn(`Error incrementing download count: ${error}`);
                 });
             },
             fallthrough: true,

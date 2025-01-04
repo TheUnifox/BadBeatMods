@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
+import { coerce } from 'semver';
 
 export class AdminRoutes {
     private router: Router;
@@ -78,7 +79,7 @@ export class AdminRoutes {
             let params = Validator.z.object({
                 versionId: Validator.z.number({ coerce: true }).int(),
                 gameName: Validator.zGameName,
-                includeUnverified: Validator.z.boolean({ coerce: true }).default(false),
+                includeUnverified: Validator.z.preprocess(arg => arg === `true`, Validator.z.boolean().default(false)),
             }).required().strict().safeParse(req.query);
 
             if (!params.success) {
@@ -90,6 +91,15 @@ export class AdminRoutes {
             if (isSpecificVersion === true) {
                 if (params.data.versionId === 0) {
                     versions = await DatabaseHelper.database.GameVersions.findAll({ where: { gameName: params.data.gameName } });
+                    /*versions.sort((a, b) => {
+                        let verA = coerce(a.version, { loose: true });
+                        let verB = coerce(b.version, { loose: true });
+                        if (verA && verB) {
+                            return verB.compare(verA); // this is reversed so that the latest version is first in the array
+                        } else {
+                            return b.version.localeCompare(a.version);
+                        }
+                    });*/
                 } else {
                     versions.push(await GameVersion.getDefaultVersionObject(params.data.gameName));
                 }
@@ -106,23 +116,40 @@ export class AdminRoutes {
 
             let errors = [];
             for (let version of versions) {
-                let request = await fetch(`${Config.server.url}${Config.server.apiRoute}/mods?gameName=${encodeURIComponent(params.data.gameName)}&versionId=${encodeURIComponent(version.version)}&includeUnverified=${params.data.includeUnverified ? `unverified` : `verified`}`);
+                let request = await fetch(`${Config.server.url}${Config.server.apiRoute}/mods?gameName=${encodeURIComponent(params.data.gameName)}&gameVersion=${encodeURIComponent(version.version)}&status=${params.data.includeUnverified ? `unverified` : `verified`}`);
                 if (!request.ok) {
                     return res.status(500).send({ message: `Unable to fetch mods.`, status: request.status, statusText: request.statusText });
                 }
                 let mods = await request.json() as any;
 
                 for (let mod of mods.mods) {
-                    for (let dependancy of mod.latest.dependencies) {
-                        if (!mods.mods.find((m: any) => m.latest.id === dependancy)) {
-                            errors.push({ mod: mod.mod.name, versionId: mod.latest.id, dependency: dependancy });
+                    for (let dependancyId of mod.latest.dependencies) {
+                        if (!mods.mods.find((m: any) => m.latest.id === dependancyId)) {
+                            let versionString = (mod.latest.supportedGameVersions as object[]).flatMap((gV:any) => `${gV.gameName} ${gV.version}`).join(`, `);
+                            let dependancy = DatabaseHelper.cache.modVersions.find((mV: any) => mV.id === dependancyId);
+                            let dependancyMod = DatabaseHelper.cache.mods.find((m: any) => m.id === dependancy.modId);
+
+                            errors.push({
+                                gV: versionString,
+                                dependant: {
+                                    name: mod.mod.name,
+                                    versionId: mod.latest.id
+                                },
+                                dependency: {
+                                    name: dependancyMod.name,
+                                    versionId: dependancy.id
+                                }
+                            });
                         }
                     }
                 }
             }
 
             if (errors.length > 0) {
-                let missingIds = Array.from(new Set(errors.map((error: any) => error.dependency)));
+                let missingIds = Array.from(new Set(errors.map((error: any) => error.dependency.versionId)));
+                errors.sort((a, b) => {
+                    return b.dependency.versionId - a.dependency.versionId;
+                });
                 return res.status(500).send({ message: `Unable to resolve ${errors.length} dependencies.`, missingIds, errors });
             }
 

@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { DatabaseHelper, Status, ModAPIResponse, GameVersion, UserRoles, User } from '../../shared/Database';
 import { Validator } from '../../shared/Validator';
 import { validateSession } from '../../shared/AuthHelper';
+import { Config } from '../../shared/Config';
+import { Logger } from '../../shared/Logger';
+import { SemVer } from 'semver';
 
 export class GetModRoutes {
     private router: Router;
@@ -42,36 +45,46 @@ export class GetModRoutes {
             if (reqQuery.data.status !== Status.Verified && reqQuery.data.status !== Status.Unverified) {
                 return res.status(400).send({ message: `Invalid status.` });
             }
-            
-            let mods:{mod: ModAPIResponse, latest: any}[] = [];
-            let showUnverified = reqQuery.data.status !== `verified`;
-            for (let mod of DatabaseHelper.cache.mods) {
-                if (mod.gameName !== reqQuery.data.gameName) {
-                    continue;
-                }
 
-                // if the mod isn't verified or unverified (with the unverified flag present), don't show it
-                if (mod.status != Status.Verified && (mod.status != Status.Unverified || !showUnverified)) {
-                    continue;
-                }
+            let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === reqQuery.data.gameVersion && gameVersion.gameName === reqQuery.data.gameName);
 
-                // get gameVersion ID
-                let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === reqQuery.data.gameVersion && gameVersion.gameName === reqQuery.data.gameName);
-                if (!gameVersion) {
-                    return res.status(400).send({ message: `Invalid game version.` });
-                }
-
-                // get the lastest mod for the selected platform (by default, universalpc. if another pc platform is selected, use that, but fallback to universalpc). inverted the showUnverified flag since the function operates on the opposite
-                let latest = await mod.getLatestVersion(gameVersion.id, reqQuery.data.platform, !showUnverified);
-                if (latest) {
-                    // if the modVersion isn't verified or unverified, don't show it
-                    if (latest.status != Status.Unverified && latest.status != Status.Verified) {
-                        continue;
-                    }
-                    mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified) });
-                }
+            if (!gameVersion) {
+                return res.status(400).send({ message: `Invalid game version.` });
             }
 
+            let showUnverified = reqQuery.data.status !== `verified`;
+            let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
+            let mods: {mod: ModAPIResponse, latest: any}[] = [];
+            let modsFromDB = await gameVersion.getSupportedMods(reqQuery.data.platform, statuses);
+            let preLength = modsFromDB.length;
+
+            for (let retMod of modsFromDB) {
+                let mod = retMod.mod.toAPIResponse();
+                let latest = await retMod.latest.toAPIResonse(gameVersion.id, statuses);
+                mods.push({ mod, latest });
+            }
+
+            mods = mods.filter((mod) => {
+                if (!mod?.latest) {
+                    return false;
+                }
+
+                if (!mod?.latest?.dependencies) {
+                    return false;
+                }
+
+                for (let dependency of mod.latest.dependencies) {
+                    if (!mods.find((mod) => mod?.latest?.id === dependency)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            if (mods.length !== preLength) {
+                Logger.debugWarn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength} sent)`, `getMod`);
+            }
             return res.status(200).send({ mods });
         });
 
@@ -116,9 +129,22 @@ export class GetModRoutes {
                 if (raw) {
                     returnVal.push(await version.toRawAPIResonse());
                 } else {
-                    returnVal.push(await version.toAPIResonse());
+                    let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]);
+                    if (resolvedVersion) {
+                        returnVal.push(resolvedVersion);
+                    } else {
+                        Config.devmode ? console.log(`Failed to get mod version ${version.id} for mod ${mod.id}`) : null;
+                    }
                 }
             }
+
+            returnVal.sort((a, b) => {
+                if (a?.modVersion && b?.modVersion) {
+                    return new SemVer(b?.modVersion).compare(a?.modVersion);
+                } else {
+                    return 0;
+                }
+            });
 
             return res.status(200).send({ mod: { info: raw ? mod : mod.toAPIResponse(), versions: returnVal } });
         });
@@ -151,7 +177,7 @@ export class GetModRoutes {
             if (raw === `true`) {
                 return res.status(200).send({ modVersion: await modVersion.toRawAPIResonse() });
             } else {
-                return res.status(200).send({ modVersion: await modVersion.toAPIResonse() });
+                return res.status(200).send({ modVersion: await modVersion.toAPIResonse(modVersion.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]) });
             }
         });
 
@@ -177,11 +203,19 @@ export class GetModRoutes {
 
             for (const version of DatabaseHelper.cache.modVersions) {
                 if (version.zipHash === hash) {
-                    retVal.push(await (raw ? version.toRawAPIResonse() : version.toAPIResonse()));
+                    if (raw) {
+                        retVal.push(await version.toRawAPIResonse());
+                    } else {
+                        retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
+                    }
                 }
                 for (const fileHash of version.contentHashes) {
                     if (fileHash.hash === hash) {
-                        retVal.push(await (raw ? version.toRawAPIResonse() : version.toAPIResonse()));
+                        if (raw) {
+                            retVal.push(await version.toRawAPIResonse());
+                        } else {
+                            retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
+                        }
                     }
                 }
             }

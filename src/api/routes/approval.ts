@@ -127,6 +127,7 @@ export class ApprovalRoutes {
 
             mod.setStatus(status.data, session.user).then(() => {
                 Logger.log(`Mod ${modId} set to status ${status} by ${session.user.username}.`);
+                DatabaseHelper.refreshCache(`mods`);
                 return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
                 Logger.error(`Error ${status} mod: ${error}`);
@@ -168,6 +169,7 @@ export class ApprovalRoutes {
 
             modVersion.setStatus(status.data, session.user).then(() => {
                 Logger.log(`ModVersion ${modVersion.id} set to status ${status} by ${session.user.username}.`);
+                DatabaseHelper.refreshCache(`modVersions`);
                 return res.status(200).send({ message: `Mod ${status}.` });
             }).catch((error) => {
                 Logger.error(`Error ${status} mod: ${error}`);
@@ -218,6 +220,7 @@ export class ApprovalRoutes {
             if (accepted) {
                 edit.approve(session.user).then((record) => {
                     Logger.log(`Edit ${editId} accepted by ${session.user.username}.`);
+                    isMod ? DatabaseHelper.refreshCache(`mods`) : DatabaseHelper.refreshCache(`modVersions`);
                     return res.status(200).send({ message: `Edit accepted.`, record: record });
                 }).catch((error) => {
                     Logger.error(`Error approving edit ${editId}: ${error}`);
@@ -226,6 +229,7 @@ export class ApprovalRoutes {
             } else {
                 edit.deny(session.user).then(() => {
                     Logger.log(`Edit ${editId} rejected by ${session.user.username}.`);
+                    isMod ? DatabaseHelper.refreshCache(`mods`) : DatabaseHelper.refreshCache(`modVersions`);
                     return res.status(200).send({ message: `Edit rejected.` });
                 }).catch((error) => {
                     Logger.error(`Error rejecting edit ${editId}: ${error}`);
@@ -528,6 +532,7 @@ export class ApprovalRoutes {
             }
             Logger.log(`ModVersion ${modVersionId.data} & its ${dependants.length} have been revoked by ${session.user.username}. This totals to ${revokedIds.length} revoked modVersions.`);
             console.log(`Revoked IDs:`, revokedIds);
+            DatabaseHelper.refreshCache(`modVersions`);
             return res.status(200).send({ message: `Mod version revoked.`, revokedIds: revokedIds });
         });
         // #endregion

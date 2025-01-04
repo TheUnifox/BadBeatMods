@@ -14,6 +14,10 @@ export class Logger {
         Config.devmode ? console.debug(`[DEBUG${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`) : null;
     }
 
+    public static debugWarn(message:any, moduleName?:string) {
+        Config.devmode ? console.debug(`[DEBUG WARN${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`) : null;
+    }
+
     public static log(message:any, moduleName?:string) {
         console.log(`[BBM${moduleName ? ` ${moduleName}` : ``}] ${new Date(Date.now()).toLocaleString()} > ${message}`);
         this.sendWebhookLog(`[BBM${moduleName ? ` ${moduleName}` : ``}] ${time(new Date(Date.now()), TimestampStyles.LongTime)} > ${message}`);

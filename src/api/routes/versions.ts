@@ -3,6 +3,7 @@ import { DatabaseHelper, GameVersion, SupportedGames, UserRoles } from '../../sh
 import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { Validator } from '../../shared/Validator';
+import { coerce } from 'semver';
 
 export class VersionsRoutes {
     private router: Router;
@@ -33,6 +34,16 @@ export class VersionsRoutes {
             } else {
                 versions = DatabaseHelper.cache.gameVersions;
             }
+
+            versions.sort((a, b) => {
+                let verA = coerce(a.version, { loose: true });
+                let verB = coerce(b.version, { loose: true });
+                if (verA && verB) {
+                    return verB.compare(verA); // this is reversed so that the latest version is first in the array
+                } else {
+                    return b.version.localeCompare(a.version);
+                }
+            });
 
             return res.status(200).send({ versions });
         });
