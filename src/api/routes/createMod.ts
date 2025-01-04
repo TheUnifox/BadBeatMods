@@ -167,8 +167,9 @@ export class CreateModRoutes {
                 contentHashes: hashs,
                 zipHash: file.md5,
                 lastUpdatedById: session.user.id,
-            }).then((modVersion) => {
-                res.status(200).send({ modVersion });
+            }).then(async (modVersion) => {
+                let retVal = await modVersion.toRawAPIResonse();
+                res.status(200).send({ modVersion: retVal });
             }).catch((error) => {
                 res.status(500).send({ message: `Error creating mod version: ${error}` });
             });
