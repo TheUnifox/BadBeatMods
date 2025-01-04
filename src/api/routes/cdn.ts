@@ -36,7 +36,7 @@ export class CDNRoutes {
                 DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
                     version.increment(`downloadCount`);
                 }).catch((error) => {
-                    Config.devmode ? Logger.warn(`Error incrementing download count: ${error}`) : null;
+                    Logger.debugWarn(`Error incrementing download count: ${error}`);
                 });
             },
             fallthrough: true,

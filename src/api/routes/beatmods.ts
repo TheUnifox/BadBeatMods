@@ -152,7 +152,7 @@ export class BeatModsRoutes {
 
             let convertedMod = await this.convertToBeatmodsMod(mod, modVersion, gameVersion);
             if (!convertedMod) {
-                Config.devmode ? Logger.warn(`Failed to convert mod ${mod.name} v${modVersion.modVersion.raw} to BeatMods format.`, `getMod`) : null;
+                Logger.debugWarn(`Failed to convert mod ${mod.name} v${modVersion.modVersion.raw} to BeatMods format.`, `getMod`);
                 continue;
             }
             modArray.push(convertedMod);

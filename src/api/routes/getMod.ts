@@ -75,7 +75,7 @@ export class GetModRoutes {
                     if (latestModVersion) {
                         mods.push({ mod: mod.toAPIResponse(), latest: await latest.toAPIResonse(gameVersion.id, reqQuery.data.platform, !showUnverified) });
                     } else {
-                        Config.devmode ? Logger.warn(`Failed to get latest mod version for mod ${mod.id}`) : null;
+                        Logger.debugWarn(`Failed to get latest mod version for mod ${mod.id}`);
                     }
                 }
             }
@@ -99,7 +99,7 @@ export class GetModRoutes {
                 return true;
             });
             if (mods.length !== preLength) {
-                Config.devmode ? Logger.warn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength} sent)`, `getMod`) : null;
+                Logger.debugWarn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength} sent)`, `getMod`);
             }
             return res.status(200).send({ mods });
         });
