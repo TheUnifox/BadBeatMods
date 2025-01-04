@@ -3,7 +3,6 @@ import { Categories, DatabaseHelper, GameVersion, Mod, ModVersion, Platform, Sup
 import { Logger } from '../../shared/Logger';
 import { Config } from '../../shared/Config';
 import { coerce } from 'semver';
-import { platform } from 'os';
 
 export class BeatModsRoutes {
     private router: Router;
