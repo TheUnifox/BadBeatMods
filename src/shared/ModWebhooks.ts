@@ -1,5 +1,5 @@
 import { WebhookClient } from "discord.js";
-import { DatabaseHelper, Mod, ModVersion, Platform, User } from "./Database";
+import { DatabaseHelper, Mod, ModVersion, Platform, Status, User } from "./Database";
 import { Config } from "./Config";
 import { Logger } from "./Logger";
 
@@ -84,7 +84,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
         let mod = modObj ? modObj : await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
         let gameVersions = await modVersion.getSupportedGameVersions();
         let dependancies: string[] = [];
-        let resolvedDependancies = await modVersion.getUpdatedDependencies(gameVersions[0].id, false);
+        let resolvedDependancies = await modVersion.getUpdatedDependencies(gameVersions[0].id, [Status.Verified, Status.Unverified]);
 
         for (let dependancy of resolvedDependancies) {
             let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy.modId } });

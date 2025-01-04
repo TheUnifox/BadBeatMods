@@ -782,6 +782,20 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
         }
         return version;
     }
+
+    public async getSupportedMods(platform: Platform, statusesToSearchFor: Status[]): Promise<{mod: Mod, latest:ModVersion}[]> {
+        let mods = DatabaseHelper.cache.mods.filter((mod) => mod.gameName == this.gameName && statusesToSearchFor.includes(mod.status));
+
+        let supportedMods: {mod: Mod, latest:ModVersion}[] = [];
+        for (let mod of mods) {
+            // get the latest version for the mod, and if it exists, add it to the list of supported mods
+            let latest = await mod.getLatestVersion(this.id, platform, statusesToSearchFor);
+            if (latest) {
+                supportedMods.push({mod, latest});
+            }
+        }
+        return supportedMods;
+    }
 }
 // #endregion
 // #region Mod
@@ -801,21 +815,15 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
 
-    public async getLatestVersion(gameVersionId: number, platform: Platform, onlyVerified: boolean = true): Promise<ModVersion | null> {
+    public async getLatestVersion(gameVersionId: number, platform: Platform, statusesToSearchFor: Status[]): Promise<ModVersion | null> {
         let versions = DatabaseHelper.cache.modVersions.filter((version) => {
             // if the version is not for the correct platform
             if (version.modId !== this.id) {
                 return false;
             }
 
-            if (version.status !== Status.Verified) {
-                if (onlyVerified) {
-                    return false;
-                } else {
-                    if (version.status === Status.Removed || version.status === Status.Private) {
-                        return false;
-                    }
-                }
+            if (!statusesToSearchFor.includes(version.status)) {
+                return false;
             }
 
             // if the version is not for the correct game
@@ -979,7 +987,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getUpdatedDependencies(gameVersionId: number, onlyVerified: boolean = true): Promise<ModVersion[] | null> {
+    public async getUpdatedDependencies(gameVersionId: number, statusesToSearchFor: Status[]): Promise<ModVersion[] | null> {
         let dependencies = [];
 
         for (let dependencyId of this.dependencies) {
@@ -993,7 +1001,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
                 parentMod = await DatabaseHelper.database.Mods.findByPk(dependency.modId);
             }
 
-            let latestVersion = await parentMod.getLatestVersion(gameVersionId, dependency.platform, onlyVerified);
+            let latestVersion = await parentMod.getLatestVersion(gameVersionId, dependency.platform, statusesToSearchFor);
             if (latestVersion) {
                 dependencies.push(latestVersion);
             } else {
@@ -1033,8 +1041,8 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         };
     }
 
-    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], onlyApproved = false): Promise<ModVersionAPIResponse|null> {
-        let dependencies = await this.getUpdatedDependencies(gameVersionId, onlyApproved);
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], statusesToSearchFor:Status[]): Promise<ModVersionAPIResponse|null> {
+        let dependencies = await this.getUpdatedDependencies(gameVersionId, statusesToSearchFor);
         if (!dependencies) {
             return null;
         }

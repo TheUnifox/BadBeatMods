@@ -93,7 +93,7 @@ let cdnRouter = express.Router({
 
 apiRouter.use(rateLimit({
     windowMs: 60 * 1000,
-    max: 100,
+    max: 200,
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: false,
@@ -163,41 +163,25 @@ app.use(Config.server.apiRoute, apiRouter);
 app.use(Config.server.cdnRoute, cdnRouter);
 
 app.disable(`x-powered-by`);
+// catch all unknown routes and return a 404
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 apiRouter.use((req, res, next) => {
     return res.status(404).send({message: `Unknown route.`});
 });
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 cdnRouter.use((req, res, next) => {
     return res.status(404).send({message: `Unknown route.`});
 });
-          
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 apiRouter.use((err:any, req:any, res:any, next:any) => {
     console.error(err.stack);
     return res.status(500).send({message: `Server error`});
 });
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 cdnRouter.use((err:any, req:any, res:any, next:any) => {
     console.error(err.stack);
     return res.status(500).send({message: `Server error`});
 });
-
-async function startServer() {
-    await database.init();
-    app.listen(port, () => {
-        console.log(`Server listening on port ${port} - Expected to be available at ${Config.server.url}`);
-        Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
-        Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
-        Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
-    });
-    
-    if (Config.bot.enabled) {
-        const luma = new Luma({
-            intents: [],
-            presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
-        luma.login(Config.bot.token);
-    }
-}
-startServer();
 
 process.on(`exit`, (code) => {
     Logger.log(`Process exiting with code ${code}`);
@@ -231,3 +215,22 @@ process.on(`unhandledRejection`, (reason: Error | any, promise: Promise<any>) =>
 });
 
 console.log(`Setup complete.`);
+
+async function startServer() {
+    await database.init();
+    console.log(`Starting server.`);
+    app.listen(port, () => {
+        console.log(`Server listening on port ${port} - Expected to be available at ${Config.server.url}`);
+        Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
+        Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
+        Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
+    });
+    
+    if (Config.bot.enabled) {
+        const luma = new Luma({
+            intents: [],
+            presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
+        luma.login(Config.bot.token);
+    }
+}
+startServer();

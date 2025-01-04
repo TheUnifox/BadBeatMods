@@ -97,7 +97,7 @@ export class UserRoutes {
                         }
                     }
 
-                    let latest = await mod.getLatestVersion((await GameVersion.getDefaultVersionObject(mod.gameName)).id, platform.data, status.data === Status.Verified);
+                    let latest = await mod.getLatestVersion((await GameVersion.getDefaultVersionObject(mod.gameName)).id, platform.data, [status.data]);
                     if (latest) {
                         mods.push({mod: mod.toAPIResponse(), latest: latest});
                     } else {

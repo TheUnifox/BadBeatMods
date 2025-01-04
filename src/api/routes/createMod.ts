@@ -49,6 +49,21 @@ export class CreateModRoutes {
                 }
             }
 
+            // if the icon is invalid, we don't need to do anything since it was delt with above
+            let filePath = ``;
+            if (iconIsValid) {
+                // this is jsut so that the following code doesn't have to cast icon as UploadedFile every time
+                if (!icon || Array.isArray(icon)) {
+                    iconIsValid = false;
+                } else {
+                    // move the icon to the correct location
+                    let filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
+                    if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
+                        iconIsValid = false;
+                    }
+                }
+            }
+
             DatabaseHelper.database.Mods.create({
                 name: reqBody.data.name,
                 summary: reqBody.data.summary,
@@ -61,25 +76,12 @@ export class CreateModRoutes {
                 iconFileName: iconIsValid ? `${(icon as UploadedFile).md5}${path.extname((icon as UploadedFile).name)}` : `default.png`,
                 lastUpdatedById: session.user.id,
                 status: Status.Private,
-            }).then((mod) => {
-                // if the icon is invalid, we don't need to do anything since it was delt with above
-                if (!iconIsValid) {
-                    return res.status(200).send({ mod });
+            }).then(async (mod) => {
+                DatabaseHelper.refreshCache(`mods`);
+                if (iconIsValid) {
+                    (icon as UploadedFile).mv(filePath);
                 }
-                // this is jsut so that the following code doesn't have to cast icon as UploadedFile every time
-                if (!icon || Array.isArray(icon)) {
-                    mod.update({ iconFileName: `default.png` });
-                    return res.status(200).send({ mod });
-                }
-                // move the icon to the correct location
-                let filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
-                if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
-                    mod.update({ iconFileName: `default.png` });
-                    return res.status(200).send({ mod });
-                } else {
-                    icon.mv(filePath);
-                    return res.status(200).send({ mod });
-                }
+                return res.status(200).send({ mod });
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });
             });
@@ -168,10 +170,11 @@ export class CreateModRoutes {
                 zipHash: file.md5,
                 lastUpdatedById: session.user.id,
             }).then(async (modVersion) => {
+                DatabaseHelper.refreshCache(`modVersions`);
                 let retVal = await modVersion.toRawAPIResonse();
-                res.status(200).send({ modVersion: retVal });
+                return res.status(200).send({ modVersion: retVal });
             }).catch((error) => {
-                res.status(500).send({ message: `Error creating mod version: ${error}` });
+                return res.status(500).send({ message: `Error creating mod version: ${error}` });
             });
         });
     }
