@@ -57,7 +57,7 @@ export class AuthRoutes {
                             perGame: {},
                         },
                         discordId: null,
-                        displayName: profile.displayName,
+                        displayName: profile.displayName ? profile.displayName : profile.username,
                         bio: `${profile._json.bio}`,
                     }).then((user) => {
                         Logger.log(`User ${profile.username} signed up.`, `Auth`);
