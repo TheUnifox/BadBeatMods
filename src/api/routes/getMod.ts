@@ -86,6 +86,10 @@ export class GetModRoutes {
                     return false;
                 }
 
+                if (!mod?.latest?.dependencies) {
+                    return false;
+                }
+
                 for (let dependency of mod.latest.dependencies) {
                     if (!mods.find((mod) => mod.latest.id === dependency)) {
                         return false;

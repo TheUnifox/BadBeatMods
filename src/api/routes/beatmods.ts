@@ -163,6 +163,10 @@ export class BeatModsRoutes {
                 return false;
             }
 
+            if (!mod.dependencies) {
+                return false;
+            }
+
             for (let dependency of mod.dependencies) {
                 if (typeof dependency === `string`) {
                     if (!mods.find((mod) => mod.id === parseInt(dependency))) {
@@ -196,6 +200,10 @@ export class BeatModsRoutes {
             } else {
                 // fix this eventually
                 dependancies = await modVersion.getUpdatedDependencies(gameVersion.id, true);
+            }
+
+            if (!dependancies) {
+                return null;
             }
 
             for (let dependancy of dependancies) {

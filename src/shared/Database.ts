@@ -979,7 +979,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return gameVersions;
     }
 
-    public async getUpdatedDependencies(gameVersionId: number, onlyVerified: boolean = true): Promise<ModVersion[]> {
+    public async getUpdatedDependencies(gameVersionId: number, onlyVerified: boolean = true): Promise<ModVersion[] | null> {
         let dependencies = [];
 
         for (let dependencyId of this.dependencies) {
@@ -998,6 +998,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
                 dependencies.push(latestVersion);
             } else {
                 Logger.debugWarn(`Failed to find latest version for dependency ${dependency.id} (Req by ${this.id})`);
+                return null;
             }
         }
 
