@@ -4,6 +4,7 @@ import { Validator } from '../../shared/Validator';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
 import { Logger } from '../../shared/Logger';
+import { SemVer } from 'semver';
 
 export class GetModRoutes {
     private router: Router;
@@ -153,6 +154,14 @@ export class GetModRoutes {
                     }
                 }
             }
+
+            returnVal.sort((a, b) => {
+                if (a?.modVersion && b?.modVersion) {
+                    return new SemVer(b?.modVersion).compare(a?.modVersion);
+                } else {
+                    return 0;
+                }
+            });
 
             return res.status(200).send({ mod: { info: raw ? mod : mod.toAPIResponse(), versions: returnVal } });
         });
