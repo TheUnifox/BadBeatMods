@@ -225,8 +225,9 @@ export class GetModRoutes {
                 Promise.all(retVal).then((retVal) => {
                     return res.status(200).send({ modVersions: retVal });
                 });
+            } else {
+                return res.status(404).send({ message: `Hash not found.` });
             }
-            return res.status(404).send({ message: `Hash not found.` });
         });
     }
 
