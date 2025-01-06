@@ -191,7 +191,7 @@ export class GetModRoutes {
             // #swagger.parameters['hash'] = { description: 'The hash to look up.', type: 'string', required: true }
             // #swagger.parameters['raw'] = { description: 'Return the raw mod depedendcies without attempting to resolve them.', type: 'boolean' }
 
-            const hash = Validator.zString.min(8).safeParse(req.query.hash).data;
+            const hash = Validator.zHashStringOrArray.safeParse(req.query.hash).data;
             const raw = Validator.zBool.safeParse(req.query.raw).data;
 
             if (!hash) {
@@ -199,20 +199,21 @@ export class GetModRoutes {
             }
 
             // i'm dont have a type for the raw mod version
-            let retVal: any[] = [];
+            let retVal: Promise<any>[] = [];
+            let hashArr = Array.isArray(hash) ? hash : [hash];
 
             for (const version of DatabaseHelper.cache.modVersions) {
-                if (version.zipHash === hash) {
+                if (hashArr.includes(version.zipHash)) {
                     if (raw) {
-                        retVal.push(await version.toRawAPIResonse());
+                        retVal.push(version.toRawAPIResonse());
                     } else {
                         retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
                     }
                 }
                 for (const fileHash of version.contentHashes) {
-                    if (fileHash.hash === hash) {
+                    if (hashArr.includes(fileHash.hash)) {
                         if (raw) {
-                            retVal.push(await version.toRawAPIResonse());
+                            retVal.push(version.toRawAPIResonse());
                         } else {
                             retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
                         }
@@ -221,7 +222,9 @@ export class GetModRoutes {
             }
 
             if (retVal.length > 0) {
-                return res.status(200).send({ modVersions: retVal });
+                Promise.all(retVal).then((retVal) => {
+                    return res.status(200).send({ modVersions: retVal });
+                });
             }
             return res.status(404).send({ message: `Hash not found.` });
         });
