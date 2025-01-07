@@ -401,3 +401,35 @@ export function validateAdditionalGamePermissions(session: {approved: boolean, u
     }
     return false;
 }
+
+export function allowedToSeeMod(session: {approved: boolean, user: User}, gameName:SupportedGames, authorIds: number[]): boolean {
+    if (session.approved) {
+        if (!session.user.roles) {
+            return false;
+        }
+
+        if (!session.user.roles.sitewide) {
+            return false;
+        }
+
+        if (
+            !session.user.roles.sitewide.includes(UserRoles.Admin) &&
+            !session.user.roles.sitewide.includes(UserRoles.Moderator) &&
+            !session.user.roles.sitewide.includes(UserRoles.AllPermissions) &&
+            !authorIds.includes(session.user.id)
+        ) {
+            return true;
+        } else {
+            if (!session.user.roles.perGame[gameName]) {
+                return false;
+            } else {
+                if (!session.user.roles.perGame[gameName].includes(UserRoles.Admin) &&
+                    !session.user.roles.perGame[gameName].includes(UserRoles.Moderator) &&
+                    !session.user.roles.perGame[gameName].includes(UserRoles.AllPermissions)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
