@@ -66,6 +66,7 @@ export class Validator {
     public static readonly zGameName = ZodGameName;
     public static readonly zPostType = ZodPostType;
     public static readonly zUserRoles = ZodUserRoles;
+    public static readonly zHashStringOrArray = z.union([z.string().min(8), z.array(z.string().min(8))]);
     public static readonly zUrl = z.string().url().refine((url) => {
         try {
             let urlObj = new URL(url);
