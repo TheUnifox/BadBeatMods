@@ -22,7 +22,7 @@ export class CreateModRoutes {
         this.router.post(`/mods/create`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -90,7 +90,7 @@ export class CreateModRoutes {
         this.router.post(`/mods/:modIdParam/upload`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             

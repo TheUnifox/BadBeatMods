@@ -29,11 +29,11 @@ export class UpdateModRoutes {
             let modOriginalGameName = DatabaseHelper.getGameNameFromModId(modId.data);
             
             let session = await validateSession(req, res, true, modOriginalGameName);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
-            if (!reqBody.data.name && !reqBody.data.summary && !reqBody.data.description && !reqBody.data.category && !reqBody.data.authorIds && !reqBody.data.gitUrl && !reqBody.data.gameName) {
+            if (!reqBody.data || (!reqBody.data.name && !reqBody.data.summary && !reqBody.data.description && !reqBody.data.category && !reqBody.data.authorIds && !reqBody.data.gitUrl && !reqBody.data.gameName)) {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
@@ -129,11 +129,11 @@ export class UpdateModRoutes {
             }
 
             let session = await validateSession(req, res, true);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
-            if (!reqBody.data.supportedGameVersionIds && !reqBody.data.modVersion && !reqBody.data.dependencies && !reqBody.data.platform) {
+            if (!reqBody.data || (!reqBody.data.supportedGameVersionIds && !reqBody.data.modVersion && !reqBody.data.dependencies && !reqBody.data.platform)) {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
@@ -214,7 +214,7 @@ export class UpdateModRoutes {
         this.router.post(`/mods/:modIdParam/submit`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -242,7 +242,7 @@ export class UpdateModRoutes {
         this.router.post(`/modVersions/:modVersionIdParam/submit`, async (req, res) => {
             // #swagger.tags = ['Mods']
             let session = await validateSession(req, res, true);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 

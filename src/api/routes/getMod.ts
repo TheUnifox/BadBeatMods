@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseHelper, Status, ModAPIResponse, GameVersion, UserRoles, User } from '../../shared/Database';
+import { DatabaseHelper, Status, ModAPIPublicResponse, GameVersion, UserRoles, User } from '../../shared/Database';
 import { Validator } from '../../shared/Validator';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
@@ -54,7 +54,7 @@ export class GetModRoutes {
 
             let showUnverified = reqQuery.data.status !== `verified`;
             let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
-            let mods: {mod: ModAPIResponse, latest: any}[] = [];
+            let mods: {mod: ModAPIPublicResponse, latest: any}[] = [];
             let modsFromDB = await gameVersion.getSupportedMods(reqQuery.data.platform, statuses);
             let preLength = modsFromDB.length;
 
@@ -231,9 +231,9 @@ export class GetModRoutes {
         });
     }
 
-    private shouldShowItem(authorIds: number[], status: Status, session: {approved: boolean, user: User}): boolean {
+    private shouldShowItem(authorIds: number[], status: Status, session: {user: User|null}): boolean {
         if (status != Status.Unverified && status != Status.Verified) {
-            if (!session.approved) {
+            if (!session.user) {
                 return false;
             }
 

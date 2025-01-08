@@ -33,6 +33,7 @@ export class CDNRoutes {
                 res.set(`Content-Disposition`, `attachment`);
                 let hash = path.basename(file).replace(path.extname(file), ``);
                 DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
+                    if (!version) return;
                     version.increment(`downloadCount`);
                 }).catch((error) => {
                     Logger.debugWarn(`Error incrementing download count: ${error}`);

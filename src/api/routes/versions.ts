@@ -58,7 +58,7 @@ export class VersionsRoutes {
             }
         
             let session = await validateSession(req, res, UserRoles.Admin, reqBody.data.gameName);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
         

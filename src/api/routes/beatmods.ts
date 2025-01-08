@@ -123,7 +123,7 @@ export class BeatModsRoutes {
         let modArray: BeatModsMod[] = [];
 
         if (!version || typeof version !== `string`) {
-            version = null;
+            version = undefined;
         }
 
         let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === version && gameVersion.gameName === SupportedGames.BeatSaber);
@@ -131,6 +131,10 @@ export class BeatModsRoutes {
             gameVersion = await GameVersion.getDefaultVersionObject(SupportedGames.BeatSaber);
         } else if (!gameVersion) {
             return res.status(400).send({ message: `Missing Game Version.`});
+        }
+
+        if (!gameVersion) {
+            return res.status(400).send({ message: `Invalid Game Version.`});
         }
 
         let showUnverified = status !== `approved`;
@@ -209,6 +213,9 @@ export class BeatModsRoutes {
         }
 
         let author = DatabaseHelper.cache.users.find((user) => user.id === modVersion.authorId);
+        if (!author) {
+            return null;
+        }
         let platform = `universal`;
         let status:BeatModsStatus = `declined`;
         switch (modVersion.status) {

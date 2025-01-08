@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseHelper, GameVersion, ModAPIResponse, Platform, Status, User } from '../../shared/Database';
+import { DatabaseHelper, GameVersion, ModAPIPublicResponse, Platform, Status, User } from '../../shared/Database';
 import { allowedToSeeMod, validateSession } from '../../shared/AuthHelper';
 import { Validator } from '../../shared/Validator';
 
@@ -20,7 +20,7 @@ export class UserRoutes {
             // #swagger.responses[401] = { description: 'Unauthorized.' }
             // #swagger.responses[500] = { description: 'Internal server error.' }
             let session = await validateSession(req, res, false);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             return res.status(200).send({ user: session.user.toAPIResponse() });
@@ -57,7 +57,7 @@ export class UserRoutes {
             // #swagger.responses[200] = { description: 'Returns mods.' }
             // #swagger.responses[404] = { description: 'User not found.' }
             // #swagger.responses[400] = { description: 'Invalid parameters.' }
-            let session: { approved: boolean; user: User | null } = { approved: false, user: null };
+            let session: { user: User | null } = { user: null };
             let id = Validator.zDBID.safeParse(req.params.id);
             let status = Validator.zStatus.default(Status.Verified).safeParse(req.query.status);
             let platform = Validator.zPlatform.default(Platform.UniversalPC).safeParse(req.query.platform);
@@ -67,10 +67,10 @@ export class UserRoutes {
 
             let user = DatabaseHelper.cache.users.find((u) => u.id === id.data);
             if (user) {
-                let mods: {mod: ModAPIResponse, latest: any }[] = [];
+                let mods: {mod: ModAPIPublicResponse, latest: any }[] = [];
                 if (status.data !== Status.Verified && status.data !== Status.Unverified) {
                     session = await validateSession(req, res, false, null, true);
-                    if (!session.approved) {
+                    if (!session.user) {
                         return;
                     }
                 }
@@ -89,7 +89,12 @@ export class UserRoutes {
                         }
                     }
 
-                    let latest = await mod.getLatestVersion((await GameVersion.getDefaultVersionObject(mod.gameName)).id, platform.data, [status.data]);
+                    let latestGameVersion = await GameVersion.getDefaultVersionObject(mod.gameName);
+                    if (!latestGameVersion) {
+                        continue;
+                    }
+
+                    let latest = await mod.getLatestVersion(latestGameVersion.id, platform.data, [status.data]);
                     if (latest) {
                         mods.push({mod: mod.toAPIResponse(), latest: latest});
                     } else {

@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck i do not gaf about this file anymore since beatmods is dead
+
 import { Router } from 'express';
 import { validateSession } from '../../shared/AuthHelper';
 import { Categories, ContentHash, DatabaseHelper, Mod, ModVersion, Platform, SupportedGames, UserRoles, Status } from '../../shared/Database';
@@ -23,7 +26,7 @@ export class ImportRoutes {
         this.router.post(`/beatmods/importAll`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin, null);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             

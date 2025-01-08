@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
-import { coerce } from 'semver';
 
 export class AdminRoutes {
     private router: Router;
@@ -19,7 +18,7 @@ export class AdminRoutes {
         this.router.get(`/admin/health/hashCheck`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -44,7 +43,7 @@ export class AdminRoutes {
         this.router.get(`/admin/health/missingIcons`, async (req, res) => {
             // #swagger.tags = ['Admin']
             let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -72,7 +71,7 @@ export class AdminRoutes {
             // #swagger.parameters['gameName'] = { description: 'The game name to check.', required: true }
             // #swagger.parameters['includeUnverified'] = { description: 'Include unverified mods.', required: false, type: 'boolean' }
             let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -101,7 +100,11 @@ export class AdminRoutes {
                         }
                     });*/
                 } else {
-                    versions.push(await GameVersion.getDefaultVersionObject(params.data.gameName));
+                    let defaultVersion = await GameVersion.getDefaultVersionObject(params.data.gameName);
+                    if (!defaultVersion) {
+                        return res.status(404).send({ message: `Default version not found.` });
+                    }
+                    versions.push(defaultVersion);
                 }
             } else {
                 if (params.data.versionId <= -2) {
@@ -127,7 +130,13 @@ export class AdminRoutes {
                         if (!mods.mods.find((m: any) => m.latest.id === dependancyId)) {
                             let versionString = (mod.latest.supportedGameVersions as object[]).flatMap((gV:any) => `${gV.gameName} ${gV.version}`).join(`, `);
                             let dependancy = DatabaseHelper.cache.modVersions.find((mV: any) => mV.id === dependancyId);
+                            if (!dependancy) {
+                                return res.status(404).send({ message: `Database ID for modVersions not found.`, dependancyId });
+                            }
                             let dependancyMod = DatabaseHelper.cache.mods.find((m: any) => m.id === dependancy.modId);
+                            if (!dependancyMod) {
+                                return res.status(404).send({ message: `Database ID for mods not found.`, dependancyId });
+                            }
 
                             errors.push({
                                 gV: versionString,
@@ -170,7 +179,7 @@ export class AdminRoutes {
                 }
             } */
             let session = await validateSession(req, res, UserRoles.Admin);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -240,47 +249,52 @@ export class AdminRoutes {
                 }
             }
 
-            let session: { approved: boolean, user: any } = { approved: false, user: null };
+            let session: { user: any } = { user: null };
             if (gameName.data) {
                 switch (role.data) {
                     case UserRoles.Admin:
                         session = await validateSession(req, res, UserRoles.AllPermissions, gameName.data);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addPerGameRole(gameName.data, UserRoles.Admin);
                         break;
                     case UserRoles.Moderator:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addPerGameRole(gameName.data, UserRoles.Moderator);
                         break;
                     case UserRoles.Approver:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addPerGameRole(gameName.data, UserRoles.Approver);
                         break;
                     case UserRoles.Poster:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addPerGameRole(gameName.data, UserRoles.Poster);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
 
-                        if (user.roles.perGame[gameName.data].length > 0) {
-                            return res.status(400).send({ message: `User cannot be banned due to already having roles.`, user });
+                        if (gameName.data) {
+                            if (Array.isArray(user.roles.perGame[gameName.data])) {
+                                // @ts-expect-error - TS doesn't like this but it's fine
+                                if (user.roles.perGame[gameName.data].length > 0) {
+                                    return res.status(400).send({ message: `User cannot be banned due to already having roles.`, user });
+                                }
+                            }
                         }
-
+                    
                         user.addPerGameRole(gameName.data, UserRoles.Banned);
                         break;
                     default:
@@ -291,35 +305,35 @@ export class AdminRoutes {
                 switch (role.data) {
                     case UserRoles.Admin:
                         session = await validateSession(req, res, UserRoles.AllPermissions);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addSiteWideRole(UserRoles.Admin);
                         break;
                     case UserRoles.Moderator:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addSiteWideRole(UserRoles.Moderator);
                         break;
                     case UserRoles.Approver:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addSiteWideRole(UserRoles.Approver);
                         break;
                     case UserRoles.Poster:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.addSiteWideRole(UserRoles.Poster);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         if (user.roles.sitewide.length > 0) {
@@ -366,40 +380,40 @@ export class AdminRoutes {
                 return res.status(404).send({ message: `User not found.` });
             }
 
-            let session: { approved: boolean, user: any } = { approved: false, user: null };
+            let session: { user: any } = { user: null };
             if (gameName.data) {
                 switch (role.data) {
                     case UserRoles.Admin:
                         session = await validateSession(req, res, UserRoles.AllPermissions, gameName.data);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Admin);
                         break;
                     case UserRoles.Moderator:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Moderator);
                         break;
                     case UserRoles.Approver:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Approver);
                         break;
                     case UserRoles.Poster:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Poster);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Banned);
@@ -411,35 +425,35 @@ export class AdminRoutes {
                 switch (role.data) {
                     case UserRoles.Admin:
                         session = await validateSession(req, res, UserRoles.AllPermissions);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Admin);
                         break;
                     case UserRoles.Moderator:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Moderator);
                         break;
                     case UserRoles.Approver:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Approver);
                         break;
                     case UserRoles.Poster:
                         session = await validateSession(req, res, UserRoles.Admin);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Poster);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
-                        if (!session.approved) {
+                        if (!session.user) {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Banned);

@@ -79,6 +79,9 @@ export class DatabaseManager {
                             perGame: {},
                         },
                         githubId: null,
+                        sponsorUrl: ``,
+                        displayName: ``,
+                        bio: ``
                     }).then(() => {
                         Logger.log(`Created built in server account.`);
                     }).catch((error) => {
@@ -200,6 +203,7 @@ export class DatabaseManager {
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
+            deletedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
             modelName: `users`,
@@ -230,6 +234,7 @@ export class DatabaseManager {
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
+            deletedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
             modelName: `gameVersions`,
@@ -306,6 +311,7 @@ export class DatabaseManager {
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
+            deletedAt: DataTypes.DATE
         }, {
             sequelize: this.sequelize,
             modelName: `mods`,
@@ -408,6 +414,7 @@ export class DatabaseManager {
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
+            deletedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
             modelName: `modVersions`,
@@ -458,6 +465,7 @@ export class DatabaseManager {
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
+            deletedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
@@ -577,6 +585,11 @@ export class DatabaseManager {
 
         this.ModVersions.afterValidate(async (modVersion) => {
             let parentMod = await Mod.findByPk(modVersion.modId);
+
+            if (!parentMod) {
+                throw new Error(`ModVersion must have a valid modId.`);
+            }
+
             await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
                 if (existingVersion) {
                     if (existingVersion.id != modVersion.id && modVersion.status == Status.Verified) {
@@ -643,14 +656,15 @@ export class DatabaseManager {
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
     declare readonly id: CreationOptional<number>;
     declare username: string;
-    declare githubId: string;
-    declare discordId: string;
-    declare sponsorUrl: string;
+    declare githubId: string | null;
+    declare discordId: string | null;
+    declare sponsorUrl: string | null;
     declare displayName: string;
     declare bio: string;
     declare roles: UserRolesObject;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+    declare readonly deletedAt: CreationOptional<Date>;
 
     public addSiteWideRole(role: UserRoles) {
         if (!this.roles.sitewide.includes(role)) {
@@ -702,9 +716,9 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
         }
     }
 
-    public toAPIResponse(): UserAPIResponse {
+    public toAPIResponse() {
         return {
-            id: this.id,
+            id: this.id.valueOf(), // this is a number, but the type system doesn't like it
             username: this.username,
             githubId: this.githubId,
             sponsorUrl: this.sponsorUrl,
@@ -732,21 +746,8 @@ export enum UserRoles {
     Moderator = `moderator`,
     Banned = `banned`,
 }
-
-export interface UserAPIResponse {
-    id: number;
-    username: string;
-    githubId: string;
-    sponsorUrl: string;
-    displayName: string;
-    roles: UserRolesObject;
-    bio: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
 // #endregion
 // #region GameVersion
-export type APIGameVersion = InferAttributes<GameVersion, { omit: `createdAt` | `updatedAt` }>;
 export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreationAttributes<GameVersion>> {
     declare readonly id: CreationOptional<number>;
     declare gameName: SupportedGames;
@@ -754,6 +755,7 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
     declare defaultVersion: boolean;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+    declare readonly deletedAt: CreationOptional<Date>;
 
     public toAPIResponse() {
         return {
@@ -764,21 +766,27 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
         };
     }
 
-    public static async getDefaultVersion(gameName: SupportedGames): Promise<string | null> {
-        let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion == true);
+    public static async getDefaultVersion(gameName: SupportedGames): Promise<string | undefined> {
+        let version: GameVersion | undefined = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion == true);
         if (!version) {
-            version = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+            let dbVer = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+            if (dbVer) {
+                version = dbVer;
+            }
         }
         if (!version) {
-            return null;
+            return undefined;
         }
         return version.version;
     }
 
-    public static async getDefaultVersionObject(gameName: SupportedGames): Promise<GameVersion | null> {
+    public static async getDefaultVersionObject(gameName: SupportedGames): Promise<GameVersion | undefined> {
         let version = DatabaseHelper.cache.gameVersions.find((version) => version.gameName == gameName && version.defaultVersion == true);
         if (!version) {
-            version = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+            let dbVer = await DatabaseHelper.database.GameVersions.findOne({ where: { gameName, defaultVersion: true } });
+            if (dbVer) {
+                version = dbVer;
+            }
         }
         return version;
     }
@@ -810,10 +818,11 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare status: Status;
     declare iconFileName: string;
     declare gitUrl: string;
-    declare lastApprovedById: number;
+    declare lastApprovedById: CreationOptional<number> | null;
     declare lastUpdatedById: number;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+    declare readonly deletedAt: CreationOptional<Date>;
 
     public async getLatestVersion(gameVersionId: number, platform: Platform, statusesToSearchFor: Status[]): Promise<ModVersion | null> {
         let versions = DatabaseHelper.cache.modVersions.filter((version) => {
@@ -883,7 +892,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         return count;
     }
 
-    public toAPIResponse(): ModAPIResponse {
+    public toAPIResponse() {
         return {
             id: this.id,
             name: this.name,
@@ -902,26 +911,10 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
         };
     }
 }
-export interface ModAPIResponse {
-    id: number;
-    name: string;
-    summary: string;
-    description: string;
-    gameName: SupportedGames;
-    category: Categories;
-    authors: UserAPIResponse[];
-    status: Status;
-    iconFileName: string;
-    gitUrl: string;
-    lastApprovedById: number;
-    lastUpdatedById: number;
-    createdAt: Date;
-    updatedAt: Date;
-}
 // #endregion
 // #region ModVersion
 export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreationAttributes<ModVersion>> {
-    declare readonly id: number;
+    declare readonly id: CreationOptional<number>;
     declare modId: number;
     declare authorId: number;
     declare modVersion: SemVer;
@@ -931,11 +924,12 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare platform: Platform;
     declare zipHash: string;
     declare contentHashes: ContentHash[];
-    declare downloadCount: number;
-    declare lastApprovedById: number;
+    declare downloadCount: CreationOptional<number>;
+    declare lastApprovedById: CreationOptional<number> | null;
     declare lastUpdatedById: number;
-    declare readonly createdAt: Date;
-    declare readonly updatedAt: Date;
+    declare readonly createdAt: CreationOptional<Date>;
+    declare readonly updatedAt: CreationOptional<Date>;
+    declare readonly deletedAt: CreationOptional<Date> | null;
 
     public async setStatus(status:Status, user: User) {
         this.status = status;
@@ -971,12 +965,15 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return count;
     }
 
-    public async getSupportedGameVersions(): Promise<APIGameVersion[]> {
-        let gameVersions: APIGameVersion[] = [];
+    public async getSupportedGameVersions(): Promise<GameVersionAPIPublicResponse[]> {
+        let gameVersions: GameVersionAPIPublicResponse[] = [];
         for (let versionId of this.supportedGameVersionIds) {
             let version = DatabaseHelper.cache.gameVersions.find((version) => version.id == versionId);
             if (!version) {
-                version = await DatabaseHelper.database.GameVersions.findByPk(versionId);
+                let dbVer = await DatabaseHelper.database.GameVersions.findByPk(versionId);
+                if (dbVer) {
+                    version = dbVer;
+                }
             }
 
             if (version) {
@@ -993,12 +990,24 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         for (let dependencyId of this.dependencies) {
             let dependency = DatabaseHelper.cache.modVersions.find((version) => version.id == dependencyId);
             if (!dependency) {
-                dependency = await DatabaseHelper.database.ModVersions.findByPk(dependencyId);
+                let dbDep = await DatabaseHelper.database.ModVersions.findByPk(dependencyId);
+                if (dbDep) {
+                    dependency = dbDep;
+                } else {
+                    Logger.error(`Failed to find dependency ${dependencyId} (Req by ${this.id})`);
+                    return null;
+                }
             }
 
             let parentMod = DatabaseHelper.cache.mods.find((mod) => mod.id == dependency.modId);
             if (!parentMod) {
-                parentMod = await DatabaseHelper.database.Mods.findByPk(dependency.modId);
+                let dbMod = await DatabaseHelper.database.Mods.findByPk(dependency.modId);
+                if (dbMod) {
+                    parentMod = dbMod;
+                } else {
+                    Logger.error(`Failed to find parent mod ${dependency.modId} for dependency ${dependency.id} (Req by ${this.id})`);
+                    return null;
+                }
             }
 
             let latestVersion = await parentMod.getLatestVersion(gameVersionId, dependency.platform, statusesToSearchFor);
@@ -1041,16 +1050,22 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         };
     }
 
-    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], statusesToSearchFor:Status[]): Promise<ModVersionAPIResponse|null> {
+    public async toAPIResonse(gameVersionId: number = this.supportedGameVersionIds[0], statusesToSearchFor:Status[]): Promise<ModVersionAPIPublicResponse|null> {
         let dependencies = await this.getUpdatedDependencies(gameVersionId, statusesToSearchFor);
         if (!dependencies) {
             return null;
         }
 
+        let author = DatabaseHelper.cache.users.find((user) => user.id == this.authorId);
+        let resolvedAuthor;
+        if (!author) {
+            throw new Error(`Author not found for mod version ${this.id}`);
+        }
+
         return {
             id: this.id,
             modId: this.modId,
-            author: DatabaseHelper.cache.users.find((user) => user.id == this.authorId).toAPIResponse(),
+            author: author.toAPIResponse(),
             modVersion: this.modVersion.raw,
             platform: this.platform,
             zipHash: this.zipHash,
@@ -1064,41 +1079,24 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         };
     }
 }
-
-export interface ModVersionAPIResponse {
-    id: number;
-    modId: number;
-    author: UserAPIResponse;
-    modVersion: string;
-    platform: Platform;
-    zipHash: string;
-    status: Status;
-    dependencies: number[];
-    contentHashes: ContentHash[];
-    supportedGameVersions: APIGameVersion[];
-    downloadCount: number;
-    lastApprovedById?: number;
-    lastUpdatedById?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
 // #endregion
 // #region EditApprovalQueue
-export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
-export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `iconFileName` | `status` | `lastApprovedById` | `lastUpdatedById` }>
+export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `deletedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
+export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `deletedAt` | `iconFileName` | `status` | `lastApprovedById` | `lastUpdatedById` }>
 
 //this is gonna be fun :3
 export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAttributes<EditQueue>> {
-    declare readonly id: number;
+    declare readonly id: CreationOptional<number>;
     declare submitterId: number;
     declare objectId: number;
     declare objectTableName: `modVersions` | `mods`;
     declare object: ModVersionApproval | ModApproval;
 
-    declare approverId: number;
-    declare approved: boolean|null; // just use null as a 3rd bit 5head
-    declare readonly createdAt: Date;
-    declare readonly updatedAt: Date;
+    declare approverId: CreationOptional<number> | null;
+    declare approved: boolean | null; // just use null as a 3rd bit 5head
+    declare readonly createdAt: CreationOptional<Date>;
+    declare readonly updatedAt: CreationOptional<Date>;
+    declare readonly deletedAt: CreationOptional<Date> | null;
 
     public isModVersion(): this is EditQueue & { objectTableName: `modVersions`, object: ModVersionApproval } {
         return this.objectTableName === `modVersions` && `modVersion` in this.object;
@@ -1113,7 +1111,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
             return;
         }
         
-        let record: Mod | ModVersion;
+        let record: Mod | ModVersion | undefined = undefined;
 
         if (this.objectTableName == `modVersions` && `modVersion` in this.object) {
             let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objectId);
@@ -1181,7 +1179,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
 // #endregion
 // #region MOTD
 export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<MOTD>> {
-    declare readonly id: number;
+    declare readonly id: CreationOptional<number>;
     declare gameName: SupportedGames;
     declare gameVersionIds?: number[]|null;
     declare postType: PostType;
@@ -1191,10 +1189,10 @@ export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<M
     declare authorId: number;
     declare startTime: Date;
     declare endTime: Date;
-    declare readonly createdAt: Date;
-    declare readonly updatedAt: Date;
+    declare readonly createdAt: CreationOptional<Date>;
+    declare readonly updatedAt: CreationOptional<Date>;
 
-    public static async getActiveMOTDs(gameName: SupportedGames, versions:number[] = null, platform:Platform, getExpired = false): Promise<MOTD[]> {
+    public static async getActiveMOTDs(gameName: SupportedGames, versions:number[]|undefined = undefined, platform:Platform|undefined, getExpired = false): Promise<MOTD[]> {
         return DatabaseHelper.cache.motd.filter((motd) => {
             let now = new Date();
             if (getExpired) {
@@ -1229,6 +1227,57 @@ export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<M
 }
 // #endregion
 // #region Interfaces/Enums
+export type UserAPIPublicResponse = {
+    id: number;
+    username: string;
+    githubId: string | null;
+    sponsorUrl: string | null;
+    displayName: string;
+    roles: UserRolesObject;
+    bio: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export type GameVersionAPIPublicResponse = {
+    id: number;
+    gameName: SupportedGames;
+    version: string;
+    defaultVersion: boolean;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+export type ModAPIPublicResponse = {
+    id: number;
+    name: string;
+    summary: string;
+    description: string;
+    gameName: SupportedGames;
+    category: Categories;
+    authors: UserAPIPublicResponse[];
+    status: Status;
+    iconFileName: string;
+    gitUrl: string;
+    lastApprovedById: number | null;
+    lastUpdatedById: number;
+    createdAt: Date;
+    updatedAt: Date;
+};
+export type ModVersionAPIPublicResponse = {
+    id: number;
+    modId: number;
+    modVersion: string; // semver.raw
+    author: UserAPIPublicResponse;
+    platform: Platform;
+    zipHash: string;
+    contentHashes: ContentHash[];
+    status: Status;
+    dependencies: number[];
+    supportedGameVersions: GameVersionAPIPublicResponse[];
+    downloadCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 export enum PostType {
     Emergency = `emergency`,
     GameUpdates = `gameupdates`,
@@ -1360,15 +1409,16 @@ export class DatabaseHelper {
         return mod.gameName;
     }
 
-    public static getGameNameFromEditApprovalQueueId(id: number): SupportedGames | null {
+    public static getGameNameFromEditApprovalQueueId(id: number): SupportedGames | undefined {
         let edit = DatabaseHelper.cache.editApprovalQueue.find((edit) => edit.id == id);
         if (!edit) {
-            return null;
+            return undefined;
         }
         if (edit.objectTableName == `mods` && `gameName` in edit.object) {
             return edit.object.gameName;
         } else if (edit.objectTableName == `modVersions`) {
-            return DatabaseHelper.getGameNameFromModVersionId(edit.objectId);
+            let gameName = DatabaseHelper.getGameNameFromModVersionId(edit.objectId);
+            return gameName ? gameName : undefined;
         }
     }
 

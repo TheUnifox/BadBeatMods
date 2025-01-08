@@ -330,17 +330,22 @@ export interface GitHubPublicUser {
 
 //#endregion
 
-/*
-    Role: if False, no role is required, you just have to be signed in.
-    If True, the user must not be banned.
-    If a UserRoles, the user must have that role.
-*/
-export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, gameName:SupportedGames = null, handleRequest:boolean = true): Promise<{approved: boolean, user: User|null }> {
+/**
+ * @param {(UserRoles|boolean)} [role=UserRoles.Admin] if False, no role is required, you just have to be signed in. If True, the user must not be banned. If a UserRoles, the user must have that role.
+ */
+// setting the type in this way is stupid but it works for callbacks
+export async function validateSession(req: any, res: any, role: UserRoles|boolean = UserRoles.Admin, gameName:SupportedGames|null = null, handleRequest:boolean = true): Promise<{ user: User } | { user: null }> {
     let sessionId = req.session.userId as number;
     // check for devmode options
     if (Config.devmode && Config.authBypass) {
         let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
-        return { approved: true, user: user };
+        if (!user) {
+            if (handleRequest) {
+                res.status(401).send({ message: `Unauthorized.` });
+            }
+            return { user: null };
+        }
+        return { user: user };
     }
 
     // check if signed in
@@ -348,7 +353,7 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         if (handleRequest) {
             res.status(401).send({ message: `Unauthorized.` });
         }
-        return { approved: false, user: null };
+        return { user: null };
     }
     
     // check if valid user
@@ -357,7 +362,7 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
         if (handleRequest) {
             res.status(401).send({ message: `Unauthorized.` });
         }
-        return { approved: false, user: null };
+        return { user: null };
     }
 
     // check if user is banned only
@@ -366,31 +371,31 @@ export async function validateSession(req: any, res: any, role: UserRoles|boolea
             if (handleRequest) {
                 res.status(401).send({ message: `Unauthorized.` });
             }
-            return { approved: false, user: null };
+            return { user: null };
         } else {
-            return { approved: true, user: user };
+            return { user: user };
         }
     } else if (typeof role === `boolean` && role == false) {
-        return { approved: true, user: user };
+        return { user: user };
     }
 
     // check if user has role (yes, sitewide overrides perGame roles. hence the name, "sitewide")
     if (user.roles.sitewide.includes(role) || (gameName && user.roles.perGame[gameName]?.includes(role))) {
-        return { approved: true, user: user };
+        return { user: user };
     } else {
         if (user.roles.sitewide.includes(UserRoles.AllPermissions) || (gameName && user.roles.perGame[gameName]?.includes(UserRoles.AllPermissions))) {
-            return { approved: true, user: user };
+            return { user: user };
         } else {
             if (handleRequest) {
                 res.status(401).send({ message: `Unauthorized.` });
             }
-            return { approved: false, user: null };
+            return { user: null };
         }
     }
 }
 
-export function validateAdditionalGamePermissions(session: {approved: boolean, user: User}, gameName: SupportedGames, role:UserRoles = UserRoles.Admin): boolean {
-    if (!session.approved) {
+export function validateAdditionalGamePermissions(session: {user: User}, gameName: SupportedGames, role:UserRoles = UserRoles.Admin): boolean {
+    if (!session.user) {
         return false;
     }
     if (session.user.roles.sitewide.includes(UserRoles.AllPermissions) || session.user.roles.sitewide.includes(role)) {
@@ -402,8 +407,8 @@ export function validateAdditionalGamePermissions(session: {approved: boolean, u
     return false;
 }
 
-export function allowedToSeeMod(session: {approved: boolean, user: User}, gameName:SupportedGames, authorIds: number[]): boolean {
-    if (session.approved) {
+export function allowedToSeeMod(session: { user: User|null }, gameName:SupportedGames, authorIds: number[]): boolean {
+    if (session.user) {
         if (!session.user.roles) {
             return false;
         }

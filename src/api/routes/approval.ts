@@ -30,7 +30,7 @@ export class ApprovalRoutes {
                 return res.status(400).send({ message: `Missing game name.` });
             }
             let session = await validateSession(req, res, UserRoles.Approver, gameName.data);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -70,7 +70,7 @@ export class ApprovalRoutes {
                 return res.status(400).send({ message: `Missing game name.` });
             }
             let session = await validateSession(req, res, UserRoles.Approver, gameName.data);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -112,12 +112,8 @@ export class ApprovalRoutes {
             // #swagger.responses[500] = { description: 'Error approving mod.' }
             let modId = Validator.zDBID.safeParse(req.params.modIdParam);
             let status = Validator.zStatus.safeParse(req.body.status);
-            if (!modId.success && !status.success) {
+            if (!modId.success || !status.success) {
                 return res.status(400).send({ message: `Invalid Mod ID or Status.` });
-            }
-            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModId(modId.data));
-            if (!session.approved) {
-                return;
             }
 
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId.data } });
@@ -125,13 +121,18 @@ export class ApprovalRoutes {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
+            let session = await validateSession(req, res, UserRoles.Approver, mod.gameName);
+            if (!session.user) {
+                return;
+            }
+
             mod.setStatus(status.data, session.user).then(() => {
-                Logger.log(`Mod ${modId} set to status ${status} by ${session.user.username}.`);
+                Logger.log(`Mod ${modId} set to status ${status.data} by ${session.user!.username}.`);
                 DatabaseHelper.refreshCache(`mods`);
-                return res.status(200).send({ message: `Mod ${status}.` });
+                return res.status(200).send({ message: `Mod ${status.data}.` });
             }).catch((error) => {
                 Logger.error(`Error ${status} mod: ${error}`);
-                return res.status(500).send({ message: `Error ${status} mod:  ${error}` });
+                return res.status(500).send({ message: `Error ${status.data} mod:  ${error}` });
             });
         });
 
@@ -148,11 +149,11 @@ export class ApprovalRoutes {
             // #swagger.responses[500] = { description: 'Error approving modVersion.' }
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             let status = Validator.zStatus.safeParse(req.body.status);
-            if (!modVersionId.success && !status.success) {
+            if (!modVersionId.success || !status.success) {
                 return res.status(400).send({ message: `Invalid ModVersion ID or Status.` });
             }
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -170,10 +171,10 @@ export class ApprovalRoutes {
             modVersion.setStatus(status.data, session.user).then(() => {
                 Logger.log(`ModVersion ${modVersion.id} set to status ${status} by ${session.user.username}.`);
                 DatabaseHelper.refreshCache(`modVersions`);
-                return res.status(200).send({ message: `Mod ${status}.` });
+                return res.status(200).send({ message: `Mod ${status.data}.` });
             }).catch((error) => {
                 Logger.error(`Error ${status} mod: ${error}`);
-                return res.status(500).send({ message: `Error ${status} mod:  ${error}` });
+                return res.status(500).send({ message: `Error ${status.data} mod:  ${error}` });
             });
         });
 
@@ -194,7 +195,7 @@ export class ApprovalRoutes {
                 return res.status(400).send({ message: `Invalid edit id or accepted value.` });
             }
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId.data));
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -205,7 +206,13 @@ export class ApprovalRoutes {
             }
 
             let isMod = `name` in edit.object;
-            let modId = isMod ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => modVersion.modId);
+            let modId = isMod ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => {
+                if (!modVersion) {
+                    return null;
+                } else {
+                    return modVersion.modId;
+                }
+            });
 
             if (!modId) {
                 return res.status(404).send({ message: `Mod not found.` });
@@ -217,18 +224,18 @@ export class ApprovalRoutes {
             }
 
             // approve or deny edit
-            if (accepted) {
+            if (accepted.data) {
                 edit.approve(session.user).then((record) => {
-                    Logger.log(`Edit ${editId} accepted by ${session.user.username}.`);
+                    Logger.log(`Edit ${editId.data} accepted by ${session.user.username}.`);
                     isMod ? DatabaseHelper.refreshCache(`mods`) : DatabaseHelper.refreshCache(`modVersions`);
                     return res.status(200).send({ message: `Edit accepted.`, record: record });
                 }).catch((error) => {
-                    Logger.error(`Error approving edit ${editId}: ${error}`);
+                    Logger.error(`Error approving edit ${editId.data}: ${error}`);
                     return res.status(500).send({ message: `Error approving edit:  ${error}` });
                 });
             } else {
                 edit.deny(session.user).then(() => {
-                    Logger.log(`Edit ${editId} rejected by ${session.user.username}.`);
+                    Logger.log(`Edit ${editId.data} rejected by ${session.user.username}.`);
                     isMod ? DatabaseHelper.refreshCache(`mods`) : DatabaseHelper.refreshCache(`modVersions`);
                     return res.status(200).send({ message: `Edit rejected.` });
                 }).catch((error) => {
@@ -263,8 +270,11 @@ export class ApprovalRoutes {
             if (!reqBody.success) {
                 return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
+            if (!reqBody.data) {
+                return res.status(400).send({ message: `Missing parameters.` });
+            }
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModId(modId.data));
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -329,7 +339,7 @@ export class ApprovalRoutes {
                 return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -339,7 +349,7 @@ export class ApprovalRoutes {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
-            if (!reqBody.data.modVersion && !reqBody.data.supportedGameVersionIds && !reqBody.data.dependencies && !reqBody.data.platform) {
+            if (!reqBody.data || (!reqBody.data.modVersion && !reqBody.data.supportedGameVersionIds && !reqBody.data.dependencies && !reqBody.data.platform)) {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
@@ -392,7 +402,7 @@ export class ApprovalRoutes {
                 return res.status(400).send({ message: `Invalid edit id.` });
             }
             let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromEditApprovalQueueId(editId.data));
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             
@@ -403,7 +413,17 @@ export class ApprovalRoutes {
                 return res.status(404).send({ message: `Edit not found.` });
             }
 
-            let modId = edit.isMod() ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => modVersion.modId);
+            let modId = edit.isMod() ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => {
+                if (!modVersion) {
+                    return null;
+                } else {
+                    return modVersion.modId;
+                }
+            });
+
+            if (!modId) {
+                return res.status(404).send({ message: `Mod ID not found.` });
+            }
             
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
 
@@ -425,7 +445,7 @@ export class ApprovalRoutes {
                         return res.status(400).send({ message: `Invalid parameters.`, errors: reqBodym.error.issues });
                     }
                     
-                    if (!reqBodym.data.name && !reqBodym.data.summary && !reqBodym.data.description && !reqBodym.data.gitUrl && !reqBodym.data.category && !reqBodym.data.gameName && !reqBodym.data.authorIds) {
+                    if (!reqBodym.data || (!reqBodym.data.name && !reqBodym.data.summary && !reqBodym.data.description && !reqBodym.data.gitUrl && !reqBodym.data.category && !reqBodym.data.gameName && !reqBodym.data.authorIds)) {
                         return res.status(400).send({ message: `No changes provided.` });
                     }
 
@@ -463,7 +483,7 @@ export class ApprovalRoutes {
                     }
 
                     // parameter validation & getting db object
-                    if (!reqBodyv.data.modVersion && !reqBodyv.data.supportedGameVersionIds && !reqBodyv.data.dependencies && !reqBodyv.data.platform) {
+                    if (!reqBodyv.data || (!reqBodyv.data.modVersion && !reqBodyv.data.supportedGameVersionIds && !reqBodyv.data.dependencies && !reqBodyv.data.platform)) {
                         return res.status(400).send({ message: `No changes provided.` });
                     }
 
@@ -500,7 +520,7 @@ export class ApprovalRoutes {
                 return res.status(400).send({ message: `Invalid mod version id.` });
             }
             let session = await validateSession(req, res, UserRoles.Admin, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 

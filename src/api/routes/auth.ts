@@ -11,7 +11,7 @@ import { Validator } from '../../shared/Validator';
 
 export class AuthRoutes {
     private router: Router;
-    private validStates: {stateId: string, ip: string, redirectUrl: URL, userId: number}[] = [];
+    private validStates: {stateId: string, ip: string, redirectUrl: URL, userId: number|null}[] = [];
 
     constructor(router: Router) {
         this.router = router;
@@ -26,7 +26,7 @@ export class AuthRoutes {
             // #swagger.responses[200] = { description: 'Returns user information.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
             let session = await validateSession(req, res, false);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             return res.status(200).send({ user: session.user.toAPIResponse() });
@@ -37,6 +37,7 @@ export class AuthRoutes {
         });
           
         passport.deserializeUser(function(obj, done) {
+            // @ts-expect-error 2345 honestly i just have this so that passport works
             done(null, obj);
         });
 
@@ -125,7 +126,7 @@ export class AuthRoutes {
 
         this.router.get(`/auth/discord`, async (req, res, next) => {
             let session = await validateSession(req, res, false);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             let state = this.prepAuth(req, session.user.id);
@@ -237,7 +238,7 @@ export class AuthRoutes {
         this.router.get(`/link/discord`, async (req, res) => {
             // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
             let state = this.prepAuth(req, session.user.id);

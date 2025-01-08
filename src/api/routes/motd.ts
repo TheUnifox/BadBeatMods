@@ -35,7 +35,7 @@ export class MOTDRoutes {
             }
 
             let session = await validateSession(req, res, UserRoles.Poster, reqBody.data.gameName);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
@@ -66,7 +66,7 @@ export class MOTDRoutes {
             }
 
             let session = await validateSession(req, res, UserRoles.Poster, motd.gameName);
-            if (!session.approved) {
+            if (!session.user) {
                 return;
             }
 
