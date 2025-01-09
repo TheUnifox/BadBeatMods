@@ -57,7 +57,7 @@ export class CreateModRoutes {
                     iconIsValid = false;
                 } else {
                     // move the icon to the correct location
-                    let filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
+                    filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
                     if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
                         iconIsValid = false;
                     }
@@ -81,6 +81,7 @@ export class CreateModRoutes {
                 if (iconIsValid) {
                     (icon as UploadedFile).mv(filePath);
                 }
+                Logger.log(`Mod ${mod.name} created by ${session.user.username}.`);
                 return res.status(200).send({ mod });
             }).catch((error) => {
                 return res.status(500).send({ message: `Error creating mod: ${error}` });
