@@ -418,19 +418,19 @@ export function allowedToSeeMod(session: { user: User|null }, gameName:Supported
         }
 
         if (
-            !session.user.roles.sitewide.includes(UserRoles.Admin) &&
-            !session.user.roles.sitewide.includes(UserRoles.Moderator) &&
-            !session.user.roles.sitewide.includes(UserRoles.AllPermissions) &&
-            !authorIds.includes(session.user.id)
+            session.user.roles.sitewide.includes(UserRoles.Admin) ||
+            session.user.roles.sitewide.includes(UserRoles.Moderator) ||
+            session.user.roles.sitewide.includes(UserRoles.AllPermissions) ||
+            authorIds.includes(session.user.id)
         ) {
             return true;
         } else {
             if (!session.user.roles.perGame[gameName]) {
                 return false;
             } else {
-                if (!session.user.roles.perGame[gameName].includes(UserRoles.Admin) &&
-                    !session.user.roles.perGame[gameName].includes(UserRoles.Moderator) &&
-                    !session.user.roles.perGame[gameName].includes(UserRoles.AllPermissions)) {
+                if (session.user.roles.perGame[gameName].includes(UserRoles.Admin) ||
+                    session.user.roles.perGame[gameName].includes(UserRoles.Moderator) ||
+                    session.user.roles.perGame[gameName].includes(UserRoles.AllPermissions)) {
                     return true;
                 }
             }
