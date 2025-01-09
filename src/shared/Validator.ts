@@ -5,21 +5,25 @@ import { Config } from "./Config";
 
 //generic types that I use a lot
 const ZodDBID = z.number({coerce: true}).int().positive();
-const ZodDBIDArray = z.preprocess((id) => {
-    if (Array.isArray(id)) {
-        return id;
+const ZodDBIDArray = z.preprocess((t, ctx) => {
+    if (Array.isArray(t)) {
+        return t;
     } else {
-        if (typeof id === `string` && id.length > 0) {
-            let ids = id.split(`,`);
+        if (typeof t === `string` && t.length > 0) {
+            let ids = t.split(`,`);
             let retVal = ids.map(id => parseInt(id, 10));
             for (let iid of retVal) {
-                if (isNaN(iid)) {
-                    return id;
+                let parsed = ZodDBID.safeParse(iid);
+                if (!parsed.success) {
+                    return t;
+                } else {
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Invalid ID`});
+                    return z.NEVER;
                 }
             }
             return retVal;
         } else {
-            return id;
+            return t;
         }
     }
 }, z.array(ZodDBID));
@@ -84,12 +88,12 @@ export class Validator {
         gameName: true,
     }).required().strict();
 
-    public static readonly zUploadModVersion = ZodModVersion.pick({
-        supportedGameVersionIds: true,
-        modVersion: true,
-        dependencies: true,
-        platform: true,
-    }).required().strict();
+    public static readonly zUploadModVersion = z.object({
+        supportedGameVersionIds: ZodDBIDArray,
+        modVersion: ZodModVersion.shape.modVersion,
+        dependencies: ZodModVersion.shape.dependencies,
+        platform: ZodModVersion.shape.platform,
+    }).strict();
 
     public static readonly zUpdateMod = ZodMod.pick({
         name: true,

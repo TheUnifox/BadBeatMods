@@ -165,7 +165,7 @@ export class CreateModRoutes {
                 status: Status.Private,
                 supportedGameVersionIds: reqBody.data.supportedGameVersionIds,
                 modVersion: new SemVer(reqBody.data.modVersion),
-                dependencies: reqBody.data.dependencies,
+                dependencies: reqBody.data.dependencies ? reqBody.data.dependencies : [],
                 platform: reqBody.data.platform,
                 contentHashes: hashs,
                 zipHash: file.md5,
