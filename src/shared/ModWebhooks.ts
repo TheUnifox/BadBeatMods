@@ -1,5 +1,5 @@
 import { WebhookClient } from "discord.js";
-import { DatabaseHelper, Mod, ModVersion, Platform, Status, User } from "./Database";
+import { DatabaseHelper, Mod, ModVersion, Status, User } from "./Database";
 import { Config } from "./Config";
 import { Logger } from "./Logger";
 
@@ -85,6 +85,18 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
         let gameVersions = await modVersion.getSupportedGameVersions();
         let dependancies: string[] = [];
         let resolvedDependancies = await modVersion.getUpdatedDependencies(gameVersions[0].id, [Status.Verified, Status.Unverified]);
+
+        if (!author) {
+            return Logger.error(`Author not found for mod version ${modVersion.id}`);
+        }
+
+        if (!mod) {
+            return Logger.error(`Mod not found for mod version ${modVersion.id}`);
+        }
+
+        if (!resolvedDependancies) {
+            return Logger.error(`Dependancies not found for mod version ${modVersion.id}`);
+        }
 
         for (let dependancy of resolvedDependancies) {
             let dependancyMod = await DatabaseHelper.database.Mods.findOne({ where: { id: dependancy.modId } });

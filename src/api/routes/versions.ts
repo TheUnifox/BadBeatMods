@@ -69,7 +69,8 @@ export class VersionsRoutes {
         
             DatabaseHelper.database.GameVersions.create({
                 gameName: reqBody.data.gameName,
-                version: reqBody.data.version
+                version: reqBody.data.version,
+                defaultVersion: false,
             }).then((version) => {
                 Logger.log(`Version ${version} added by ${session.user.username}.`);
                 return res.status(200).send({ version });

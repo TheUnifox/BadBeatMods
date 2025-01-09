@@ -45,8 +45,17 @@ module.exports = {
             }
             let randomVersionId = randomInt(1, DatabaseHelper.cache.mods.length);
             let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: randomVersionId } });
+            if (!modVersion) {
+                return await interaction.reply({ content: `Invalid mod version.`, ephemeral: true });
+            }
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
+            if (!mod) {
+                return await interaction.reply({ content: `Invalid mod.`, ephemeral: true });
+            }
             let user = await DatabaseHelper.database.Users.findOne({ where: { id: 1 } });
+            if (!user) {
+                return await interaction.reply({ content: `Invalid user.`, ephemeral: true });
+            }
             let embedtype = interaction.options.getString(`embedtype`);
             switch (embedtype) {
                 case `modApproval`:

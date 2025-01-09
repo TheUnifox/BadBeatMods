@@ -123,7 +123,7 @@ export class Validator {
     public static readonly zCreateMOTD = z.object({
         gameName: ZodGameName.default(SupportedGames.BeatSaber),
         platforms: z.array(ZodPlatform).default([Platform.UniversalPC]),
-        gameVersionIds: z.array(this.zDBID).default(null),
+        gameVersionIds: z.array(this.zDBID).optional(),
         postType: z.nativeEnum(PostType).default(PostType.Community),
         message: z.string().min(3).max(64),
         startTime: z.coerce.date().default(new Date()),

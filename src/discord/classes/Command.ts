@@ -34,6 +34,11 @@ export class Command {
     public async updateCommand(luma: Luma) {
         let rest = new REST({ version: `10` }).setToken(Config.bot.token);
 
+        if (!this.id) {
+            luma.logger.error(`Command (${this.data.name}) does not have an ID.`, `Update Command`);
+            return;
+        }
+
         rest.patch(Routes.applicationCommand(Config.bot.clientId, this.id), { body: this.data.toJSON() })
             .then((response) => {
                 let response2: RESTGetAPIApplicationCommandResult = response as RESTGetAPIApplicationCommandResult;

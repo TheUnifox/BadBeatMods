@@ -30,5 +30,9 @@ USER nodejs
 EXPOSE 5001
 ENV NODE_ENV=production
 ENV IS_DOCKER=true
+ARG GIT_VERSION=unknown
+ARG GIT_REPO=unknown
+ENV GIT_VERSION=$GIT_VERSION
+ENV GIT_REPO=$GIT_REPO
 
 CMD ["npm", "run", "start"]

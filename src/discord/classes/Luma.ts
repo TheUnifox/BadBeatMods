@@ -22,7 +22,12 @@ export class Luma extends Discord.Client {
         //loadContextMenus(this, path.resolve(__dirname, `../commands/contextmenus`));
         this.pushCommands();
         this.once(`ready`, () => {
-            Logger.log(`Logged in as ${this.user.tag}`, `Luma.constructor`);
+            if (this.user) {
+                Logger.log(`Logged in as ${this.user.tag}`, `Luma.constructor`);
+            } else {
+                Logger.warn(`Logged in, but user is null`);
+                this.destroy();
+            }
         });
         this.registerInteractionEvent();
     }
@@ -38,7 +43,12 @@ export class Luma extends Discord.Client {
             if (command.guilds.length != 0) {
                 command.guilds.forEach(gid => {
                     try {
-                        serverCommands.get(gid).push(command.data.toJSON());
+                        let commandsForServer = serverCommands.get(gid);
+                        if (!commandsForServer) {
+                            commandsForServer = [];
+                        }
+                        commandsForServer.push(command.data.toJSON());
+                        serverCommands.set(gid, commandsForServer);
                     } catch (error) {
                         this.logger.error(error, `pushServerCommands`);
                     }
@@ -49,10 +59,15 @@ export class Luma extends Discord.Client {
         });
 
         this.contextMenus.forEach(contextmenu => {
-            if (contextmenu.guilds.length != 0) {
+            if (contextmenu.guilds && contextmenu.guilds.length != 0) {
                 contextmenu.guilds.forEach(gid => {
                     try {
-                        serverCommands.get(gid).push(contextmenu.data.toJSON());
+                        let commandsForServer = serverCommands.get(gid);
+                        if (!commandsForServer) {
+                            commandsForServer = [];
+                        }
+                        commandsForServer.push(contextmenu.data.toJSON());
+                        serverCommands.set(gid, commandsForServer);
                     } catch (error) {
                         this.logger.error(error, `pushServerCommands`);
                     }
@@ -103,7 +118,9 @@ export class Luma extends Discord.Client {
                 const command = this.commands.get(interaction.commandName);
                 if (!command) return;
                 try {
-                    command.autocomplete(this, interaction);
+                    if (command.autocomplete) {
+                        await command.autocomplete(this, interaction);
+                    }
                 } catch (error) {
                     //do nothing
                 }

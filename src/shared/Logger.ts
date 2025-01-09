@@ -51,7 +51,7 @@ export class Logger {
     }
     
     
-    private static sendWebhookEmbed(title:string, message:any, color:ColorResolvable, source:string) {
+    private static sendWebhookEmbed(title:string, message:any, color:ColorResolvable, source?:string) {
         let loggingEmbed:EmbedBuilder = new EmbedBuilder()
             .setTitle(title)
             .setDescription(message.toString())
