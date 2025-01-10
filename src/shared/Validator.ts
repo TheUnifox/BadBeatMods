@@ -15,8 +15,6 @@ const ZodDBIDArray = z.preprocess((t, ctx) => {
             for (let iid of retVal) {
                 let parsed = ZodDBID.safeParse(iid);
                 if (!parsed.success) {
-                    return t;
-                } else {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Invalid ID`});
                     return z.NEVER;
                 }
@@ -91,7 +89,7 @@ export class Validator {
     public static readonly zUploadModVersion = z.object({
         supportedGameVersionIds: ZodDBIDArray,
         modVersion: ZodModVersion.shape.modVersion,
-        dependencies: ZodModVersion.shape.dependencies,
+        dependencies: ZodModVersion.shape.dependencies.optional(),
         platform: ZodModVersion.shape.platform,
     }).strict();
 

@@ -121,7 +121,7 @@ export class CreateModRoutes {
                 return res.status(400).send({ message: `Invalid game version.` });
             }
 
-            if ((await Validator.validateIDArray(reqBody.data.dependencies, `modVersions`, true, false)) == false) {
+            if ((await Validator.validateIDArray(reqBody.data.dependencies, `modVersions`, true, true)) == false) {
                 return res.status(400).send({ message: `Invalid dependency.` });
             }
 
@@ -129,7 +129,7 @@ export class CreateModRoutes {
                 return res.status(413).send({ message: `File missing or too large.` });
             }
             //#endregion
-            let isZip = file.mimetype === `application/zip` && file.name.endsWith(`.zip`);
+            let isZip = (file.mimetype === `application/zip` || file.mimetype === `application/x-zip-compressed`) && file.name.endsWith(`.zip`);
             let hashs: ContentHash[] = [];
             if (isZip) {
                 await JSZip.loadAsync(file.data).then(async (zip) => {
@@ -175,7 +175,7 @@ export class CreateModRoutes {
                 let retVal = await modVersion.toRawAPIResonse();
                 return res.status(200).send({ modVersion: retVal });
             }).catch((error) => {
-                return res.status(500).send({ message: `Error creating mod version: ${error}` });
+                return res.status(500).send({ message: `Error creating mod version: ${error} ${error?.errors}` });
             });
         });
     }
