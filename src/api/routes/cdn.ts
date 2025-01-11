@@ -29,15 +29,23 @@ export class CDNRoutes {
             immutable: true,
             index: false,
             maxAge: 1000 * 60 * 60 * 24 * 7,
-            setHeaders: (res, file) => { // this is a hacky workaround to get code to execute when a file is served, but it should work with minimal preformance impact
-                res.set(`Content-Disposition`, `attachment`);
+            setHeaders: (res, file) => {
+                res.set(`Content-Type`, `application/zip`);
                 let hash = path.basename(file).replace(path.extname(file), ``);
-                DatabaseHelper.database.ModVersions.findOne({ where: { zipHash: hash } }).then((version) => {
-                    if (!version) return;
-                    version.increment(`downloadCount`);
-                }).catch((error) => {
-                    Logger.debugWarn(`Error incrementing download count: ${error}`);
-                });
+                let modVersion = DatabaseHelper.cache.modVersions.find((version) => version.zipHash === hash);
+                if (modVersion) {
+                    let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
+                    if (mod) {
+                        res.set(`Content-Disposition`, `attachment; filename="${mod.name} v${modVersion.modVersion}.zip"`);
+                    } else {
+                        res.set(`Content-Disposition`, `attachment;`);
+                    }
+                    modVersion.increment(`downloadCount`, { silent: true }).catch((err) => {
+                        Logger.error(`Failed to increment download count for mod version ${modVersion.id}: ${err}`);
+                    });
+                } else {
+                    res.set(`Content-Disposition`, `attachment;`);
+                }
             },
             fallthrough: true,
         }));
