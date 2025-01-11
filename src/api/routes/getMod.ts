@@ -130,7 +130,7 @@ export class GetModRoutes {
                 if (raw) {
                     returnVal.push(await version.toRawAPIResonse());
                 } else {
-                    let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], allowedToSeeItems ? [Status.Verified, Status.Unverified, Status.Private, Status.Removed] : [Status.Verified, Status.Unverified]);
+                    let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified, Status.Private, Status.Removed]);
                     if (resolvedVersion) {
                         returnVal.push(resolvedVersion);
                     } else {
@@ -238,14 +238,17 @@ export class GetModRoutes {
                 return false;
             }
 
-            if (!session.user.roles.sitewide.includes(UserRoles.AllPermissions) && !session.user.roles.sitewide.includes(UserRoles.Approver) && !session.user.roles.sitewide.includes(UserRoles.Admin)) {
-                return false;
+            if (session.user.roles.sitewide.includes(UserRoles.AllPermissions) || session.user.roles.sitewide.includes(UserRoles.Approver) || session.user.roles.sitewide.includes(UserRoles.Admin)) {
+                return true;
             }
 
-            if (authorIds.includes(session.user.id) == false) {
-                return false;
+            if (authorIds.includes(session.user.id)) {
+                return true;
             }
+
+            return false;
+        } else {
+            return true;
         }
-        return true;
     }
 }
