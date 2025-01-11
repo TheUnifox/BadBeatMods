@@ -122,14 +122,15 @@ export class GetModRoutes {
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
-                if (this.shouldShowItem(mod.authorIds, version.status, session) == false) {
+                let allowedToSeeItems = this.shouldShowItem(mod.authorIds, version.status, session);
+                if (allowedToSeeItems == false) {
                     continue;
                 }
                 // if raw is true, return the raw mod version info instead of attempting to resolve the dependencies & other fields
                 if (raw) {
                     returnVal.push(await version.toRawAPIResonse());
                 } else {
-                    let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]);
+                    let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], allowedToSeeItems ? [Status.Verified, Status.Unverified, Status.Private, Status.Removed] : [Status.Verified, Status.Unverified]);
                     if (resolvedVersion) {
                         returnVal.push(resolvedVersion);
                     } else {
