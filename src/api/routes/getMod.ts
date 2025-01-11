@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseHelper, Status, ModAPIPublicResponse, GameVersion, UserRoles, User } from '../../shared/Database';
+import { DatabaseHelper, Status, ModAPIPublicResponse, GameVersion, UserRoles, User, SupportedGames } from '../../shared/Database';
 import { Validator } from '../../shared/Validator';
 import { validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
@@ -114,7 +114,7 @@ export class GetModRoutes {
             }
 
             // if the mod isn't verified or unverified (with the unverified flag present), don't show it unless the user is an admin or approver or the mod author
-            if (this.shouldShowItem(mod.authorIds, mod.status, session) == false) {
+            if (this.shouldShowItem(mod.authorIds, mod.status, mod.gameName, session) == false) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
@@ -122,7 +122,7 @@ export class GetModRoutes {
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
-                let allowedToSeeItems = this.shouldShowItem(mod.authorIds, version.status, session);
+                let allowedToSeeItems = this.shouldShowItem(mod.authorIds, version.status, mod.gameName, session);
                 if (allowedToSeeItems == false) {
                     continue;
                 }
@@ -171,7 +171,7 @@ export class GetModRoutes {
             }
 
             // this does not check the mod as a whole, only the mod version's author. i'd prefer to not make another call to the database or the cache to get the mod's author
-            if (this.shouldShowItem([modVersion.authorId], modVersion.status, await validateSession(req, res, false, null, false)) == false) {
+            if (this.shouldShowItem([modVersion.authorId], modVersion.status, null, await validateSession(req, res, false, null, false)) == false) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
@@ -232,14 +232,26 @@ export class GetModRoutes {
         });
     }
 
-    private shouldShowItem(authorIds: number[], status: Status, session: {user: User|null}): boolean {
+    private shouldShowItem(authorIds: number[], status: Status, game:SupportedGames | null, session: {user: User|null}): boolean {
         if (status != Status.Unverified && status != Status.Verified) {
             if (!session.user) {
                 return false;
             }
 
-            if (session.user.roles.sitewide.includes(UserRoles.AllPermissions) || session.user.roles.sitewide.includes(UserRoles.Approver) || session.user.roles.sitewide.includes(UserRoles.Admin)) {
+            if (session.user.roles.sitewide.includes(UserRoles.AllPermissions) ||
+            session.user.roles.sitewide.includes(UserRoles.Approver) ||
+            session.user.roles.sitewide.includes(UserRoles.Admin)) {
                 return true;
+            }
+
+            if (game) {
+                if (session.user.roles.perGame[game]) {
+                    if (session.user.roles.perGame[game].includes(UserRoles.AllPermissions) ||
+                    session.user.roles.perGame[game].includes(UserRoles.Approver) ||
+                    session.user.roles.perGame[game].includes(UserRoles.Admin)) {
+                        return true;
+                    }
+                }
             }
 
             if (authorIds.includes(session.user.id)) {
