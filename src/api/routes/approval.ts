@@ -251,12 +251,20 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit a mod in the approval queue.'
             // #swagger.description = 'Edit a mod in the approval queue.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to edit.', type: 'integer', required: true }
-            // #swagger.parameters['name'] = { description: 'The new name of the mod.', type: 'string' }
-            // #swagger.parameters['summary'] = { description: 'The new summary of the mod.', type: 'string' }
-            // #swagger.parameters['description'] = { description: 'The new description of the mod.', type: 'string' }
-            // #swagger.parameters['gitUrl'] = { description: 'The new gitUrl of the mod.', type: 'string' }
-            // #swagger.parameters['category'] = { description: 'The new category of the mod.', type: 'string' }
-            // #swagger.parameters['gameName'] = { description: 'The new gameName of the mod.', type: 'string' }
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                required: true,
+                description: 'The mod object to update.',
+                schema: {
+                    name: 'string',
+                    summary: 'string',
+                    description: 'string',
+                    gitUrl: 'string',
+                    category: 'string',
+                    gameName: 'string',
+                    authorIds: [1, 2, 3],
+                }
+            } */
             // #swagger.responses[200] = { description: 'Mod updated.', schema: { mod: {} } }
             // #swagger.responses[400] = { description: 'No changes provided.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -321,10 +329,17 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit a modVersion in the approval queue.'
             // #swagger.description = 'Edit a modVersion in the approval queue.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to edit.', type: 'integer', required: true }
-            // #swagger.parameters['gameVersionIds'] = { description: 'The new gameVersionIds of the modVersion.', type: 'array', items: { type: 'integer' } }
-            // #swagger.parameters['modVersion'] = { description: 'The new modVersion of the modVersion.', type: 'string' }
-            // #swagger.parameters['dependencyIds'] = { description: 'The new dependencyIds of the modVersion.', type: 'array', items: { type: 'integer' } }
-            // #swagger.parameters['platform'] = { description: 'The new platform of the modVersion.', type: 'string' }
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                required: true,
+                description: 'The modVersion object to update.',
+                schema: {
+                    modVersion: 'string',
+                    supportedGameVersionIds: [1, 2, 3],
+                    dependencies: [1, 2, 3],
+                    platform: 'string',
+                }
+            } */
             // #swagger.responses[200] = { description: 'ModVersion updated.', schema: { modVersion: {} } }
             // #swagger.responses[400] = { description: 'No changes provided.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }

@@ -1281,40 +1281,50 @@
             "description": "The id of the mod to edit."
           },
           {
-            "name": "name",
-            "description": "The new name of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "summary",
-            "description": "The new summary of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "description",
-            "description": "The new description of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "gitUrl",
-            "description": "The new gitUrl of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "category",
-            "description": "The new category of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "gameName",
-            "description": "The new gameName of the mod.",
-            "type": "string",
-            "in": "query"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "The mod object to update.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "authorIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -1364,34 +1374,45 @@
             "description": "The id of the modVersion to edit."
           },
           {
-            "name": "gameVersionIds",
-            "description": "The new gameVersionIds of the modVersion.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "modVersion",
-            "description": "The new modVersion of the modVersion.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "dependencyIds",
-            "description": "The new dependencyIds of the modVersion.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "platform",
-            "description": "The new platform of the modVersion.",
-            "type": "string",
-            "in": "query"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "The modVersion object to update.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "modVersion": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
           }
         ],
         "responses": {
