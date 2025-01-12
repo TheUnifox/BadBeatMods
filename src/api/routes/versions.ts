@@ -94,9 +94,13 @@ export class VersionsRoutes {
 
         this.router.post(`/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            //
-            /* #swagger.parameters['body'] = { description: 'The ID of the version to set as default', required: true, type: 'object', schema: {
-              gameVersionId: 1
+            /* #swagger.parameters['body'] = {
+                description: 'The ID of the version to set as default',
+                required: true,
+                type: 'object',
+                schema: {
+                    gameVersionId: 1
+                }
             }
             */
             let gameVersionId = Validator.zDBID.safeParse(req.body.gameVersionId);

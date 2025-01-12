@@ -749,6 +749,22 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The ID of the version to set as default",
+            "required": true,
+            "type": "object",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "gameVersionId": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            },
+            "in": "query"
+          },
+          {
+            "name": "body",
             "in": "body",
             "schema": {
               "type": "object",
