@@ -873,6 +873,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
                 sendModLog(this, user, `New`);
                 break;
             case Status.Verified:
+                this.lastApprovedById = user.id;
                 sendModLog(this, user, `Approved`);
                 break;
             case Status.Removed:
@@ -945,6 +946,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
                 sendModVersionLog(this, user, `New`);
                 break;
             case Status.Verified:
+                this.lastApprovedById = user.id;
                 sendModVersionLog(this, user, `Approved`);
                 break;
             case Status.Removed:
