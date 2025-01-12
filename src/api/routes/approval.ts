@@ -279,7 +279,7 @@ export class ApprovalRoutes {
             }
 
             // if the gameName is being changed, check if the user has permission to approve mods the new game
-            if (reqBody.data.gameName !== DatabaseHelper.getGameNameFromModId(modId.data) && validateAdditionalGamePermissions(session, reqBody.data.gameName, UserRoles.Approver) == false) {
+            if (reqBody.data.gameName && reqBody.data.gameName !== DatabaseHelper.getGameNameFromModId(modId.data) && validateAdditionalGamePermissions(session, reqBody.data.gameName, UserRoles.Approver) == false) {
                 return res.status(401).send({ message: `You cannot edit this mod.` });
             }
 
@@ -364,7 +364,7 @@ export class ApprovalRoutes {
             // if the parameter is not provided, keep the old value
             modVer.dependencies = reqBody.data.dependencies || modVer.dependencies;
             modVer.supportedGameVersionIds = reqBody.data.supportedGameVersionIds || modVer.supportedGameVersionIds;
-            modVer.modVersion = new SemVer(reqBody.data.modVersion) || modVer.modVersion;
+            modVer.modVersion = reqBody.data.modVersion ? new SemVer(reqBody.data.modVersion) : modVer.modVersion;
             modVer.platform = reqBody.data.platform || modVer.platform;
             modVer.lastUpdatedById = session.user.id;
             modVer.save().then(() => {
@@ -454,7 +454,7 @@ export class ApprovalRoutes {
                     }
 
                     // if the gameName is being changed, check if the user has permission to approve mods the new game
-                    if (reqBodym.data.gameName !== mod.gameName && validateAdditionalGamePermissions(session, reqBodym.data.gameName, UserRoles.Approver) == false) {
+                    if (reqBodym.data.gameName && reqBodym.data.gameName !== mod.gameName && validateAdditionalGamePermissions(session, reqBodym.data.gameName, UserRoles.Approver) == false) {
                         return res.status(401).send({ message: `You cannot edit this mod.` });
                     }
 
@@ -496,7 +496,7 @@ export class ApprovalRoutes {
                     }
 
                     edit.object = {
-                        modVersion: new SemVer(reqBodyv.data.modVersion) || edit.object.modVersion,
+                        modVersion: reqBodyv.data.modVersion ? new SemVer(reqBodyv.data.modVersion) : edit.object.modVersion,
                         supportedGameVersionIds: reqBodyv.data.supportedGameVersionIds || edit.object.supportedGameVersionIds,
                         dependencies: reqBodyv.data.dependencies || edit.object.dependencies,
                         platform: reqBodyv.data.platform || edit.object.platform,

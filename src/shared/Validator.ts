@@ -93,22 +93,23 @@ export class Validator {
         platform: ZodModVersion.shape.platform,
     }).strict();
 
-    public static readonly zUpdateMod = ZodMod.pick({
-        name: true,
-        summary: true,
-        description: true,
-        category: true,
-        gitUrl: true,
-        gameName: true,
-        authorIds: true,
-    }).optional();
+    public static readonly zUpdateMod = z.object({
+        name: z.string().min(3).max(64).optional(),
+        summary: z.string().min(3).max(100).optional(),
+        description: z.string().min(3).max(4096).optional(),
+        category: ZodCategory.optional(),
+        gitUrl: z.string().min(5).max(256).url().optional(),
+        gameName: ZodGameName.optional(),
+        authorIds: ZodDBIDArray.optional(),
+    }).strict();
 
-    public static readonly zUpdateModVersion = ZodModVersion.pick({
-        supportedGameVersionIds: true,
-        modVersion: true,
-        dependencies: true,
-        platform: true,
-    }).optional();
+    public static readonly zUpdateModVersion = z.object({
+        supportedGameVersionIds: ZodDBIDArray.optional(),
+        modVersion: z.string().refine(valid, { message: `Invalid SemVer` }).optional(),
+        dependencies: ZodDBIDArray.optional(),
+        platform: ZodPlatform.optional(),
+        status: ZodStatus.optional(),
+    });
 
     public static readonly zOAuth2Callback = z.object({
         code: z.string(),
