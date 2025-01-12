@@ -174,7 +174,7 @@ export class UpdateModRoutes {
                 }
             }
 
-            if (mod.status == Status.Verified) {
+            if (modVersion.status == Status.Verified) {
                 let existingEdit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { objectId: modVersion.id, objectTableName: `modVersions`, submitterId: session.user.id, approved: null } });
 
                 if (existingEdit) {
