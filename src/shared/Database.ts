@@ -1122,9 +1122,12 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
                 modVersion.platform = this.object.platform || modVersion.platform;
                 modVersion.supportedGameVersionIds = this.object.supportedGameVersionIds || modVersion.supportedGameVersionIds;
                 modVersion.dependencies = this.object.dependencies || modVersion.dependencies;
-                modVersion.lastApprovedById = approver.id;
+                //modVersion.lastApprovedById = approver.id;
                 modVersion.lastUpdatedById = this.submitterId;
-                modVersion.status = Status.Verified;
+                //modVersion.status = Status.Verified;
+                if (modVersion.status == Status.Verified) {
+                    modVersion.lastApprovedById = approver.id;
+                }
                 record = await modVersion.save();
             }
         } else if (this.objectTableName == `mods` && `name` in this.object) {
@@ -1136,9 +1139,12 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
                 mod.gitUrl = this.object.gitUrl || mod.gitUrl;
                 mod.authorIds = this.object.authorIds || mod.authorIds;
                 mod.gameName = this.object.gameName || mod.gameName;
-                mod.lastApprovedById = approver.id;
+                //mod.lastApprovedById = approver.id;
                 mod.lastUpdatedById = this.submitterId;
-                mod.status = Status.Verified;
+                //mod.status = Status.Verified;
+                if (mod.status == Status.Verified) {
+                    mod.lastApprovedById = approver.id;
+                }
                 record = await mod.save();
             }
         }
