@@ -48,13 +48,15 @@ export class UpdateModRoutes {
                 allowedToEdit = true;
             }
 
-            if (reqBody.data.gameName !== modOriginalGameName) {
-                if (session.user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.Approver)) {
-                    allowedToEdit = true;
-                }
-            } else {
-                if (session.user.roles.perGame[modOriginalGameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[modOriginalGameName]?.includes(UserRoles.Approver)) {
-                    allowedToEdit = true;
+            if (reqBody.data.gameName) {
+                if (reqBody.data.gameName !== modOriginalGameName) {
+                    if (session.user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.AllPermissions) || session. user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.Approver)) {
+                        allowedToEdit = true;
+                    }
+                } else {
+                    if (session.user.roles.perGame[modOriginalGameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[modOriginalGameName]?.includes(UserRoles.Approver)) {
+                        allowedToEdit = true;
+                    }
                 }
             }
 
@@ -185,7 +187,7 @@ export class UpdateModRoutes {
                     objectId: modVersion.id,
                     object: {
                         supportedGameVersionIds: reqBody.data.supportedGameVersionIds || modVersion.supportedGameVersionIds,
-                        modVersion: new SemVer(reqBody.data.modVersion) || modVersion.modVersion,
+                        modVersion: reqBody.data.modVersion ? new SemVer(reqBody.data.modVersion) : modVersion.modVersion,
                         dependencies: reqBody.data.dependencies || modVersion.dependencies,
                         platform: reqBody.data.platform || modVersion.platform,
                     }
@@ -198,7 +200,7 @@ export class UpdateModRoutes {
             } else {
                 await modVersion.update({
                     supportedGameVersionIds: reqBody.data.supportedGameVersionIds || modVersion.supportedGameVersionIds,
-                    modVersion: new SemVer(reqBody.data.modVersion) || modVersion.modVersion,
+                    modVersion: reqBody.data.modVersion ? new SemVer(reqBody.data.modVersion) : modVersion.modVersion,
                     dependencies: reqBody.data.dependencies || modVersion.dependencies,
                     platform: reqBody.data.platform || modVersion.platform,
                 }).then((modVersion) => {
