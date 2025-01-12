@@ -127,11 +127,11 @@ export class ApprovalRoutes {
             }
 
             mod.setStatus(status.data, session.user).then(() => {
-                Logger.log(`Mod ${modId} set to status ${status.data} by ${session.user!.username}.`);
+                Logger.log(`Mod ${modId.data} set to status ${status.data} by ${session.user!.username}.`);
                 DatabaseHelper.refreshCache(`mods`);
                 return res.status(200).send({ message: `Mod ${status.data}.` });
             }).catch((error) => {
-                Logger.error(`Error ${status} mod: ${error}`);
+                Logger.error(`Error ${status.data} mod: ${error}`);
                 return res.status(500).send({ message: `Error ${status.data} mod:  ${error}` });
             });
         });
@@ -169,11 +169,11 @@ export class ApprovalRoutes {
             }
 
             modVersion.setStatus(status.data, session.user).then(() => {
-                Logger.log(`ModVersion ${modVersion.id} set to status ${status} by ${session.user.username}.`);
+                Logger.log(`ModVersion ${modVersion.id} set to status ${status.data} by ${session.user.username}.`);
                 DatabaseHelper.refreshCache(`modVersions`);
                 return res.status(200).send({ message: `Mod ${status.data}.` });
             }).catch((error) => {
-                Logger.error(`Error ${status} mod: ${error}`);
+                Logger.error(`Error ${status.data} mod: ${error}`);
                 return res.status(500).send({ message: `Error ${status.data} mod:  ${error}` });
             });
         });
@@ -316,10 +316,10 @@ export class ApprovalRoutes {
             mod.gameName = reqBody.data.gameName || mod.gameName;
             mod.lastUpdatedById = session.user.id;
             mod.save().then(() => {
-                Logger.log(`Mod ${modId} updated by ${session.user.username}.`);
+                Logger.log(`Mod ${modId.data} updated by ${session.user.username}.`);
                 return res.status(200).send({ message: `Mod updated.`, mod: mod });
             }).catch((error) => {
-                Logger.error(`Error updating mod ${modId}: ${error}`);
+                Logger.error(`Error updating mod ${modId.data}: ${error}`);
                 return res.status(500).send({ message: `Error updating mod: ${error}` });
             });
         });
@@ -359,7 +359,7 @@ export class ApprovalRoutes {
             }
 
             // parameter validation & getting db object
-            let modVer = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId, status: Status.Unverified } });
+            let modVer = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId.data, status: Status.Unverified } });
             if (!modVer) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
@@ -383,10 +383,10 @@ export class ApprovalRoutes {
             modVer.platform = reqBody.data.platform || modVer.platform;
             modVer.lastUpdatedById = session.user.id;
             modVer.save().then(() => {
-                Logger.log(`ModVersion ${modVersionId} updated by ${session.user.username}.`);
+                Logger.log(`ModVersion ${modVersionId.data} updated by ${session.user.username}.`);
                 return res.status(200).send({ message: `ModVersion updated.`, modVersion: modVer });
             }).catch((error) => {
-                Logger.error(`Error updating modVersion ${modVersionId}: ${error}`);
+                Logger.error(`Error updating modVersion ${modVersionId.data}: ${error}`);
                 return res.status(500).send({ message: `Error updating modVersion: ${error}` });
             });
         });
@@ -450,7 +450,7 @@ export class ApprovalRoutes {
             switch (edit.objectTableName) {
                 case `mods`:
                     if (!edit.isMod()) {
-                        Logger.error(`Edit ${editId} is not a mod edit, despite the table name being "mods".`);
+                        Logger.error(`Edit ${editId.data} is not a mod edit, despite the table name being "mods".`);
                         return res.status(500).send({ message: `Invalid edit.` });
                     }
 
@@ -487,7 +487,7 @@ export class ApprovalRoutes {
                     break;
                 case `modVersions`:
                     if (!edit.isModVersion()) {
-                        Logger.error(`Edit ${editId} is not a mod version edit, despite the table name being "modVersions".`);
+                        Logger.error(`Edit ${editId.data} is not a mod version edit, despite the table name being "modVersions".`);
                         return res.status(500).send({ message: `Invalid edit.` });
                     }
                     
