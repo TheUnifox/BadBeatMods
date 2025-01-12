@@ -108,7 +108,6 @@ export class Validator {
         modVersion: z.string().refine(valid, { message: `Invalid SemVer` }).optional(),
         dependencies: ZodDBIDArray.optional(),
         platform: ZodPlatform.optional(),
-        status: ZodStatus.optional(),
     });
 
     public static readonly zOAuth2Callback = z.object({
