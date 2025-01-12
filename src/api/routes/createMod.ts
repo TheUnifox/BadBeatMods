@@ -152,8 +152,8 @@ export class CreateModRoutes {
                 return res.status(400).send({ message: `File must be a zip archive.` });
             }
 
-            let filePath = `${path.resolve(Config.storage.iconsDir)}/${file.md5}${path.extname(file.name)}`;
-            if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
+            let filePath = `${path.resolve(Config.storage.modsDir)}/${file.md5}${path.extname(file.name)}`;
+            if (filePath.startsWith(`${path.resolve(Config.storage.modsDir)}`) == false) {
                 return res.status(400).send({ message: `Invalid zip file.` });
             } else {
                 file.mv(filePath);
