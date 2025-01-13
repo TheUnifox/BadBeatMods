@@ -178,7 +178,7 @@ export class BeatModsRoutes {
                 Logger.debugWarn(`Some mods were removed due to missing dependencies. (${modArray.length} out of ${preLength})`, `getMod`);
             }
         } else {
-            let modVersions = DatabaseHelper.cache.modVersions.filter((mV) => mV.status === Status.Verified || mV.status === Status.Unverified);
+            let modVersions = DatabaseHelper.cache.modVersions.filter((mV) => mV.status === Status.Verified);
             for (let modVersion of modVersions) {
                 let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
                 if (!mod) {
@@ -187,12 +187,8 @@ export class BeatModsRoutes {
                 if (!modVersion.supportedGameVersionIds[0]) {
                     continue;
                 }
-                let baseGV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === modVersion.supportedGameVersionIds[0]);
-                if (!baseGV) {
-                    continue;
-                }
 
-                let bmMod = await this.convertToBeatmodsMod(mod, modVersion, baseGV, true);
+                let bmMod = await this.convertToBeatmodsMod(mod, modVersion, null, true);
                 if (!bmMod) {
                     Logger.debugWarn(`Failed to convert mod ${mod.name} v${modVersion.modVersion.raw} to BeatMods format.`, `getMod`);
                     continue;
@@ -203,9 +199,20 @@ export class BeatModsRoutes {
         return res.status(200).send(modArray);
     }
 
-    private async convertToBeatmodsMod(mod: Mod, modVersion: ModVersion, gameVersion: GameVersion, doResolution: boolean = true): Promise<BeatModsMod|null> {
+    private async convertToBeatmodsMod(mod: Mod, modVersion: ModVersion, gameVersion: GameVersion|null, doResolution: boolean = true): Promise<BeatModsMod|null> {
         let dependencies: (BeatModsMod | string)[] = [];
-        let mVDeps = await modVersion.getUpdatedDependencies(gameVersion.id, [Status.Verified]);
+        let mVDeps: ModVersion[] = [];
+        if (gameVersion) {
+            let intmVDeps = await modVersion.getUpdatedDependencies(gameVersion.id, [Status.Verified]);
+            if (!intmVDeps) {
+                return null;
+            }
+            mVDeps = intmVDeps;
+        } else {
+            //mVDeps = DatabaseHelper.cache.modVersions.filter((mV) => modVersion.dependencies.includes(mV.id) && mV.status === Status.Verified);
+            mVDeps = [];
+        }
+        
         if (!mVDeps) {
             return null;
         }
@@ -227,7 +234,7 @@ export class BeatModsRoutes {
                     }
                     dependencies.push(convertedDependency);
                 } else {
-                    dependencies.push(dependency.toString());
+                    dependencies.push(dependency.id.toString());
                 }
             }
         }
