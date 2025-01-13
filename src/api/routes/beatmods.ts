@@ -128,57 +128,77 @@ export class BeatModsRoutes {
 
         let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === version && gameVersion.gameName === SupportedGames.BeatSaber);
         if (!gameVersion && !version) {
-            gameVersion = await GameVersion.getDefaultVersionObject(SupportedGames.BeatSaber);
+            gameVersion = undefined;
         } else if (!gameVersion) {
             return res.status(400).send({ message: `Missing Game Version.`});
         }
 
-        if (!gameVersion) {
-            return res.status(400).send({ message: `Invalid Game Version.`});
-        }
-
-        let showUnverified = status !== `approved`;
-        let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
+        if (gameVersion) {
+            let showUnverified = status !== `approved`;
+            let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
         
-        let mods = await gameVersion.getSupportedMods(Platform.UniversalPC, statuses);
-        for (let mod of mods) {
-            let convertedMod = await this.convertToBeatmodsMod(mod.mod, mod.latest, gameVersion, true);
-            if (!convertedMod) {
-                Logger.debugWarn(`Failed to convert mod ${mod.mod.name} v${mod.latest.modVersion.raw} to BeatMods format.`, `getMod`);
-                continue;
+            let mods = await gameVersion.getSupportedMods(Platform.UniversalPC, statuses);
+            for (let mod of mods) {
+                let convertedMod = await this.convertToBeatmodsMod(mod.mod, mod.latest, gameVersion, true);
+                if (!convertedMod) {
+                    Logger.debugWarn(`Failed to convert mod ${mod.mod.name} v${mod.latest.modVersion.raw} to BeatMods format.`, `getMod`);
+                    continue;
+                }
+                modArray.push(convertedMod);
             }
-            modArray.push(convertedMod);
-        }
-        let preLength = modArray.length;
-        modArray = modArray.filter((modi) => {
-            if (!modi) {
-                return false;
-            }
+            let preLength = modArray.length;
+            modArray = modArray.filter((modi) => {
+                if (!modi) {
+                    return false;
+                }
 
-            if (!modi.dependencies) {
-                return false;
-            }
+                if (!modi.dependencies) {
+                    return false;
+                }
 
-            //let errors: any[] = [];
-            for (let dependency of modi.dependencies) {
-                if (typeof dependency === `string`) {
-                    if (!modArray.find((modii) => modii._id === dependency)) {
+                //let errors: any[] = [];
+                for (let dependency of modi.dependencies) {
+                    if (typeof dependency === `string`) {
+                        if (!modArray.find((modii) => modii._id === dependency)) {
                         //errors.push(dependency);
-                        return false;
-                    }
-                } else {
-                    if (!modArray.find((modii) => modii._id === dependency._id)) {
+                            return false;
+                        }
+                    } else {
+                        if (!modArray.find((modii) => modii._id === dependency._id)) {
                         //errors.push(dependency._id);
-                        return false;
+                            return false;
+                        }
                     }
                 }
+
+                return true;
+            });
+
+            if (modArray.length !== preLength) {
+                Logger.debugWarn(`Some mods were removed due to missing dependencies. (${modArray.length} out of ${preLength})`, `getMod`);
             }
+        } else {
+            let modVersions = DatabaseHelper.cache.modVersions.filter((mV) => mV.status === Status.Verified || mV.status === Status.Unverified);
+            for (let modVersion of modVersions) {
+                let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
+                if (!mod) {
+                    continue;
+                }
+                if (!modVersion.supportedGameVersionIds[0]) {
+                    continue;
+                }
+                let baseGV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === modVersion.supportedGameVersionIds[0]);
+                if (!baseGV) {
+                    continue;
+                }
 
-            return true;
-        });
-
-        if (modArray.length !== preLength) {
-            Logger.debugWarn(`Some mods were removed due to missing dependencies. (${modArray.length} out of ${preLength})`, `getMod`);
+                let bmMod = await this.convertToBeatmodsMod(mod, modVersion, baseGV, true);
+                if (!bmMod) {
+                    Logger.debugWarn(`Failed to convert mod ${mod.name} v${modVersion.modVersion.raw} to BeatMods format.`, `getMod`);
+                    continue;
+                }
+                modArray.push(bmMod);
+            }
         }
         return res.status(200).send(modArray);
     }
