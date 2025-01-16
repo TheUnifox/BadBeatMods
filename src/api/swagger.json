@@ -273,13 +273,60 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "description": "Update a mod.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "Mod ID"
+          },
+          {
+            "name": "body",
+            "description": "Mod data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "authorIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            },
+            "in": "query"
           }
         ],
         "responses": {
@@ -1354,8 +1401,12 @@
           },
           "500": {
             "description": "Error updating mod."
+          },
+          "501": {
+            "description": "Not Implemented"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/approval/modversion/{modVersionIdParam}": {
@@ -1442,8 +1493,12 @@
           },
           "500": {
             "description": "Error updating modVersion."
+          },
+          "501": {
+            "description": "Not Implemented"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/approval/edit/{editIdParam}": {

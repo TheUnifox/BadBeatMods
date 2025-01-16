@@ -18,6 +18,22 @@ export class UpdateModRoutes {
         // #region Update Mod
         this.router.patch(`/mods/:modIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            // #swagger.description = `Update a mod.`
+            // #swagger.parameters['modIdParam'] = { description: 'Mod ID', type: 'integer' }
+            /* #swagger.parameters['body'] = {
+                description: 'Mod data',
+                required: true,
+                schema: {
+                    name: 'string',
+                    summary: 'string',
+                    description: 'string',
+                    category: 'string',
+                    authorIds: [1, 2, 3],
+                    gitUrl: 'string',
+                    gameName: 'string'
+                }
+            }
+            */
             let modId = Validator.zDBID.safeParse(req.params.modIdParam);
             let reqBody = Validator.zUpdateMod.safeParse(req.body);
             if (!modId.success) {
@@ -37,7 +53,7 @@ export class UpdateModRoutes {
                 return res.status(400).send({ message: `No changes provided.` });
             }
 
-            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId.data } });
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
@@ -92,10 +108,10 @@ export class UpdateModRoutes {
                         category: reqBody.data.category || mod.category,
                     }
                 }).then((edit) => {
-                    res.status(200).send({ message: `Edit submitted for approval.`, edit: edit });
+                    res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
-                    res.status(500).send({ message: `Error submitting edit.` });
+                    res.status(500).send({ message: `Error creating edit submitted by ${session.user.id}.` });
                 });
             } else {
                 await mod.update({
@@ -108,10 +124,10 @@ export class UpdateModRoutes {
                     category: reqBody.data.category || mod.category,
                     lastUpdatedById: session.user.id,
                 }).then((mod) => {
-                    res.status(200).send({ message: `Mod updated.`, edit: mod });
+                    res.status(200).send({ message: `Mod ${mod.id} updated by ${session.user.id}.`, edit: mod });
                 }).catch((error) => {
                     Logger.error(`Error updating mod: ${error}`);
-                    res.status(500).send({ message: `Error updating mod.` });
+                    res.status(500).send({ message: `Error updating mod ${mod.id}.` });
                 });
             }
         });
@@ -120,6 +136,19 @@ export class UpdateModRoutes {
         // #region Update Mod Version
         this.router.patch(`/modversion/:modVersionIdParam`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            // #swagger.description = `Update a mod version.`
+            // #swagger.parameters['modVersionIdParam'] = { description: 'Mod Version ID', type: 'integer' }
+            /* #swagger.parameters['body'] = {
+                description: 'Mod version data',
+                required: true,
+                schema: {
+                    supportedGameVersionIds: [1, 2, 3],
+                    modVersion: 'string',
+                    dependencies: [1, 2, 3],
+                    platform: 'string'
+                }
+            }
+            */
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             let reqBody = Validator.zUpdateModVersion.safeParse(req.body);
 
@@ -192,7 +221,7 @@ export class UpdateModRoutes {
                         platform: reqBody.data.platform || modVersion.platform,
                     }
                 }).then((edit) => {
-                    res.status(200).send({ message: `Edit submitted for approval.`, edit: edit });
+                    res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
                     res.status(500).send({ message: `Error submitting edit.` });
