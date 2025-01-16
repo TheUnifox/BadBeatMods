@@ -251,6 +251,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit a mod in the approval queue.'
             // #swagger.description = 'Edit a mod in the approval queue.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to edit.', type: 'integer', required: true }
+            // #swagger.deprecated = true
             /* #swagger.parameters['body'] = {
                 in: 'body',
                 required: true,
@@ -270,6 +271,8 @@ export class ApprovalRoutes {
             // #swagger.responses[401] = { description: 'Unauthorized.' }
             // #swagger.responses[404] = { description: 'Mod not found.' }
             // #swagger.responses[500] = { description: 'Error updating mod.' }
+            return res.status(501).send({ message: `This endpoint is deprecated.` });
+            /*
             let modId = Validator.zDBID.safeParse(req.params.modIdParam);
             if (!modId.success) {
                 return res.status(400).send({ message: `Invalid mod id.` });
@@ -322,6 +325,7 @@ export class ApprovalRoutes {
                 Logger.error(`Error updating mod ${modId.data}: ${error}`);
                 return res.status(500).send({ message: `Error updating mod: ${error}` });
             });
+            */
         });
 
         this.router.patch(`/approval/modversion/:modVersionIdParam`, async (req, res) => {
@@ -329,6 +333,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit a modVersion in the approval queue.'
             // #swagger.description = 'Edit a modVersion in the approval queue.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to edit.', type: 'integer', required: true }
+            // #swagger.deprecated = true
             /* #swagger.parameters['body'] = {
                 in: 'body',
                 required: true,
@@ -345,6 +350,8 @@ export class ApprovalRoutes {
             // #swagger.responses[401] = { description: 'Unauthorized.' }
             // #swagger.responses[404] = { description: 'ModVersion not found.' }
             // #swagger.responses[500] = { description: 'Error updating modVersion.' }
+            return res.status(501).send({ message: `This endpoint is deprecated.` });
+            /*
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             if (!modVersionId.success) {
                 return res.status(400).send({ message: `Invalid mod version id.` });
@@ -389,6 +396,7 @@ export class ApprovalRoutes {
                 Logger.error(`Error updating modVersion ${modVersionId.data}: ${error}`);
                 return res.status(500).send({ message: `Error updating modVersion: ${error}` });
             });
+            */
         });
 
         this.router.patch(`/approval/edit/:editIdParam`, async (req, res) => {
