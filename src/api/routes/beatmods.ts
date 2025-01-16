@@ -133,10 +133,10 @@ export class BeatModsRoutes {
             return res.status(400).send({ message: `Missing Game Version.`});
         }
 
+        let showUnverified = status !== `approved`;
+        let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
+
         if (gameVersion) {
-            let showUnverified = status !== `approved`;
-            let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
-        
             let mods = await gameVersion.getSupportedMods(Platform.UniversalPC, statuses);
             for (let mod of mods) {
                 let convertedMod = await this.convertToBeatmodsMod(mod.mod, mod.latest, gameVersion, true);
@@ -178,7 +178,7 @@ export class BeatModsRoutes {
                 Logger.debugWarn(`Some mods were removed due to missing dependencies. (${modArray.length} out of ${preLength})`, `getMod`);
             }
         } else {
-            let modVersions = DatabaseHelper.cache.modVersions.filter((mV) => mV.status === Status.Verified);
+            let modVersions = DatabaseHelper.cache.modVersions.filter((mV) => statuses.includes(mV.status));
             for (let modVersion of modVersions) {
                 let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
                 if (!mod) {
