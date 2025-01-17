@@ -25,6 +25,7 @@ import { MOTDRoutes } from './api/routes/motd';
 import { UserRoutes } from './api/routes/users';
 import path from 'node:path';
 import fs from 'node:fs';
+import { StatusRoutes } from './api/routes/status';
 
 console.log(`Starting setup...`);
 new Config();
@@ -121,6 +122,7 @@ new AdminRoutes(apiRouter);
 new VersionsRoutes(apiRouter);
 new MOTDRoutes(apiRouter);
 new UserRoutes(apiRouter);
+new StatusRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
     swaggerDocument.host = `${Config.server.url.replace(`http://`, ``).replace(`https://`, ``)}${Config.server.apiRoute}`;

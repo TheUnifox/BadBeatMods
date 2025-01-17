@@ -21,10 +21,6 @@
       "description": "Version Management"
     },
     {
-      "name": "Admin",
-      "description": "Admin related endpoints"
-    },
-    {
       "name": "Approval",
       "description": "Approval related endpoints"
     },
@@ -35,6 +31,14 @@
     {
       "name": "Users",
       "description": "User related endpoints"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin related endpoints"
+    },
+    {
+      "name": "Status",
+      "description": "Status related endpoints"
     },
     {
       "name": "BeatMods",
@@ -481,13 +485,55 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "description": "Update a mod version.",
         "parameters": [
           {
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "Mod Version ID"
+          },
+          {
+            "name": "body",
+            "description": "Mod version data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "modVersion": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            },
+            "in": "query"
           }
         ],
         "responses": {
@@ -1821,6 +1867,23 @@
           },
           "404": {
             "description": "User not found."
+          }
+        }
+      }
+    },
+    "/bbmStatusForBbmAlsoPinkEraAndLillieAreCuteBtwWilliamGay": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Get API status.",
+        "description": "Get API status.",
+        "responses": {
+          "200": {
+            "description": "Returns API status."
+          },
+          "500": {
+            "description": "Internal server error."
           }
         }
       }
