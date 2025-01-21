@@ -100,13 +100,15 @@ apiRouter.use(rateLimit({
     skipSuccessfulRequests: false,
 }));
 
-cdnRouter.use(rateLimit({
+const cdnRateLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 200,
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: false,
-}));
+});
+
+cdnRouter.use(cdnRateLimiter);
 
 //app.use(`/api`, Validator.runValidator);
 if (Config.flags.enableBeatModsCompatibility) {
@@ -140,7 +142,7 @@ if (Config.flags.enableFavicon) {
 }
         
 if (Config.flags.enableBanner) {
-    app.get(`/banner.png`, (req, res) => {
+    app.get(`/banner.png`, cdnRateLimiter, (req, res) => {
         res.sendFile(path.resolve(`./assets/banner.png`), {
             maxAge: 1000 * 60 * 60 * 24 * 1,
             //immutable: true,
@@ -150,7 +152,7 @@ if (Config.flags.enableBanner) {
 }
 
 if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
-    app.use(`/`, express.static(path.resolve(`./storage/frontend`), {
+    app.use(`/`, cdnRateLimiter, express.static(path.resolve(`./storage/frontend`), {
         dotfiles: `ignore`,
         immutable: false,
         index: true,
