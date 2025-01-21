@@ -427,7 +427,50 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Create a mod.",
+        "description": "Create a mod.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "icon",
+            "in": "formData",
+            "type": "file",
+            "description": "Mod icon.",
+            "required": false
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -449,13 +492,57 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Upload a mod version.",
+        "description": "Upload a mod version.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number",
+            "description": "Mod ID."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "modVersion": {
+                  "type": "string",
+                  "example": "1.0.0"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "description": "Mod zip file.",
+            "required": true
           }
         ],
         "responses": {
@@ -1186,19 +1273,16 @@
             "description": "The id of the mod to approve."
           },
           {
-            "name": "status",
-            "description": "The status to set the mod to.",
-            "type": "string",
-            "in": "query"
-          },
-          {
             "name": "body",
             "in": "body",
+            "required": true,
+            "description": "The status to set the mod to.",
             "schema": {
               "type": "object",
               "properties": {
                 "status": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "string"
                 }
               }
             }
@@ -1239,19 +1323,16 @@
             "description": "The id of the modVersion to approve."
           },
           {
-            "name": "status",
-            "description": "The status to set the modVersion to.",
-            "type": "string",
-            "in": "query"
-          },
-          {
             "name": "body",
             "in": "body",
+            "required": true,
+            "description": "The status to set the modVersion to.",
             "schema": {
               "type": "object",
               "properties": {
                 "status": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "string"
                 }
               }
             }
@@ -1292,19 +1373,16 @@
             "description": "The id of the edit to approve."
           },
           {
-            "name": "accepted",
-            "description": "The status to set the edit to.",
-            "type": "boolean",
-            "in": "query"
-          },
-          {
             "name": "body",
             "in": "body",
+            "required": true,
+            "description": "The accepted value.",
             "schema": {
               "type": "object",
               "properties": {
                 "accepted": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "boolean"
                 }
               }
             }
