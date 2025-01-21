@@ -104,7 +104,15 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve a mod.'
             // #swagger.description = 'Approve a mod for public visibility.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to approve.', type: 'integer' }
-            // #swagger.parameters['status'] = { description: 'The status to set the mod to.', type: 'string' }
+            /* #swagger.parameters['body'] = {
+                    in: 'body',
+                    required: true,
+                    description: 'The status to set the mod to.',
+                    schema: {
+                        status: 'string',
+                    }
+                }
+            */
             // #swagger.responses[200] = { description: 'Mod status updated.' }
             // #swagger.responses[400] = { description: 'Missing status.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -149,7 +157,15 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve a modVersion.'
             // #swagger.description = 'Approve a modVersion for public visibility.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to approve.', type: 'integer' }
-            // #swagger.parameters['status'] = { description: 'The status to set the modVersion to.', type: 'string' }
+            /* #swagger.parameters['body'] = {
+                    in: 'body',
+                    required: true,
+                    description: 'The status to set the modVersion to.',
+                    schema: {
+                        status: 'string',
+                    }
+                }
+            */
             // #swagger.responses[200] = { description: 'ModVersion status updated.' }
             // #swagger.responses[400] = { description: 'Missing status.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -199,7 +215,15 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve an edit.'
             // #swagger.description = 'Approve an edit for public visibility.'
             // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to approve.', type: 'integer' }
-            // #swagger.parameters['accepted'] = { description: 'The status to set the edit to.', type: 'boolean' }
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                required: true,
+                description: 'The accepted value.',
+                schema: {
+                    accepted: 'boolean',
+                }
+            }
+            */
             // #swagger.responses[200] = { description: 'Edit status updated.' }
             // #swagger.responses[400] = { description: 'Missing status.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -432,7 +456,7 @@ export class ApprovalRoutes {
                     category: 'string',
                     gameName: 'string',
                     authorIds: [1, 2, 3],
-                    
+
                     supportedGameVersionIds: [1, 2, 3],
                     modVersion: 'string',
                     platform: 'string',
