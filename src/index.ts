@@ -25,6 +25,7 @@ import { MOTDRoutes } from './api/routes/motd';
 import { UserRoutes } from './api/routes/users';
 import path from 'node:path';
 import fs from 'node:fs';
+import { StatusRoutes } from './api/routes/status';
 
 console.log(`Starting setup...`);
 new Config();
@@ -99,13 +100,15 @@ apiRouter.use(rateLimit({
     skipSuccessfulRequests: false,
 }));
 
-cdnRouter.use(rateLimit({
+const cdnRateLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 200,
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: false,
-}));
+});
+
+cdnRouter.use(cdnRateLimiter);
 
 //app.use(`/api`, Validator.runValidator);
 if (Config.flags.enableBeatModsCompatibility) {
@@ -121,6 +124,7 @@ new AdminRoutes(apiRouter);
 new VersionsRoutes(apiRouter);
 new MOTDRoutes(apiRouter);
 new UserRoutes(apiRouter);
+new StatusRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
     swaggerDocument.host = `${Config.server.url.replace(`http://`, ``).replace(`https://`, ``)}${Config.server.apiRoute}`;
@@ -128,7 +132,7 @@ if (Config.flags.enableSwagger) {
 }
 
 if (Config.flags.enableFavicon) {
-    app.get(`/favicon.ico`, (req, res) => {
+    app.get(`/favicon.ico`, cdnRateLimiter, (req, res) => {
         res.sendFile(path.resolve(`./assets/favicon.png`), {
             maxAge: 1000 * 60 * 60 * 24 * 1,
             //immutable: true,
@@ -138,7 +142,7 @@ if (Config.flags.enableFavicon) {
 }
         
 if (Config.flags.enableBanner) {
-    app.get(`/banner.png`, (req, res) => {
+    app.get(`/banner.png`, cdnRateLimiter, (req, res) => {
         res.sendFile(path.resolve(`./assets/banner.png`), {
             maxAge: 1000 * 60 * 60 * 24 * 1,
             //immutable: true,
@@ -148,7 +152,7 @@ if (Config.flags.enableBanner) {
 }
 
 if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
-    app.use(`/`, express.static(path.resolve(`./storage/frontend`), {
+    app.use(`/`, cdnRateLimiter, express.static(path.resolve(`./storage/frontend`), {
         dotfiles: `ignore`,
         immutable: false,
         index: true,

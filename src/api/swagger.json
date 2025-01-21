@@ -21,10 +21,6 @@
       "description": "Version Management"
     },
     {
-      "name": "Admin",
-      "description": "Admin related endpoints"
-    },
-    {
       "name": "Approval",
       "description": "Approval related endpoints"
     },
@@ -35,6 +31,14 @@
     {
       "name": "Users",
       "description": "User related endpoints"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin related endpoints"
+    },
+    {
+      "name": "Status",
+      "description": "Status related endpoints"
     },
     {
       "name": "BeatMods",
@@ -273,13 +277,60 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "description": "Update a mod.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "Mod ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Mod data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "authorIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -376,7 +427,50 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Create a mod.",
+        "description": "Create a mod.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "icon",
+            "in": "formData",
+            "type": "file",
+            "description": "Mod icon.",
+            "required": false
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -398,13 +492,57 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "summary": "Upload a mod version.",
+        "description": "Upload a mod version.",
         "parameters": [
           {
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "number",
+            "description": "Mod ID."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "modVersion": {
+                  "type": "string",
+                  "example": "1.0.0"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "description": "Mod zip file.",
+            "required": true
           }
         ],
         "responses": {
@@ -434,13 +572,55 @@
         "tags": [
           "Mods"
         ],
-        "description": "",
+        "description": "Update a mod version.",
         "parameters": [
           {
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "description": "Mod Version ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Mod version data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "modVersion": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -570,15 +750,15 @@
           },
           "400": {
             "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
           }
         }
       }
     },
     "/auth/discord": {
       "get": {
+        "tags": [
+          "Auth"
+        ],
         "description": "",
         "responses": {
           "400": {
@@ -589,6 +769,9 @@
     },
     "/auth/discord/callback": {
       "get": {
+        "tags": [
+          "Auth"
+        ],
         "description": "",
         "responses": {
           "200": {
@@ -616,38 +799,6 @@
           },
           "500": {
             "description": "Internal server error."
-          }
-        }
-      }
-    },
-    "/link/discord": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/link/discord/callback": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
           }
         }
       }
@@ -1122,19 +1273,16 @@
             "description": "The id of the mod to approve."
           },
           {
-            "name": "status",
-            "description": "The status to set the mod to.",
-            "type": "string",
-            "in": "query"
-          },
-          {
             "name": "body",
             "in": "body",
+            "required": true,
+            "description": "The status to set the mod to.",
             "schema": {
               "type": "object",
               "properties": {
                 "status": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "string"
                 }
               }
             }
@@ -1175,19 +1323,16 @@
             "description": "The id of the modVersion to approve."
           },
           {
-            "name": "status",
-            "description": "The status to set the modVersion to.",
-            "type": "string",
-            "in": "query"
-          },
-          {
             "name": "body",
             "in": "body",
+            "required": true,
+            "description": "The status to set the modVersion to.",
             "schema": {
               "type": "object",
               "properties": {
                 "status": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "string"
                 }
               }
             }
@@ -1228,19 +1373,16 @@
             "description": "The id of the edit to approve."
           },
           {
-            "name": "accepted",
-            "description": "The status to set the edit to.",
-            "type": "boolean",
-            "in": "query"
-          },
-          {
             "name": "body",
             "in": "body",
+            "required": true,
+            "description": "The accepted value.",
             "schema": {
               "type": "object",
               "properties": {
                 "accepted": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "boolean"
                 }
               }
             }
@@ -1354,8 +1496,12 @@
           },
           "500": {
             "description": "Error updating mod."
+          },
+          "501": {
+            "description": "Not Implemented"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/approval/modversion/{modVersionIdParam}": {
@@ -1442,8 +1588,12 @@
           },
           "500": {
             "description": "Error updating modVersion."
+          },
+          "501": {
+            "description": "Not Implemented"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/approval/edit/{editIdParam}": {
@@ -1462,79 +1612,80 @@
             "description": "The id of the edit to edit."
           },
           {
-            "name": "name",
-            "description": "The new name of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "summary",
-            "description": "The new summary of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "description",
-            "description": "The new description of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "gitUrl",
-            "description": "The new gitUrl of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "category",
-            "description": "The new category of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "authorIds",
-            "description": "The new authorIds of the mod.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "gameName",
-            "description": "The new gameName of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "gameVersionIds",
-            "description": "The new gameVersionIds of the mod.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "modVersion",
-            "description": "The new modVersion of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "dependencyIds",
-            "description": "The new dependencyIds of the mod.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "platform",
-            "description": "The new platform of the mod.",
-            "type": "string",
-            "in": "query"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "The edit object to update.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "authorIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "modVersion": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -1683,7 +1834,7 @@
     "/user": {
       "get": {
         "tags": [
-          "User"
+          "Users"
         ],
         "summary": "Get logged in user information.",
         "description": "Get user information.",
@@ -1703,7 +1854,7 @@
     "/user/{id}": {
       "get": {
         "tags": [
-          "User"
+          "Users"
         ],
         "summary": "Get user information.",
         "description": "Get user information.",
@@ -1732,7 +1883,7 @@
     "/user/{id}/mods": {
       "get": {
         "tags": [
-          "User"
+          "Users"
         ],
         "summary": "Get user information.",
         "description": "Get user information.",
@@ -1766,6 +1917,23 @@
           },
           "404": {
             "description": "User not found."
+          }
+        }
+      }
+    },
+    "/bbmStatusForBbmAlsoPinkEraAndLillieAreCuteBtwWilliamGay": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Get API status.",
+        "description": "Get API status.",
+        "responses": {
+          "200": {
+            "description": "Returns API status."
+          },
+          "500": {
+            "description": "Internal server error."
           }
         }
       }

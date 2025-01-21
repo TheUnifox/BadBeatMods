@@ -21,6 +21,25 @@ export class CreateModRoutes {
     private async loadRoutes() {
         this.router.post(`/mods/create`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Create a mod.'
+            // #swagger.description = 'Create a mod.'
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                schema: {
+                    name: 'string',
+                    summary: 'string',
+                    description: 'string',
+                    gitUrl: 'string',
+                    category: 'string',
+                    gameName: 'string',
+                }
+            }
+            #swagger.parameters['icon'] = {
+                in: 'formData',
+                type: 'file',
+                description: 'Mod icon.',
+                required: false
+            } */
             let session = await validateSession(req, res, true);
             if (!session.user) {
                 return;
@@ -90,6 +109,25 @@ export class CreateModRoutes {
 
         this.router.post(`/mods/:modIdParam/upload`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Upload a mod version.'
+            // #swagger.description = 'Upload a mod version.'
+            // #swagger.parameters['modIdParam'] = { description: 'Mod ID.', type: 'number' }
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                schema: {
+                    supportedGameVersionIds: [1],
+                    modVersion: '1.0.0',
+                    dependencies: [1],
+                    platform: 'string',
+                }
+            }
+            #swagger.parameters['file'] = {
+                in: 'formData',
+                type: 'file',
+                description: 'Mod zip file.',
+                required: true
+            } */
+
             let session = await validateSession(req, res, true);
             if (!session.user) {
                 return;

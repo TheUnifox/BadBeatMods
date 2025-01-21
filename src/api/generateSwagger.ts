@@ -16,10 +16,11 @@ const doc = {
         { name: `Mods`, description: `Mod related endpoints` },
         { name: `Auth`, description: `Authentication related endpoints` },
         { name: `Versions`, description: `Version Management` },
-        { name: `Admin`, description: `Admin related endpoints` },
         { name: `Approval`, description: `Approval related endpoints` },
         { name: `MOTD`, description: `Message of the Day related endpoints` },
         { name: `Users`, description: `User related endpoints` },
+        { name: `Admin`, description: `Admin related endpoints` },
+        { name: `Status`, description: `Status related endpoints` },
         { name: `BeatMods`, description: `Legacy BeatMods API endpoints` },
     ],
 };
@@ -37,6 +38,7 @@ const routes = [
     `./routes/approval.ts`,
     `./routes/motd.ts`,
     `./routes/users.ts`,
+    `./routes/status.ts`,
 ];
 
 swaggerAutogen()(outputFile, routes, doc);
