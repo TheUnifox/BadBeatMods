@@ -96,7 +96,7 @@ apiRouter.use(rateLimit({
     windowMs: 60 * 1000,
     max: 200,
     statusCode: 429,
-    message: `Rate limit exceeded.`,
+    message: {message: `Rate limit exceeded.`},
     skipSuccessfulRequests: false,
 }));
 
