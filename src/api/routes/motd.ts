@@ -23,7 +23,7 @@ export class MOTDRoutes {
                 return res.status(400).send({ message: `Invalid game version.` });
             }
 
-            let motds = MOTD.getActiveMOTDs(reqQuery.data.gameName, [gameVersionObj.id], reqQuery.data.platform, reqQuery.data.getExpired);
+            let motds = await MOTD.getActiveMOTDs(reqQuery.data.gameName, [gameVersionObj.id], reqQuery.data.platform, reqQuery.data.getExpired);
             return res.status(200).send({ messages: motds });
         });
 

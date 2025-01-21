@@ -288,6 +288,7 @@
           },
           {
             "name": "body",
+            "in": "body",
             "description": "Mod data",
             "required": true,
             "schema": {
@@ -329,8 +330,7 @@
                   "example": "string"
                 }
               }
-            },
-            "in": "query"
+            }
           }
         ],
         "responses": {
@@ -496,6 +496,7 @@
           },
           {
             "name": "body",
+            "in": "body",
             "description": "Mod version data",
             "required": true,
             "schema": {
@@ -532,8 +533,7 @@
                   "example": "string"
                 }
               }
-            },
-            "in": "query"
+            }
           }
         ],
         "responses": {
@@ -663,15 +663,15 @@
           },
           "400": {
             "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
           }
         }
       }
     },
     "/auth/discord": {
       "get": {
+        "tags": [
+          "Auth"
+        ],
         "description": "",
         "responses": {
           "400": {
@@ -682,6 +682,9 @@
     },
     "/auth/discord/callback": {
       "get": {
+        "tags": [
+          "Auth"
+        ],
         "description": "",
         "responses": {
           "200": {
@@ -709,38 +712,6 @@
           },
           "500": {
             "description": "Internal server error."
-          }
-        }
-      }
-    },
-    "/link/discord": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/link/discord/callback": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
           }
         }
       }
@@ -1563,79 +1534,80 @@
             "description": "The id of the edit to edit."
           },
           {
-            "name": "name",
-            "description": "The new name of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "summary",
-            "description": "The new summary of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "description",
-            "description": "The new description of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "gitUrl",
-            "description": "The new gitUrl of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "category",
-            "description": "The new category of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "authorIds",
-            "description": "The new authorIds of the mod.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "gameName",
-            "description": "The new gameName of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "gameVersionIds",
-            "description": "The new gameVersionIds of the mod.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "modVersion",
-            "description": "The new modVersion of the mod.",
-            "type": "string",
-            "in": "query"
-          },
-          {
-            "name": "dependencyIds",
-            "description": "The new dependencyIds of the mod.",
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "in": "query"
-          },
-          {
-            "name": "platform",
-            "description": "The new platform of the mod.",
-            "type": "string",
-            "in": "query"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "The edit object to update.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gitUrl": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "gameName": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "authorIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "supportedGameVersionIds": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "modVersion": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "platform": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "example": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -1784,7 +1756,7 @@
     "/user": {
       "get": {
         "tags": [
-          "User"
+          "Users"
         ],
         "summary": "Get logged in user information.",
         "description": "Get user information.",
@@ -1804,7 +1776,7 @@
     "/user/{id}": {
       "get": {
         "tags": [
-          "User"
+          "Users"
         ],
         "summary": "Get user information.",
         "description": "Get user information.",
@@ -1833,7 +1805,7 @@
     "/user/{id}/mods": {
       "get": {
         "tags": [
-          "User"
+          "Users"
         ],
         "summary": "Get user information.",
         "description": "Get user information.",

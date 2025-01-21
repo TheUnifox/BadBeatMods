@@ -82,6 +82,7 @@ export class AuthRoutes {
         ));
 
         this.router.get(`/auth/github`, async (req, res, next) => {
+            // #swagger.tags = ['Auth']
             let state = this.prepAuth(req, undefined, 10);
             if (!state) {
                 return res.status(400).send({ error: `Invalid parameters.` });
@@ -90,6 +91,7 @@ export class AuthRoutes {
         });
           
         this.router.get(`/auth/github/callback`, passport.authenticate(`github`, { failureRedirect: `/` }), async (req, res) => {
+            // #swagger.tags = ['Auth']
             let state = req.query[`state`];
             if (!state) {
                 return res.status(400).send({ error: `Invalid parameters.` });
@@ -125,6 +127,7 @@ export class AuthRoutes {
         }));
 
         this.router.get(`/auth/discord`, async (req, res, next) => {
+            // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
             if (!session.user) {
                 return;
@@ -137,6 +140,7 @@ export class AuthRoutes {
         });
 
         this.router.get(`/auth/discord/callback`, passport.authenticate(`discord`, { failureRedirect: `/`, session: false }), async (req, res) => {
+            // #swagger.tags = ['Auth']
             let state = req.query[`state`];
             if (!state) {
                 return res.status(400).send({ error: `Invalid parameters.` });
@@ -183,6 +187,7 @@ export class AuthRoutes {
         });
         /*
         this.router.get(`/auth/github`, async (req, res) => {
+         // #swagger.ignore = true
             // #swagger.tags = ['Auth']
             let state = this.prepAuth(req);
             if (!state) {
@@ -192,6 +197,7 @@ export class AuthRoutes {
         });
 
         this.router.get(`/auth/github/callback`, async (req, res) => {
+            // #swagger.ignore = true
             // #swagger.tags = ['Auth']
             let reqQuery = Validator.zOAuth2Callback.safeParse(req.query);
             if (!reqQuery.success) {
@@ -236,6 +242,7 @@ export class AuthRoutes {
         });
 
         this.router.get(`/link/discord`, async (req, res) => {
+            // #swagger.ignore = true
             // #swagger.tags = ['Auth']
             let session = await validateSession(req, res, false);
             if (!session.user) {
@@ -249,6 +256,7 @@ export class AuthRoutes {
         });
 
         this.router.get(`/link/discord/callback`, async (req, res) => {
+            // #swagger.ignore = true
             // #swagger.tags = ['Auth']
             let reqQuery = Validator.zOAuth2Callback.safeParse(req.query);
             if (!reqQuery.success) {

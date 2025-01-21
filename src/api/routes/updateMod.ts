@@ -21,6 +21,7 @@ export class UpdateModRoutes {
             // #swagger.description = `Update a mod.`
             // #swagger.parameters['modIdParam'] = { description: 'Mod ID', type: 'integer' }
             /* #swagger.parameters['body'] = {
+                in: 'body',
                 description: 'Mod data',
                 required: true,
                 schema: {
@@ -108,6 +109,7 @@ export class UpdateModRoutes {
                         category: reqBody.data.category || mod.category,
                     }
                 }).then((edit) => {
+                    Logger.log(`Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`);
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
@@ -139,6 +141,7 @@ export class UpdateModRoutes {
             // #swagger.description = `Update a mod version.`
             // #swagger.parameters['modVersionIdParam'] = { description: 'Mod Version ID', type: 'integer' }
             /* #swagger.parameters['body'] = {
+                in: 'body',
                 description: 'Mod version data',
                 required: true,
                 schema: {
