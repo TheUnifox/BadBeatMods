@@ -132,7 +132,7 @@ if (Config.flags.enableSwagger) {
 }
 
 if (Config.flags.enableFavicon) {
-    app.get(`/favicon.ico`, (req, res) => {
+    app.get(`/favicon.ico`, cdnRateLimiter, (req, res) => {
         res.sendFile(path.resolve(`./assets/favicon.png`), {
             maxAge: 1000 * 60 * 60 * 24 * 1,
             //immutable: true,
