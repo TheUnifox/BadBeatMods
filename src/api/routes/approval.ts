@@ -126,6 +126,14 @@ export class ApprovalRoutes {
                 return;
             }
 
+            if (mod.status !== Status.Unverified) {
+                return res.status(400).send({ message: `Mod is not in unverified status.` });
+            }
+
+            if (status.data === Status.Unverified) {
+                return res.status(400).send({ message: `Invalid status.` });
+            }
+
             mod.setStatus(status.data, session.user).then(() => {
                 Logger.log(`Mod ${modId.data} set to status ${status.data} by ${session.user!.username}.`);
                 DatabaseHelper.refreshCache(`mods`);
@@ -166,6 +174,14 @@ export class ApprovalRoutes {
             let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
             if (!mod) {
                 return res.status(404).send({ message: `Mod not found.` });
+            }
+
+            if (modVersion.status !== Status.Unverified) {
+                return res.status(400).send({ message: `Mod is not in unverified status.` });
+            }
+
+            if (status.data === Status.Unverified) {
+                return res.status(400).send({ message: `Invalid status. Use /approval/modVersion/:modVersionIdParam/revoke instead` });
             }
 
             modVersion.setStatus(status.data, session.user).then(() => {
@@ -404,17 +420,25 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit an edit in the approval queue.'
             // #swagger.description = 'Edit an edit in the approval queue.'
             // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to edit.', type: 'integer', required: true }
-            // #swagger.parameters['name'] = { description: 'The new name of the mod.', type: 'string' }
-            // #swagger.parameters['summary'] = { description: 'The new summary of the mod.', type: 'string' }
-            // #swagger.parameters['description'] = { description: 'The new description of the mod.', type: 'string' }
-            // #swagger.parameters['gitUrl'] = { description: 'The new gitUrl of the mod.', type: 'string' }
-            // #swagger.parameters['category'] = { description: 'The new category of the mod.', type: 'string' }
-            // #swagger.parameters['authorIds'] = { description: 'The new authorIds of the mod.', type: 'array', items: { type: 'integer' } }
-            // #swagger.parameters['gameName'] = { description: 'The new gameName of the mod.', type: 'string' }
-            // #swagger.parameters['gameVersionIds'] = { description: 'The new gameVersionIds of the mod.', type: 'array', items: { type: 'integer' } }
-            // #swagger.parameters['modVersion'] = { description: 'The new modVersion of the mod.', type: 'string' }
-            // #swagger.parameters['dependencyIds'] = { description: 'The new dependencyIds of the mod.', type: 'array', items: { type: 'integer' } }
-            // #swagger.parameters['platform'] = { description: 'The new platform of the mod.', type: 'string' }
+            /* #swagger.parameters['body'] = {
+                in: 'body',
+                required: true,
+                description: 'The edit object to update.',
+                schema: {
+                    name: 'string',
+                    summary: 'string',
+                    description: 'string',
+                    gitUrl: 'string',
+                    category: 'string',
+                    gameName: 'string',
+                    authorIds: [1, 2, 3],
+                    
+                    supportedGameVersionIds: [1, 2, 3],
+                    modVersion: 'string',
+                    platform: 'string',
+                    dependencies: [1, 2, 3],
+                }
+            } */
             // #swagger.responses[200] = { description: 'Edit updated.', schema: { edit: {} } }
             // #swagger.responses[400] = { description: 'No changes provided.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
