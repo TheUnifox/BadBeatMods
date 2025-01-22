@@ -60,6 +60,7 @@ const ZodModVersion = z.object({
 export class Validator {
     public static readonly z = z;
     public static readonly zDBID = ZodDBID;
+    public static readonly zDBIDArray = ZodDBIDArray;
     public static readonly zBool = ZodBool;
     public static readonly zString = z.string();
     public static readonly zStatus = ZodStatus;

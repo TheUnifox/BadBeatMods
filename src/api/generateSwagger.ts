@@ -13,14 +13,15 @@ const doc = {
     produces: [`application/json`],
     schemes: [`https`, `http`],
     tags: [
+        { name: `Status`, description: `Status related endpoints` },
         { name: `Mods`, description: `Mod related endpoints` },
-        { name: `Auth`, description: `Authentication related endpoints` },
         { name: `Versions`, description: `Version Management` },
-        { name: `Approval`, description: `Approval related endpoints` },
         { name: `MOTD`, description: `Message of the Day related endpoints` },
+        { name: `Approval`, description: `Approval related endpoints` },
         { name: `Users`, description: `User related endpoints` },
         { name: `Admin`, description: `Admin related endpoints` },
-        { name: `Status`, description: `Status related endpoints` },
+        { name: `Bulk Actions`, description: `Actions that allow you to skip calling the same endpoint over and over again` },
+        { name: `Auth`, description: `Authentication related endpoints` },
         { name: `BeatMods`, description: `Legacy BeatMods API endpoints` },
     ],
 };

@@ -956,6 +956,29 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return this;
     }
 
+    public addGameVersionId(gameVersionId: number, submitterId: number) {
+        if (this.supportedGameVersionIds.includes(gameVersionId)) {
+            return Promise.resolve(null);
+        }
+
+        if (this.status !== Status.Verified) {
+            this.supportedGameVersionIds = [...this.supportedGameVersionIds, gameVersionId];
+            return this.save();
+        } else {
+            return DatabaseHelper.database.EditApprovalQueue.create({
+                submitterId: submitterId,
+                objectId: this.id,
+                objectTableName: `modVersions`,
+                object: {
+                    dependencies: this.dependencies,
+                    modVersion: this.modVersion,
+                    platform: this.platform,
+                    supportedGameVersionIds: [...this.supportedGameVersionIds, gameVersionId],
+                },
+            });
+        }
+    }
+
     // this function called to see if a duplicate version already exists in the database. if it does, creation of a new version should be halted.
     public static async checkForExistingVersion(modId: number, semver: SemVer, platform:Platform): Promise<ModVersion | null> {
         let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
