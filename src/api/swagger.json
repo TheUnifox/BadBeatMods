@@ -9,24 +9,24 @@
   "basePath": "/",
   "tags": [
     {
-      "name": "Mods",
-      "description": "Mod related endpoints"
+      "name": "Status",
+      "description": "Status related endpoints"
     },
     {
-      "name": "Auth",
-      "description": "Authentication related endpoints"
+      "name": "Mods",
+      "description": "Mod related endpoints"
     },
     {
       "name": "Versions",
       "description": "Version Management"
     },
     {
-      "name": "Approval",
-      "description": "Approval related endpoints"
-    },
-    {
       "name": "MOTD",
       "description": "Message of the Day related endpoints"
+    },
+    {
+      "name": "Approval",
+      "description": "Approval related endpoints"
     },
     {
       "name": "Users",
@@ -37,8 +37,12 @@
       "description": "Admin related endpoints"
     },
     {
-      "name": "Status",
-      "description": "Status related endpoints"
+      "name": "Bulk Actions",
+      "description": "Actions that allow you to skip calling the same endpoint over and over again"
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication related endpoints"
     },
     {
       "name": "BeatMods",
@@ -1930,10 +1934,50 @@
         "description": "Get API status.",
         "responses": {
           "200": {
-            "description": "Returns API status."
+            "description": "Returns API status.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "API is running."
+                },
+                "veryImportantMessage": {
+                  "type": "string",
+                  "example": "pink cute, era cute, lillie cute, william gay"
+                },
+                "apiVersion": {
+                  "type": "string",
+                  "example": "0.0.1"
+                },
+                "gitVersion": {
+                  "type": "string",
+                  "example": "3fc9dbf"
+                },
+                "isDocker": {
+                  "type": "boolean",
+                  "example": false
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           },
           "500": {
-            "description": "Internal server error."
+            "description": "Internal server error.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Internal server error."
+                }
+              },
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         }
       }
