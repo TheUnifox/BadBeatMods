@@ -113,6 +113,7 @@ export class UpdateModRoutes {
                 }).then((edit) => {
                     Logger.log(`Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`);
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
+                    DatabaseHelper.refreshCache(`editApprovalQueue`);
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
                     res.status(500).send({ message: `Error creating edit submitted by ${session.user.id}.` });
@@ -227,6 +228,7 @@ export class UpdateModRoutes {
                     }
                 }).then((edit) => {
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
+                    DatabaseHelper.refreshCache(`editApprovalQueue`);
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
                     res.status(500).send({ message: `Error submitting edit.` });
