@@ -43,9 +43,8 @@ export class UpdateModRoutes {
             if (!reqBody.success) {
                 return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
             }
-            let modOriginalGameName = DatabaseHelper.getGameNameFromModId(modId.data);
             
-            let session = await validateSession(req, res, true, modOriginalGameName);
+            let session = await validateSession(req, res, true);
             if (!session.user) {
                 return;
             }
@@ -65,15 +64,18 @@ export class UpdateModRoutes {
                 allowedToEdit = true;
             }
 
-            if (reqBody.data.gameName) {
-                if (reqBody.data.gameName !== modOriginalGameName) {
-                    if (session.user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.AllPermissions) || session. user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.Approver)) {
+            if (reqBody.data.gameName && reqBody.data.gameName !== mod.gameName) {
+                // if changing game, check if user has permissions for the new game
+                if (session.user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.AllPermissions) || session. user.roles.perGame[reqBody.data.gameName]?.includes(UserRoles.Approver)) {
+                    // and if they have permissions for the current game
+                    if (session.user.roles.perGame[mod.gameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[mod.gameName]?.includes(UserRoles.Approver)) {
                         allowedToEdit = true;
                     }
-                } else {
-                    if (session.user.roles.perGame[modOriginalGameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[modOriginalGameName]?.includes(UserRoles.Approver)) {
-                        allowedToEdit = true;
-                    }
+                }
+            } else {
+                // if not changing game, check if user has permissions for the current game
+                if (session.user.roles.perGame[mod.gameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[mod.gameName]?.includes(UserRoles.Approver)) {
+                    allowedToEdit = true;
                 }
             }
 
