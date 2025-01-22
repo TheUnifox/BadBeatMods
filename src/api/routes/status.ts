@@ -26,9 +26,9 @@ export class StatusRoutes {
             let session = await validateSession(req, res, false, null, false);
             let gitVersion = `Version not found.`;
             let apiVersion = `Version not found.`;
-            if (fs.existsSync(`.git/HEAD`) || process.env.GIT_COMMIT) {
-                if (process.env.GIT_COMMIT) {
-                    gitVersion = `${process.env.GIT_COMMIT.substring(0, 7)}`;
+            if (fs.existsSync(`.git/HEAD`) || process.env.GIT_VERSION) {
+                if (process.env.GIT_VERSION) {
+                    gitVersion = `${process.env.GIT_VERSION.substring(0, 7)}`;
                 } else {
                     let gitId = fs.readFileSync(`.git/HEAD`, `utf8`);
                     if (gitId.indexOf(`:`) !== -1) {

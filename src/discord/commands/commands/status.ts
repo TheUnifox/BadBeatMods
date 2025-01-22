@@ -13,9 +13,9 @@ module.exports = {
             .setContexts(InteractionContextType.PrivateChannel),
         execute: async function exec(luma: Luma, interaction: CommandInteraction) {
             let version = `Version not found.`;
-            if (fs.existsSync(`.git/HEAD`) || process.env.GIT_COMMIT) {
-                if (process.env.GIT_COMMIT) {
-                    version = `Running on commit: ${process.env.GIT_COMMIT.substring(0, 7)}`;
+            if (fs.existsSync(`.git/HEAD`) || process.env.GIT_VERSION) {
+                if (process.env.GIT_VERSION) {
+                    version = `Running on commit: ${process.env.GIT_VERSION.substring(0, 7)}`;
                 } else {
                     let gitId = fs.readFileSync(`.git/HEAD`, `utf8`);
                     if (gitId.indexOf(`:`) !== -1) {
