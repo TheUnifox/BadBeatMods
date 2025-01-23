@@ -1,12 +1,18 @@
 {
-  "swagger": "2.0",
+  "openapi": "3.0.0",
   "info": {
     "title": "BadBeatMods API",
     "description": "This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.",
     "version": "0.0.1"
   },
-  "host": "bbm.saera.gay",
-  "basePath": "/",
+  "servers": [
+    {
+      "url": "https://bbm.saera.gay/"
+    },
+    {
+      "url": "http://bbm.saera.gay/"
+    }
+  ],
   "tags": [
     {
       "name": "Status",
@@ -49,18 +55,6 @@
       "description": "Legacy BeatMods API endpoints"
     }
   ],
-  "schemes": [
-    "https",
-    "http"
-  ],
-  "consumes": [
-    "application/json",
-    "multipart/form-data",
-    "application/x-www-form-urlencoded"
-  ],
-  "produces": [
-    "application/json"
-  ],
   "paths": {
     "/beatmods/mod": {
       "get": {
@@ -73,15 +67,19 @@
           {
             "name": "gameVersion",
             "description": "The game version as a string (ex. '1.29.1', '1.40.0').",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "status",
             "in": "query",
             "description": "The statuses to return. Available statuses are: 'approved' & 'all'",
             "format": "string",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -106,15 +104,19 @@
           {
             "name": "gameVersion",
             "description": "The game version as a string (ex. '1.29.1', '1.40.0').",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "status",
             "in": "query",
             "description": "The statuses to return. Available statuses are: 'approved' & 'all'",
             "format": "string",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -165,12 +167,6 @@
         ],
         "summary": "Legacy BeatMods API Aliases endpoint.",
         "description": "Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
         "responses": {
           "200": {
             "description": "Returns all aliases."
@@ -186,12 +182,6 @@
         ],
         "summary": "Legacy BeatMods API Aliases endpoint.",
         "description": "Legacy BeatMods API endpoint. This is available for mod downloaders that have not been updated to use the new API.<br><br>This endpoint does not work the same way as the old BeatMods API, but it should be close enough to work with most mod downloaders.",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
         "responses": {
           "200": {
             "description": "Returns all aliases."
@@ -211,31 +201,89 @@
           {
             "name": "gameName",
             "description": "The game name.",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "gameVersion",
             "description": "The game version (ex. '1.29.1', '1.40.0').",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "status",
             "description": "The status of the mod. Available status are: 'verified'. Typing anything other than that will show you unverified mods too.",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "platform",
             "description": "The platform of the mod. Available platforms are: 'oculuspc', 'universalpc', 'steampc'",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Returns all mods."
+            "description": "Returns all mods.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mods": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "latest": {
+                            "$ref": "#/components/schemas/ModVersionAPIPublicResponse"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mods": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "latest": {
+                            "$ref": "#/components/schemas/ModVersionAPIPublicResponse"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid gameVersion."
@@ -255,14 +303,18 @@
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "number",
+            "schema": {
+              "type": "string"
+            },
             "description": "The mod ID."
           },
           {
             "name": "raw",
             "description": "Return the raw mod info.",
-            "type": "boolean",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -287,7 +339,9 @@
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "Mod ID"
           },
           {
@@ -368,14 +422,18 @@
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "number",
+            "schema": {
+              "type": "string"
+            },
             "description": "The mod version ID."
           },
           {
             "name": "raw",
             "description": "Return the raw mod depedendcies without attempting to resolve them.",
-            "type": "boolean",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -402,15 +460,19 @@
           {
             "name": "hash",
             "description": "The hash to look up.",
-            "type": "string",
             "required": true,
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "raw",
             "description": "Return the raw mod depedendcies without attempting to resolve them.",
-            "type": "boolean",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -470,9 +532,11 @@
           {
             "name": "icon",
             "in": "formData",
-            "type": "file",
             "description": "Mod icon.",
-            "required": false
+            "required": false,
+            "schema": {
+              "type": "file"
+            }
           }
         ],
         "responses": {
@@ -503,7 +567,9 @@
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "number",
+            "schema": {
+              "type": "string"
+            },
             "description": "Mod ID."
           },
           {
@@ -544,9 +610,11 @@
           {
             "name": "file",
             "in": "formData",
-            "type": "file",
             "description": "Mod zip file.",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "file"
+            }
           }
         ],
         "responses": {
@@ -582,7 +650,9 @@
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "Mod Version ID"
           },
           {
@@ -657,7 +727,9 @@
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -690,7 +762,9 @@
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -830,7 +904,9 @@
           {
             "name": "gameName",
             "in": "query",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -848,14 +924,18 @@
           {
             "name": "version",
             "description": "The version to add",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "gameName",
             "description": "The game name to add the version to",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -884,7 +964,9 @@
           {
             "name": "gameName",
             "in": "query",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -906,7 +988,6 @@
             "name": "body",
             "description": "The ID of the version to set as default",
             "required": true,
-            "type": "object",
             "schema": {
               "type": "object",
               "properties": {
@@ -917,18 +998,6 @@
               }
             },
             "in": "query"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "gameVersionId": {
-                  "example": "any"
-                }
-              }
-            }
           }
         ],
         "responses": {
@@ -940,6 +1009,20 @@
           },
           "404": {
             "description": "Not Found"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameVersionId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1004,21 +1087,27 @@
             "description": "The version ID to check.",
             "required": true,
             "in": "query",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "gameName",
             "description": "The game name to check.",
             "required": true,
             "in": "query",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "includeUnverified",
             "description": "Include unverified mods.",
             "required": false,
-            "type": "boolean",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -1075,6 +1164,23 @@
           "404": {
             "description": "Not Found"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version1": {
+                    "example": "any"
+                  },
+                  "version2": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1119,6 +1225,26 @@
           },
           "404": {
             "description": "Not Found"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "example": "any"
+                  },
+                  "gameName": {
+                    "example": "any"
+                  },
+                  "role": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1165,6 +1291,26 @@
           "404": {
             "description": "Not Found"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "example": "any"
+                  },
+                  "gameName": {
+                    "example": "any"
+                  },
+                  "role": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1179,29 +1325,55 @@
           {
             "name": "gameName",
             "description": "The name of the game to get new mods for.",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "List of mods pending first approval",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "mods": {
-                  "type": "array",
-                  "example": [],
-                  "items": {}
-                },
-                "modVersions": {
-                  "type": "array",
-                  "example": [],
-                  "items": {}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mods": {
+                      "type": "array",
+                      "example": [],
+                      "items": {}
+                    },
+                    "modVersions": {
+                      "type": "array",
+                      "example": [],
+                      "items": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mods": {
+                      "type": "array",
+                      "example": [],
+                      "items": {}
+                    },
+                    "modVersions": {
+                      "type": "array",
+                      "example": [],
+                      "items": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
               }
             }
           },
@@ -1228,24 +1400,45 @@
           {
             "name": "gameName",
             "description": "The name of the game to get edits for.",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "List of edits pending approval",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "edits": {
-                  "type": "array",
-                  "example": [],
-                  "items": {}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "edits": {
+                      "type": "array",
+                      "example": [],
+                      "items": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "edits": {
+                      "type": "array",
+                      "example": [],
+                      "items": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
               }
             }
           },
@@ -1273,7 +1466,9 @@
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the mod to approve."
           },
           {
@@ -1308,6 +1503,20 @@
           "500": {
             "description": "Error approving mod."
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1323,7 +1532,9 @@
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the modVersion to approve."
           },
           {
@@ -1358,6 +1569,20 @@
           "500": {
             "description": "Error approving modVersion."
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1373,7 +1598,9 @@
             "name": "editIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the edit to approve."
           },
           {
@@ -1408,6 +1635,20 @@
           "500": {
             "description": "Error approving edit."
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accepted": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1423,7 +1664,9 @@
             "name": "modIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the mod to edit."
           },
           {
@@ -1476,16 +1719,34 @@
         "responses": {
           "200": {
             "description": "Mod updated.",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "mod": {
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "mod": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mod": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
               }
             }
           },
@@ -1520,7 +1781,9 @@
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the modVersion to edit."
           },
           {
@@ -1568,16 +1831,34 @@
         "responses": {
           "200": {
             "description": "ModVersion updated.",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "modVersion": {
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "modVersion": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "modVersion": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
               }
             }
           },
@@ -1612,7 +1893,9 @@
             "name": "editIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the edit to edit."
           },
           {
@@ -1695,16 +1978,34 @@
         "responses": {
           "200": {
             "description": "Edit updated.",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "edit": {
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "edit": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "edit": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
               }
             }
           },
@@ -1735,26 +2036,18 @@
             "name": "modVersionIdParam",
             "in": "path",
             "required": true,
-            "type": "integer",
+            "schema": {
+              "type": "string"
+            },
             "description": "The id of the modVersion to revoke."
           },
           {
             "name": "allowDependants",
             "description": "Allow dependants to remain verified. This is dangerous.",
-            "type": "boolean",
             "required": true,
-            "in": "query"
-          },
-          {
-            "name": "body",
-            "in": "body",
+            "in": "query",
             "schema": {
-              "type": "object",
-              "properties": {
-                "allowDependants": {
-                  "example": "any"
-                }
-              }
+              "type": "boolean"
             }
           }
         ],
@@ -1767,6 +2060,20 @@
           },
           "404": {
             "description": "Not Found"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "allowDependants": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1781,7 +2088,9 @@
           {
             "name": "gameName",
             "in": "query",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1819,7 +2128,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1867,7 +2178,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "number",
+            "schema": {
+              "type": "string"
+            },
             "description": "User ID."
           }
         ],
@@ -1896,20 +2209,26 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "number",
+            "schema": {
+              "type": "string"
+            },
             "description": "User ID."
           },
           {
             "name": "status",
             "description": "Status of the mod.",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "platform",
             "description": "Platform of the mod.",
-            "type": "string",
-            "in": "query"
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1935,49 +2254,395 @@
         "responses": {
           "200": {
             "description": "Returns API status.",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "API is running."
-                },
-                "veryImportantMessage": {
-                  "type": "string",
-                  "example": "pink cute, era cute, lillie cute, william gay"
-                },
-                "apiVersion": {
-                  "type": "string",
-                  "example": "0.0.1"
-                },
-                "gitVersion": {
-                  "type": "string",
-                  "example": "3fc9dbf"
-                },
-                "isDocker": {
-                  "type": "boolean",
-                  "example": false
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIStatus"
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIStatus"
+                }
               }
             }
           },
           "500": {
             "description": "Internal server error.",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Internal server error."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error."
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
                 }
               },
-              "xml": {
-                "name": "main"
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error."
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
               }
             }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ModAPIPublicResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The mod's internal ID.",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the mod.",
+            "example": "Example Mod"
+          },
+          "summary": {
+            "type": "string",
+            "description": "The summary of the mod.",
+            "example": "This is an example mod."
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the mod. Supports markdown.",
+            "example": "This is an example mod."
+          },
+          "gameName": {
+            "type": "string",
+            "description": "The name of the game this mod is for. This is used to identify the game.",
+            "example": "BeatSaber",
+            "default": "BeatSaber"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "core",
+              "essential",
+              "library",
+              "cosmetic",
+              "practice",
+              "gameplay",
+              "streamtools",
+              "ui",
+              "lighting",
+              "tweaks",
+              "multiplayer",
+              "text",
+              "editor",
+              "other"
+            ]
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/UserAPIPublicResponse"
+                }
+              ]
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "private",
+              "removed",
+              "unverified",
+              "verified"
+            ]
+          },
+          "iconFileName": {
+            "type": "string",
+            "default": "default.png"
+          },
+          "gitUrl": {
+            "type": "string"
+          },
+          "lastApprovedById": {
+            "type": "integer",
+            "nullable": true,
+            "default": null
+          },
+          "lastUpdatedById": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date the mod was added to the API.",
+            "example": "2023-10-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The date the mod was last updated.",
+            "example": "2023-10-01T00:00:00.000Z"
+          }
+        }
+      },
+      "ModVersionAPIPublicResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The version's internal ID.",
+            "example": 1
+          },
+          "modId": {
+            "type": "integer",
+            "description": "The parent mod's internal ID.",
+            "example": 1
+          },
+          "modVersion": {
+            "type": "string",
+            "description": "The version string. This is used to identify the version of the mod. This must be SemVer compliant.",
+            "example": "1.0.0"
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserAPIPublicResponse"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "steampc",
+              "oculuspc",
+              "universalpc",
+              "universalquest"
+            ]
+          },
+          "zipHash": {
+            "type": "string",
+            "description": "The hash of the zip file. This is used to find and download the zip file. Will be a MD5 hash.",
+            "example": "34e6985de8fbf7b525fc841c2cb45786"
+          },
+          "contentHashes": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "hash": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "private",
+              "removed",
+              "unverified",
+              "verified"
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "description": "The ID of the mod version this version depends on."
+            }
+          },
+          "supportedGameVersions": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/GameVersionAPIPublicResponse"
+                }
+              ]
+            }
+          },
+          "downloadCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date the version was added to the API.",
+            "example": "2023-10-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The date the version was last updated.",
+            "example": "2023-10-01T00:00:00.000Z"
+          }
+        }
+      },
+      "UserAPIPublicResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The user's internal ID.",
+            "example": 1
+          },
+          "username": {
+            "type": "string",
+            "description": "The user's username from GitHub.",
+            "example": "saeraphinx"
+          },
+          "githubId": {
+            "type": "integer",
+            "description": "The user's GitHub ID.",
+            "example": 123456789,
+            "nullable": true
+          },
+          "sponsorUrl": {
+            "type": "string",
+            "description": "The URL to support the user's works financially.",
+            "example": "https://www.patreon.com/c/beatsabermods",
+            "default": null,
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "description": "The user's display name from GitHub. Is editable after registration, and can be different from the GitHub username/display name.",
+            "example": "Saeraphinx"
+          },
+          "roles": {
+            "type": "object",
+            "properties": {
+              "siteide": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "allpermissions",
+                    "admin",
+                    "poster",
+                    "approver",
+                    "moderator",
+                    "banned"
+                  ]
+                },
+                "default": [],
+                "example": [
+                  "admin"
+                ],
+                "description": "Site-wide roles. Takes precedence over per-game roles."
+              },
+              "perGame": {
+                "type": "object",
+                "example": {
+                  "BeatSaber": [
+                    "approver"
+                  ]
+                }
+              }
+            },
+            "default": {
+              "siteide": [],
+              "perGame": {}
+            },
+            "example": {
+              "siteide": [
+                "admin"
+              ],
+              "perGame": {
+                "BeatSaber": [
+                  "approver"
+                ]
+              }
+            }
+          },
+          "bio": {
+            "type": "string",
+            "description": "The user's bio from GitHub. Is editable after registration. Supports markdown.",
+            "example": "j"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date the user registered to the API.",
+            "example": "2023-10-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The date the profile was last updated.",
+            "example": "2023-10-01T00:00:00.000Z"
+          }
+        }
+      },
+      "GameVersionAPIPublicResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The version's internal ID.",
+            "example": 1
+          },
+          "gameName": {
+            "type": "string",
+            "description": "The name of the game this version is for. This is used to identify the game.",
+            "example": "BeatSaber"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version string. This is used to identify the version of the game.",
+            "example": "1.0.0"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date the version was added to the API.",
+            "example": "2023-10-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The date the version was last updated.",
+            "example": "2023-10-01T00:00:00.000Z"
+          }
+        }
+      },
+      "APIStatus": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Status message.",
+            "example": "API is running.",
+            "default": "API is running."
+          },
+          "veryImportantMessage": {
+            "type": "string",
+            "description": "Very important message.",
+            "example": "pink cute, era cute, lillie cute, william gay",
+            "default": "pink cute, era cute, lillie cute, william gay"
+          },
+          "apiVersion": {
+            "type": "string",
+            "description": "API version (as seen in documentation).",
+            "example": "0.0.1",
+            "default": "Version not found."
+          },
+          "gitVersion": {
+            "type": "string",
+            "description": "Git commit hash.",
+            "example": "3d94a00",
+            "default": "Version not found."
+          },
+          "isDocker": {
+            "type": "boolean",
+            "description": "Whether the API is running in Docker or not.",
+            "example": true,
+            "default": false
           }
         }
       }

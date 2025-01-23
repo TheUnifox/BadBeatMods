@@ -21,7 +21,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Get new mods & modVersions pending approval.'
             // #swagger.description = 'Get a list of mods & modVersions pending their first approval.'
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string' }
-            // #swagger.responses[200] = { description: 'List of mods pending first approval', schema: { mods: [], modVersions: [] } }
+            // #swagger.responses[200] = { description: 'List of mods pending first approval', schema: { mods: [{$ref: '#/components/schemas/ModDBObject'}], modVersions: [{$ref: '#/components/schemas/ModVersionDBObject'}] } }
             // #swagger.responses[204] = { description: 'No mods found.' }
             // #swagger.responses[400] = { description: 'Missing game name.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -61,7 +61,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Get edits pending approval.'
             // #swagger.description = 'Get a list of already existing mod & modVersions that are pending approval.'
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get edits for.', type: 'string' }
-            // #swagger.responses[200] = { description: 'List of edits pending approval', schema: { edits: [] } }
+            // #swagger.responses[200] = { description: 'List of edits pending approval', schema: { edits: [{$ref: '#/components/schemas/ModDBObject'}] } }
             // #swagger.responses[204] = { description: 'No edits found.' }
             // #swagger.responses[400] = { description: 'Missing game name.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }

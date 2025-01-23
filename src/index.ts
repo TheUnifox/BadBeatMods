@@ -127,8 +127,14 @@ new UserRoutes(apiRouter);
 new StatusRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
-    swaggerDocument.host = `${Config.server.url.replace(`http://`, ``).replace(`https://`, ``)}${Config.server.apiRoute}`;
-    apiRouter.use(`/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    swaggerDocument.servers = [{url: `${Config.server.url}${Config.server.apiRoute}`}];
+    apiRouter.use(`/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+        swaggerOptions: {
+            docExpansion: `list`,
+            defaultModelExpandDepth: 2,
+            defaultModelsExpandDepth: 2,
+        }
+    }));
 }
 
 if (Config.flags.enableFavicon) {

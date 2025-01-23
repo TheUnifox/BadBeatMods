@@ -7,11 +7,19 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            
+            "name": "Launch Program w/ Docs",
             "program": "${workspaceFolder}/src/index.ts",
-            "preLaunchTask": "tsc: build - tsconfig.json",
+            "preLaunchTask": "vscode start",
             "outFiles": ["${workspaceFolder}/build/**/*.js"]
-          }
+        }, 
+        {
+            
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program",
+            "program": "${workspaceFolder}/src/index.ts",
+            "preLaunchTask": "buildTS",
+            "outFiles": ["${workspaceFolder}/build/**/*.js"]
+        }
     ]
 }

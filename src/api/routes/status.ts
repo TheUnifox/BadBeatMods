@@ -25,13 +25,7 @@ export class StatusRoutes {
             /*
             #swagger.responses[200] = {
                 description: 'Returns API status.',
-                schema: {
-                    message: 'API is running.',
-                    veryImportantMessage: 'pink cute, era cute, lillie cute, william gay',
-                    apiVersion: '0.0.1',
-                    gitVersion: '3fc9dbf',
-                    isDocker: false
-                }
+                schema: { $ref: '#/components/schemas/APIStatus' }
             }
             */
             //#swagger.responses[500] = { description: 'Internal server error.', schema: { message: 'Internal server error.' } }
