@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Categories, DatabaseHelper, GameVersion, ModVersion, Platform, Status, SupportedGames, User, Mod, PostType, UserRoles } from "./Database";
+import { Categories, DatabaseHelper, GameVersion, ModVersion, Platform, Status, SupportedGames, User, Mod, PostType, UserRoles, EditQueue } from "./Database";
 import { valid } from "semver";
 import { Config } from "./Config";
 
@@ -163,7 +163,7 @@ export class Validator {
             return false;
         }
 
-        let records: Mod[]|ModVersion[]|User[]|GameVersion[] = [];
+        let records: Mod[]|ModVersion[]|User[]|GameVersion[]|EditQueue[] = [];
         switch (tableName) {
             case `mods`:
                 records = await DatabaseHelper.database.Mods.findAll({ where: { id: ids } });
@@ -177,6 +177,9 @@ export class Validator {
             case `gameVersions`:
                 records = await DatabaseHelper.database.GameVersions.findAll({ where: { id: ids } });
                 break;
+            case `editQueue`:
+                records = await DatabaseHelper.database.EditApprovalQueue.findAll({ where: { id: ids } });
+                break;
             default:
                 return false;
         }
@@ -189,4 +192,4 @@ export class Validator {
     }
 }
 
-type TableNames = `mods` | `modVersions` | `users` | `gameVersions` ;
+type TableNames = `mods` | `modVersions` | `users` | `gameVersions` | `editQueue`;

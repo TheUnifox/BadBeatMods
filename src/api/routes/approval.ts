@@ -104,8 +104,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve a mod.'
             // #swagger.description = 'Approve a mod for public visibility.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to approve.', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
+            /* #swagger.requestBody = {
                     required: true,
                     description: 'The status to set the mod to.',
                     schema: {
@@ -157,8 +156,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve a modVersion.'
             // #swagger.description = 'Approve a modVersion for public visibility.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to approve.', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
+            /* #swagger.requestBody = {
                     required: true,
                     description: 'The status to set the modVersion to.',
                     schema: {
@@ -215,8 +213,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve an edit.'
             // #swagger.description = 'Approve an edit for public visibility.'
             // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to approve.', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The accepted value.',
                 schema: {
@@ -292,8 +289,7 @@ export class ApprovalRoutes {
             // #swagger.description = 'Edit a mod in the approval queue.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to edit.', type: 'integer', required: true }
             // #swagger.deprecated = true
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The mod object to update.',
                 schema: {
@@ -374,8 +370,7 @@ export class ApprovalRoutes {
             // #swagger.description = 'Edit a modVersion in the approval queue.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to edit.', type: 'integer', required: true }
             // #swagger.deprecated = true
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The modVersion object to update.',
                 schema: {
@@ -444,8 +439,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit an edit in the approval queue.'
             // #swagger.description = 'Edit an edit in the approval queue.'
             // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to edit.', type: 'integer', required: true }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The edit object to update.',
                 schema: {

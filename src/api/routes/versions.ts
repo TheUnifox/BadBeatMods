@@ -94,7 +94,7 @@ export class VersionsRoutes {
 
         this.router.post(`/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            /* #swagger.parameters['body'] = {
+            /* #swagger.requestBody = {
                 description: 'The ID of the version to set as default',
                 required: true,
                 type: 'object',

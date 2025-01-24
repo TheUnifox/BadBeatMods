@@ -20,18 +20,11 @@ export class UpdateModRoutes {
             // #swagger.tags = ['Mods']
             // #swagger.description = `Update a mod.`
             // #swagger.parameters['modIdParam'] = { description: 'Mod ID', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 description: 'Mod data',
                 required: true,
                 schema: {
-                    name: 'string',
-                    summary: 'string',
-                    description: 'string',
-                    category: 'string',
-                    authorIds: [1, 2, 3],
-                    gitUrl: 'string',
-                    gameName: 'string'
+                    $ref: '#/definitions/CreateEditMod'
                 }
             }
             */
@@ -143,15 +136,11 @@ export class UpdateModRoutes {
             // #swagger.tags = ['Mods']
             // #swagger.description = `Update a mod version.`
             // #swagger.parameters['modVersionIdParam'] = { description: 'Mod Version ID', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 description: 'Mod version data',
                 required: true,
                 schema: {
-                    supportedGameVersionIds: [1, 2, 3],
-                    modVersion: 'string',
-                    dependencies: [1, 2, 3],
-                    platform: 'string'
+                    $ref: '#/definitions/CreateEditModVersion'
                 }
             }
             */

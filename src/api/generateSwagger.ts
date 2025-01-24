@@ -379,6 +379,37 @@ const ServerMessage: OpenAPIV3_1.SchemaObject = {
     }
 };
 // #endregion
+// #region Edit Object Schemas
+const CreateMod: OpenAPIV3_1.SchemaObject = {
+    type: `object`,
+    properties: {
+        name: ModDBObject.properties!.name,
+        summary: ModDBObject.properties!.summary,
+        description: ModDBObject.properties!.description,
+        gameName: ModDBObject.properties!.gameName,
+        category: ModDBObject.properties!.category,
+        gitUrl: ModDBObject.properties!.gitUrl,
+    }
+};
+
+const EditMod: OpenAPIV3_1.SchemaObject = {
+    type: `object`,
+    properties: {
+        ...CreateMod.properties!,
+        authorIds: ModDBObject.properties!.authorIds,
+    }
+};
+
+const CreateEditModVersion: OpenAPIV3_1.SchemaObject = {
+    type: `object`,
+    properties: {
+        modVersion: ModVersionDBObject.properties!.modVersion,
+        platform: ModVersionDBObject.properties!.platform,
+        dependencies: ModVersionDBObject.properties!.dependencies,
+        supportedGameVersionIds: ModVersionDBObject.properties!.supportedGameVersionIds,
+    }
+};
+// #endregion
 
 const doc = {
     info: {
@@ -414,6 +445,9 @@ const doc = {
             ModVersionAPIPublicResponse,
             UserAPIPublicResponse,
             GameVersionAPIPublicResponse,
+            CreateEditModVersion,
+            CreateMod,
+            EditMod,
             APIStatus,
             ModDBObject,
             ModVersionDBObject,
