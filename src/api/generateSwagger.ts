@@ -414,7 +414,7 @@ const CreateEditModVersion: OpenAPIV3_1.SchemaObject = {
 const doc = {
     info: {
         title: `BadBeatMods API`,
-        description: `This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.`,
+        description: `This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields. For example, request bodies are not fully fleshed out, and may not be accurate. Full documentation is still currently a work in progress.`,
         version: `0.0.1`,
     },
     servers: [
