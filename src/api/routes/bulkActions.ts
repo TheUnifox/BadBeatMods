@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { DatabaseHelper, EditQueue, GameVersion, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Validator } from 'src/shared/Validator';
+import { Op } from 'sequelize';
 
 export class BulkActionsRoutes {
     private router: Router;
@@ -12,24 +13,25 @@ export class BulkActionsRoutes {
 
     private async loadRoutes() {
         this.router.post(`/ba/addGameVersion`, async (req, res) => {
-            // #swagger.tags = ['Bulk Actions']
-            // #swagger.description = 'Add a game version to multiple mod versions'
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
-                    schema: {
-                        "gameVersionId": 1,
-                        "modVersionIds": [1, 2, 3]
-                    }
+            /*
+            #swagger.tags = ['Bulk Actions']
+            #swagger.summary = 'Add a game version to multiple mod versions'
+            #swagger.description = 'Add a game version to multiple mod versions. Submits edits if the mod is already approved, otherwise queues an edit for approval. Requires the user to be an approver.'
+            #swagger.requestBody = {
+                schema: {
+                    "gameVersionId": 1,
+                    "modVersionIds": [1, 2, 3]
                 }
+            }
                     
-                #swagger.responses[200] = {
-                    description: 'Success',
-                    schema: {
-                        "editIds": [1, 2],
-                        "errorIds": [3],
-                        "editPreformedIds": [4]
-                    }
+            #swagger.responses[200] = {
+                description: 'Success',
+                schema: {
+                    "editIds": [1, 2],
+                    "errorIds": [3],
+                    "editPreformedIds": [4]
                 }
+            }
             */
             let session = await validateSession(req, res, true);
             if (!session.user) {
@@ -77,6 +79,65 @@ export class BulkActionsRoutes {
                     }
                 } else {
                     results.errorIds.push(modVersion.id);
+                }
+            }
+
+            res.status(200).send(results);
+        });
+
+        this.router.post(`/ba/approveEdits`, async (req, res) => {
+            /*
+            #swagger.tags = ['Bulk Actions']
+            #swagger.summary = 'Approve multiple edit requests'
+            #swagger.description = 'Approve multiple edit requests. Requires the user to be an approver.'
+            #swagger.requestBody = {
+                schema: {
+                    "editIds": [1, 2, 3]
+                }
+            }
+                    
+            #swagger.responses[200] = {
+                description: 'Success',
+                schema: {
+                    "successIds": [1, 2],
+                    "errorIds": [3]
+                }
+            }
+            */
+            let session = await validateSession(req, res, true);
+            if (!session.user) {
+                return;
+            }
+
+            let editIds = Validator.zDBIDArray.safeParse(req.body.editIds);
+            if (!editIds.success) {
+                res.status(400).send({ message: `Invalid edit IDs`});
+                return;
+            }
+
+            if (await Validator.validateIDArray(editIds.data, `editQueue`, false, false) == false) {
+                res.status(404).send({ message: `One or more edits not found`});
+                return;
+            }
+
+            let edits = await DatabaseHelper.database.EditApprovalQueue.findAll({ where: { id: editIds.data, approved: { [Op.ne]: true } } });
+
+            if (edits.length == 0 || edits.length != editIds.data.length) {
+                res.status(404).send({ message: `One or more edits are already approved or not found` });
+                return;
+            }
+
+            let results = {
+                successIds: [] as number[],
+                errorIds: [] as number[],
+            };
+
+            for (let edit of edits) {
+                try {
+                    await edit.approve(session.user);
+                    results.successIds.push(edit.id);
+                } catch (e) {
+                    results.errorIds.push(edit.id);
                 }
             }
 
