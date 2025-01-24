@@ -1,27 +1,47 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //// @ts-nocheck
-import path from 'path';
 import { Categories, Mod, Platform, Status, UserRoles } from '../shared/Database';
 import swaggerAutogen from 'swagger-autogen';
-import { OpenAPIV3 } from 'openapi-types';
-import { object } from 'zod';
-import { platform } from 'os';
+import { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types';
 
 // docs: https://swagger-autogen.github.io/docs/getting-started/quick-start/
 const options = {
-    openapi: `3.0.0`,
+    openapi: `3.1.0`,
     language: `en-US`,
 };
 
 // #region Raw DB Objects
-const ModDBObject: OpenAPIV3.SchemaObject = {
+const DBObject: OpenAPIV3_1.SchemaObject = {
     type: `object`,
     properties: {
         id: {
             type: `integer`,
-            description: `The mod's internal ID.`,
-            example: 1
+            description: `The object's internal ID.`,
+            example: 1,
+            minimum: 1,
+
         },
+        createdAt: {
+            type: `string`,
+            description: `The date the object was added to the database.`,
+            example: `2023-10-01T00:00:00.000Z`,
+        },
+        updatedAt: {
+            type: `string`,
+            description: `The date the object was last updated.`,
+            example: `2023-10-01T00:00:00.000Z`,
+        },
+        deletedAt: {
+            type: [`string`, `null`],
+            description: `The date the object was deleted from the database.`,
+            example: `2023-10-01T00:00:00.000Z`,
+        },
+    }
+}
+
+const ModDBObject: OpenAPIV3_1.SchemaObject = {
+    type: `object`,
+    properties: {
         name: {
             type: `string`,
             description: `The name of the mod.`,
@@ -63,39 +83,18 @@ const ModDBObject: OpenAPIV3.SchemaObject = {
             type: `string`,
         },
         lastApprovedById: {
-            type: `integer`,
-            nullable: true,
+            type: [`integer`, `null`],
             default: null,
         },
         lastUpdatedById: {
             type: `integer`,
         },
-        createdAt: {
-            type: `string`,
-            description: `The date the mod was added to the API.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        updatedAt: {
-            type: `string`,
-            description: `The date the mod was last updated.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        deletedAt: {
-            type: `string`,
-            description: `The date the mod was deleted from the API.`,
-            example: `2023-10-01T00:00:00.000Z`,
-            nullable: true
-        }
+        ...DBObject.properties
     }
 };
-const ModVersionDBObject: OpenAPIV3.SchemaObject = {
+const ModVersionDBObject: OpenAPIV3_1.SchemaObject = {
     type: `object`,
     properties: {
-        id: {
-            type: `integer`,
-            description: `The version's internal ID.`,
-            example: 1
-        },
         modId: {
             type: `integer`,
             description: `The parent mod's internal ID.`,
@@ -120,13 +119,16 @@ const ModVersionDBObject: OpenAPIV3.SchemaObject = {
             example: `34e6985de8fbf7b525fc841c2cb45786`
         },
         contentHashes: {
-            type: `object`,
-            properties: {
-                path: {
-                    type: `string`,
-                },
-                hash: {
-                    type: `string`,
+            type: `array`,
+            items: {
+                type: `object`,
+                properties: {
+                    path: {
+                        type: `string`,
+                    },
+                    hash: {
+                        type: `string`,
+                    }
                 }
             }
         },
@@ -145,49 +147,27 @@ const ModVersionDBObject: OpenAPIV3.SchemaObject = {
         downloadCount: {
             type: `integer`,
         },
-        createdAt: {
-            type: `string`,
-            description: `The date the version was added to the API.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        updatedAt: {
-            type: `string`,
-            description: `The date the version was last updated.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        deletedAt: {
-            type: `string`,
-            description: `The date the version was deleted from the API.`,
-            example: `2023-10-01T00:00:00.000Z`,
-            nullable: true
-        }
+        ...DBObject.properties
     }
 };
-const UserDBObject: OpenAPIV3.SchemaObject = {
+const UserDBObject: OpenAPIV3_1.SchemaObject = {
     type: `object`,
     properties: {
-        id: {
-            type: `integer`,
-            description: `The user's internal ID.`,
-            example: 1
-        },
         username: {
             type: `string`,
             description: `The user's username from GitHub.`,
             example: `saeraphinx`,
         },
         githubId: {
-            type: `integer`,
+            type: [`integer`, `null`],
             description: `The user's GitHub ID.`,
             example: 123456789,
-            nullable: true
         },
         sponsorUrl: {
-            type: `string`,
+            type: [`string`, `null`],
             description: `The URL to support the user's works financially.`,
             example: `https://www.patreon.com/c/beatsabermods`,
             default: null,
-            nullable: true
         },
         displayName: {
             type: `string`,
@@ -227,32 +207,12 @@ const UserDBObject: OpenAPIV3.SchemaObject = {
             description: `The user's bio from GitHub. Is editable after registration. Supports markdown.`,
             example: `j`
         },
-        createdAt: {
-            type: `string`,
-            description: `The date the user registered to the API.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        updatedAt: {
-            type: `string`,
-            description: `The date the profile was last updated.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        deletedAt: {
-            type: `string`,
-            description: `The date the user was deleted from the API.`,
-            example: `2023-10-01T00:00:00.000Z`,
-            nullable: true
-        }
+        ...DBObject.properties
     }
 };
-const GameVersionDBObject: OpenAPIV3.SchemaObject = {
+const GameVersionDBObject: OpenAPIV3_1.SchemaObject = {
     type: `object`,
     properties: {
-        id: {
-            type: `integer`,
-            description: `The version's internal ID.`,
-            example: 1
-        },
         gameName: {
             type: `string`,
             description: `The name of the game this version is for. This is used to identify the game.`,
@@ -263,32 +223,13 @@ const GameVersionDBObject: OpenAPIV3.SchemaObject = {
             description: `The version string. This is used to identify the version of the game.`,
             example: `1.0.0`
         },
-        createdAt: {
-            type: `string`,
-            description: `The date the version was added to the API.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        updatedAt: {
-            type: `string`,
-            description: `The date the version was last updated.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        deletedAt: {
-            type: `string`,
-            description: `The date the version was deleted from the API.`,
-            example: `2023-10-01T00:00:00.000Z`,
-            nullable: true
-        }
+        ...DBObject.properties
     }
 };
-const EditApprovalQueueDBObject: OpenAPIV3.SchemaObject = {
+
+const EditApprovalQueueDBObject: OpenAPIV3_1.SchemaObject = {
     type: `object`,
     properties: {
-        id: {
-            type: `integer`,
-            description: `The queue item's internal ID.`,
-            example: 1
-        },
         submitterId: {
             type: `integer`,
             description: `The ID of the user who submitted this edit.`
@@ -304,7 +245,10 @@ const EditApprovalQueueDBObject: OpenAPIV3.SchemaObject = {
         object: {
             type: `object`,
             properties: {
-                modVersion: ModVersionDBObject.properties!.modVersion,
+                modVersion: {
+                    ...ModVersionDBObject.properties!.modVersion,
+                    default: undefined
+                },
                 platform: ModVersionDBObject.properties!.platform,
                 dependnecies: ModVersionDBObject.properties!.dependencies,
                 supportedGameVersionIds: ModVersionDBObject.properties!.supportedGameVersionIds,
@@ -319,39 +263,72 @@ const EditApprovalQueueDBObject: OpenAPIV3.SchemaObject = {
             }
         },
         approverId: {
-            type: `integer`,
+            type: [`integer`, `null`],
             description: `The ID of the user who approved this edit.`,
-            nullable: true,
             default: null,
             example: 1
         },
         approved: {
-            type: `boolean`,
+            type: [`boolean`, `null`],
             description: `Whether the edit has been approved or not.`,
             example: false,
             default: null,
-            nullable: true
         },
-        createdAt: {
-            type: `string`,
-            description: `The date the queue item was added to the API.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        updatedAt: {
-            type: `string`,
-            description: `The date the queue item was last updated.`,
-            example: `2023-10-01T00:00:00.000Z`
-        },
-        deletedAt: {
-            type: `string`,
-            description: `The date the queue item was deleted from the API.`,
-            example: `2023-10-01T00:00:00.000Z`,
-            nullable: true
-        }
+        ...DBObject.properties
     }
 };
 // #endregion
-const APIStatus:OpenAPIV3.SchemaObject = {
+// #region API Public Responses
+const UserAPIPublicResponse: OpenAPIV3_1.SchemaObject = UserDBObject;
+const GameVersionAPIPublicResponse: OpenAPIV3_1.SchemaObject = GameVersionDBObject;
+const ModAPIPublicResponse: OpenAPIV3_1.SchemaObject = {
+    type: `object`,
+    properties: {
+        id: ModDBObject.properties!.id,
+        name: ModDBObject.properties!.name,
+        summary: ModDBObject.properties!.summary,
+        description: ModDBObject.properties!.description,
+        gameName: ModDBObject.properties!.gameName,
+        category: ModDBObject.properties!.category,
+        authors: {
+            type: `array`,
+            items: { allOf: [{ $ref: `#/components/schemas/UserAPIPublicResponse` }] },
+        },
+        status: ModDBObject.properties!.status,
+        iconFileName: ModDBObject.properties!.iconFileName,
+        gitUrl: ModDBObject.properties!.gitUrl,
+        lastApprovedById: ModDBObject.properties!.lastApprovedById,
+        lastUpdatedById: ModDBObject.properties!.lastUpdatedById,
+        createdAt: ModDBObject.properties!.createdAt,
+        updatedAt: ModDBObject.properties!.updatedAt,
+    }
+};
+const ModVersionAPIPublicResponse: OpenAPIV3_1.SchemaObject = {
+    type: `object`,
+    properties: {
+        id: ModVersionDBObject.properties!.id,
+        modId: ModVersionDBObject.properties!.modId,
+        modVersion: ModVersionDBObject.properties!.modVersion,
+        author: {
+            $ref: `#/components/schemas/UserAPIPublicResponse`
+        },
+        platform: ModVersionDBObject.properties!.platform,
+        zipHash: ModVersionDBObject.properties!.zipHash,
+        contentHashes: ModVersionDBObject.properties!.contentHashes,
+        status: ModVersionDBObject.properties!.status,
+        dependencies: ModVersionDBObject.properties!.dependencies,
+        supportedGameVersions: {
+            type: `array`,
+            items: { allOf: [{ $ref: `#/components/schemas/GameVersionAPIPublicResponse` }] },
+        },
+        downloadCount: ModVersionDBObject.properties!.downloadCount,
+        createdAt: ModVersionDBObject.properties!.createdAt,
+        updatedAt: ModVersionDBObject.properties!.updatedAt
+    },
+};
+// #endregion
+// #region General API Responses
+const APIStatus:OpenAPIV3_1.SchemaObject = {
     type: `object`,
     properties: {
         message: {
@@ -386,58 +363,22 @@ const APIStatus:OpenAPIV3.SchemaObject = {
         }
     }
 };
-// #region API Public Responses
-const UserAPIPublicResponse: OpenAPIV3.SchemaObject = UserDBObject;
-const GameVersionAPIPublicResponse: OpenAPIV3.SchemaObject = GameVersionDBObject;
-const ModAPIPublicResponse: OpenAPIV3.SchemaObject = {
+
+const ServerMessage: OpenAPIV3_1.SchemaObject = {
     type: `object`,
+    description: `A simple message from the server. Indicates anything from a successful operation to an error message. Most, if not all, endpoints will return this in the event of an error.`,
     properties: {
-        id: ModDBObject.properties!.id,
-        name: ModDBObject.properties!.name,
-        summary: ModDBObject.properties!.summary,
-        description: ModDBObject.properties!.description,
-        gameName: ModDBObject.properties!.gameName,
-        category: ModDBObject.properties!.category,
-        authors: {
-            type: `array`,
-            items: { allOf: [{ $ref: `#/components/schemas/UserAPIPublicResponse` }] },
-        },
-        status: ModDBObject.properties!.status,
-        iconFileName: ModDBObject.properties!.iconFileName,
-        gitUrl: ModDBObject.properties!.gitUrl,
-        lastApprovedById: ModDBObject.properties!.lastApprovedById,
-        lastUpdatedById: ModDBObject.properties!.lastUpdatedById,
-        createdAt: ModDBObject.properties!.createdAt,
-        updatedAt: ModDBObject.properties!.updatedAt,
+        message: {
+            type: `string`,
+            description: `The message to be displayed.`,
+        }
+    },
+    additionalProperties: true,
+    example: {
+        message: `string`
     }
 };
-const ModVersionAPIPublicResponse: OpenAPIV3.SchemaObject = {
-    type: `object`,
-    properties: {
-        id: ModVersionDBObject.properties!.id,
-        modId: ModVersionDBObject.properties!.modId,
-        modVersion: ModVersionDBObject.properties!.modVersion,
-        author: {
-            $ref: `#/components/schemas/UserAPIPublicResponse`
-        },
-        platform: ModVersionDBObject.properties!.platform,
-        zipHash: ModVersionDBObject.properties!.zipHash,
-        contentHashes: ModVersionDBObject.properties!.contentHashes,
-        status: ModVersionDBObject.properties!.status,
-        dependencies: ModVersionDBObject.properties!.dependencies,
-        supportedGameVersions: {
-            type: `array`,
-            items: { allOf: [{ $ref: `#/components/schemas/GameVersionAPIPublicResponse` }] },
-        },
-        downloadCount: ModVersionDBObject.properties!.downloadCount,
-        createdAt: ModVersionDBObject.properties!.createdAt,
-        updatedAt: ModVersionDBObject.properties!.updatedAt
-    },
-};
 // #endregion
-// #region Approver Endpoint Responses
-// #endregion
-
 
 const doc = {
     info: {
@@ -445,11 +386,16 @@ const doc = {
         description: `This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.`,
         version: `0.0.1`,
     },
-    host: `bbm.saera.gay`,
-    basePath: `/`,
-    consumes: [`application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`],
-    produces: [`application/json`],
-    schemes: [`https`, `http`],
+    servers: [
+        {
+            url: `https://bbm.saera.gay/api`,
+        }
+    ],
+    //host: `bbm.saera.gay`,
+    //basePath: `/`,
+    //consumes: [`application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`],
+    //produces: [`application/json`],
+    //schemes: [`https`, `http`],
     tags: [
         { name: `Status`, description: `Status related endpoints` },
         { name: `Mods`, description: `Mod related endpoints` },
@@ -469,6 +415,12 @@ const doc = {
             UserAPIPublicResponse,
             GameVersionAPIPublicResponse,
             APIStatus,
+            ModDBObject,
+            ModVersionDBObject,
+            UserDBObject,
+            GameVersionDBObject,
+            EditApprovalQueueDBObject,
+            ServerMessage
         }
     }
 };
@@ -487,6 +439,7 @@ const routes = [
     `./routes/motd.ts`,
     `./routes/users.ts`,
     `./routes/status.ts`,
+    `./routes/bulkActions.ts`,
 ];
 
 swaggerAutogen(options)(outputFile, routes, doc);
