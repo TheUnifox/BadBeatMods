@@ -1132,7 +1132,7 @@
         }
       }
     },
-    "/approval/new": {
+    "/approval/{queueType}": {
       "get": {
         "tags": [
           "Approval"
@@ -1141,8 +1141,23 @@
         "description": "Get a list of mods & modVersions pending their first approval.",
         "parameters": [
           {
+            "name": "queueType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mods",
+                "modVersions",
+                "edit"
+              ]
+            },
+            "description": "The type of queue to get."
+          },
+          {
             "name": "gameName",
             "description": "The name of the game to get new mods for.",
+            "required": true,
             "in": "query",
             "schema": {
               "type": "string"
@@ -1151,7 +1166,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of mods pending first approval",
+            "description": "List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1160,13 +1175,27 @@
                     "mods": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModDBObject"
+                        "$ref": "#/components/schemas/ModAPIPublicResponse"
                       }
                     },
                     "modVersions": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModVersionDBObject"
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "modVersion": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          }
+                        }
+                      }
+                    },
+                    "edits": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
                       }
                     }
                   },
@@ -1182,13 +1211,27 @@
                     "mods": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModDBObject"
+                        "$ref": "#/components/schemas/ModAPIPublicResponse"
                       }
                     },
                     "modVersions": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModVersionDBObject"
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "modVersion": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          }
+                        }
+                      }
+                    },
+                    "edits": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
                       }
                     }
                   },
@@ -1201,73 +1244,6 @@
           },
           "204": {
             "description": "No mods found."
-          },
-          "400": {
-            "description": "Missing game name."
-          },
-          "401": {
-            "description": "Unauthorized."
-          }
-        }
-      }
-    },
-    "/approval/edits": {
-      "get": {
-        "tags": [
-          "Approval"
-        ],
-        "summary": "Get edits pending approval.",
-        "description": "Get a list of already existing mod & modVersions that are pending approval.",
-        "parameters": [
-          {
-            "name": "gameName",
-            "description": "The name of the game to get edits for.",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of edits pending approval",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "edits": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
-                      }
-                    }
-                  },
-                  "xml": {
-                    "name": "main"
-                  }
-                }
-              },
-              "application/xml": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "edits": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
-                      }
-                    }
-                  },
-                  "xml": {
-                    "name": "main"
-                  }
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No edits found."
           },
           "400": {
             "description": "Missing game name."
