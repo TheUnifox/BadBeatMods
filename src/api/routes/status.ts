@@ -18,7 +18,6 @@ export class StatusRoutes {
         });
         
         this.router.get(`/bbmStatusForBbmAlsoPinkEraAndLillieAreCuteBtwWilliamGay`, async (req, res) => {
-           
             //#swagger.tags = ['Status']
             //#swagger.summary = 'Get API status.'
             //#swagger.description = 'Get API status.'

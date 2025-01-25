@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "BadBeatMods API",
-    "description": "This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields.",
+    "description": "This isn't really fully complete, but its better than absolutely nothing.\n\nThis API documentation is automatically generated and therefor may not be 100% accurate and may be missing a few fields. For example, request bodies are not fully fleshed out, and may not be accurate. Full documentation is still currently a work in progress.",
     "version": "0.0.1"
   },
   "servers": [
@@ -365,32 +365,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "name": "string",
-                "summary": "string",
-                "description": "string",
-                "category": "string",
-                "authorIds": [
-                  1,
-                  2,
-                  3
-                ],
-                "gitUrl": "string",
-                "gameName": "string"
+                "$ref": "#/components/schemas/CreateEditMod"
               }
             },
             "application/xml": {
               "schema": {
-                "name": "string",
-                "summary": "string",
-                "description": "string",
-                "category": "string",
-                "authorIds": [
-                  1,
-                  2,
-                  3
-                ],
-                "gitUrl": "string",
-                "gameName": "string"
+                "$ref": "#/components/schemas/CreateEditMod"
               }
             }
           }
@@ -626,34 +606,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "supportedGameVersionIds": [
-                  1,
-                  2,
-                  3
-                ],
-                "modVersion": "string",
-                "dependencies": [
-                  1,
-                  2,
-                  3
-                ],
-                "platform": "string"
+                "$ref": "#/components/schemas/CreateEditModVersion"
               }
             },
             "application/xml": {
               "schema": {
-                "supportedGameVersionIds": [
-                  1,
-                  2,
-                  3
-                ],
-                "modVersion": "string",
-                "dependencies": [
-                  1,
-                  2,
-                  3
-                ],
-                "platform": "string"
+                "$ref": "#/components/schemas/CreateEditModVersion"
               }
             }
           }
@@ -2309,25 +2267,22 @@
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "gameVersionId": 1,
-                "modVersionIds": [
-                  1,
-                  2,
-                  3
-                ]
-              }
-            },
-            "application/xml": {
-              "schema": {
-                "gameVersionId": 1,
-                "modVersionIds": [
-                  1,
-                  2,
-                  3
-                ]
+                "type": "object",
+                "properties": {
+                  "gameVersionId": {
+                    "type": "number"
+                  },
+                  "modVersionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
               }
             }
           }
@@ -2413,23 +2368,23 @@
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "editIds": [
-                  1,
-                  2,
-                  3
-                ]
-              }
-            },
-            "application/xml": {
-              "schema": {
-                "editIds": [
-                  1,
-                  2,
-                  3
-                ]
+                "type": "object",
+                "properties": {
+                  "approve": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "editIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
               }
             }
           }

@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { DatabaseHelper, EditQueue, GameVersion, UserRoles } from '../../shared/Database';
+import { DatabaseHelper, EditQueue } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
-import { Validator } from 'src/shared/Validator';
+import { Validator } from '../../shared/Validator';
 import { Op } from 'sequelize';
+import { Logger } from '../../shared/Logger';
 
 export class BulkActionsRoutes {
     private router: Router;
@@ -18,9 +19,24 @@ export class BulkActionsRoutes {
             #swagger.summary = 'Add a game version to multiple mod versions'
             #swagger.description = 'Add a game version to multiple mod versions. Submits edits if the mod is already approved, otherwise queues an edit for approval. Requires the user to be an approver.'
             #swagger.requestBody = {
-                schema: {
-                    "gameVersionId": 1,
-                    "modVersionIds": [1, 2, 3]
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                "gameVersionId": {
+                                    "type": "number",
+                                },
+                                "modVersionIds": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
                     
@@ -82,6 +98,7 @@ export class BulkActionsRoutes {
                 }
             }
 
+            DatabaseHelper.refreshCache(`editApprovalQueue`);
             res.status(200).send(results);
         });
 
@@ -91,8 +108,25 @@ export class BulkActionsRoutes {
             #swagger.summary = 'Approve multiple edit requests'
             #swagger.description = 'Approve multiple edit requests. Requires the user to be an approver.'
             #swagger.requestBody = {
-                schema: {
-                    "editIds": [1, 2, 3]
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                "approve": {
+                                    "type": "boolean",
+                                    "default": true
+                                },
+                                "editIds": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
                     
@@ -110,8 +144,14 @@ export class BulkActionsRoutes {
             }
 
             let editIds = Validator.zDBIDArray.safeParse(req.body.editIds);
+            let approve = Validator.zBool.default(true).safeParse(req.body.approve);
             if (!editIds.success) {
-                res.status(400).send({ message: `Invalid edit IDs`});
+                res.status(400).send({ message: `Invalid edit IDs`, error: editIds.error });
+                return;
+            }
+
+            if (!approve.success) {
+                res.status(400).send({ message: `Invalid approve value`, error: approve.error });
                 return;
             }
 
@@ -120,7 +160,7 @@ export class BulkActionsRoutes {
                 return;
             }
 
-            let edits = await DatabaseHelper.database.EditApprovalQueue.findAll({ where: { id: editIds.data, approved: { [Op.ne]: true } } });
+            let edits = await DatabaseHelper.database.EditApprovalQueue.findAll({ where: { id: editIds.data, approved: { [Op.eq]: null } } });
 
             if (edits.length == 0 || edits.length != editIds.data.length) {
                 res.status(404).send({ message: `One or more edits are already approved or not found` });
@@ -132,14 +172,58 @@ export class BulkActionsRoutes {
                 errorIds: [] as number[],
             };
 
+            let refreshMods = false;
+            let refreshModVersions = false;
             for (let edit of edits) {
                 try {
-                    await edit.approve(session.user);
+                    let isMod = `name` in edit.object;
+                    let modId = isMod ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => {
+                        if (!modVersion) {
+                            return null;
+                        } else {
+                            return modVersion.modId;
+                        }
+                    });
+
+                    if (!modId) {
+                        return res.status(404).send({ message: `Mod not found.` });
+                    }
+            
+                    let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
+                    if (!mod) {
+                        return res.status(404).send({ message: `Mod not found.` });
+                    }
+
+                    if (approve.data === true) {
+                        await edit.approve(session.user).then(() => {
+                            if (isMod) {
+                                refreshMods = true;
+                            } else {
+                                refreshModVersions = true;
+                            }
+                            Logger.log(`Edit ${edit.id} accepted by ${session.user.username}.`);
+                        });
+                    } else {
+                        await edit.deny(session.user).then(() => {
+                            Logger.log(`Edit ${edit.id} rejected by ${session.user.username}.`);
+                        });
+                    }
                     results.successIds.push(edit.id);
                 } catch (e) {
+                    Logger.error(`Error approving edit ${edit.id}: ${e}`);
                     results.errorIds.push(edit.id);
                 }
             }
+
+            if (refreshMods) {
+                DatabaseHelper.refreshCache(`mods`);
+            }
+
+            if (refreshModVersions) {
+                DatabaseHelper.refreshCache(`modVersions`);
+            }
+
+            DatabaseHelper.refreshCache(`editApprovalQueue`);
 
             res.status(200).send(results);
         });
