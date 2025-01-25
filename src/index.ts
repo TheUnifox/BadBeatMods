@@ -1,31 +1,35 @@
 import express from 'express';
 import session from 'express-session';
 import MemoryStore from 'memorystore';
-import { DatabaseHelper, DatabaseManager } from './shared/Database';
 import fileUpload from 'express-fileupload';
-import { CreateModRoutes } from './api/routes/createMod';
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
+import cors from 'cors';
+import path from 'node:path';
+import fs from 'node:fs';
+import { ActivityType } from 'discord.js';
+
+import { DatabaseHelper, DatabaseManager } from './shared/Database';
 import { Logger } from './shared/Logger';
-import { GetModRoutes } from './api/routes/getMod';
 import { Config } from './shared/Config';
+import { Luma } from './discord/classes/Luma';
+
+import { CreateModRoutes } from './api/routes/createMod';
+import { GetModRoutes } from './api/routes/getMod';
 import { UpdateModRoutes } from './api/routes/updateMod';
 import { AuthRoutes } from './api/routes/auth';
 import { VersionsRoutes } from './api/routes/versions';
 import { ImportRoutes } from './api/routes/import';
 import { AdminRoutes } from './api/routes/admin';
 import { ApprovalRoutes } from './api/routes/approval';
-import { Luma } from './discord/classes/Luma';
-import { ActivityType } from 'discord.js';
-import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from './api/swagger.json';
 import { BeatModsRoutes } from './api/routes/beatmods';
 import { CDNRoutes } from './api/routes/cdn';
-import cors from 'cors';
 import { MOTDRoutes } from './api/routes/motd';
 import { UserRoutes } from './api/routes/users';
-import path from 'node:path';
-import fs from 'node:fs';
 import { StatusRoutes } from './api/routes/status';
+import { BulkActionsRoutes } from './api/routes/bulkActions';
+
+import swaggerDocument from './api/swagger.json';
 
 console.log(`Starting setup...`);
 new Config();
@@ -125,14 +129,22 @@ new VersionsRoutes(apiRouter);
 new MOTDRoutes(apiRouter);
 new UserRoutes(apiRouter);
 new StatusRoutes(apiRouter);
+new BulkActionsRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
-    swaggerDocument.host = `${Config.server.url.replace(`http://`, ``).replace(`https://`, ``)}${Config.server.apiRoute}`;
-    apiRouter.use(`/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    swaggerDocument.servers = [{url: `${Config.server.url}${Config.server.apiRoute}`}];
+    apiRouter.use(`/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+        swaggerOptions: {
+            docExpansion: `list`,
+            defaultModelExpandDepth: 2,
+            defaultModelsExpandDepth: 2,
+        }
+    }));
 }
 
 if (Config.flags.enableFavicon) {
     app.get(`/favicon.ico`, cdnRateLimiter, (req, res) => {
+        // #swagger.ignore = true;
         res.sendFile(path.resolve(`./assets/favicon.png`), {
             maxAge: 1000 * 60 * 60 * 24 * 1,
             //immutable: true,
@@ -142,6 +154,7 @@ if (Config.flags.enableFavicon) {
 }
         
 if (Config.flags.enableBanner) {
+    // #swagger.ignore = true;
     app.get(`/banner.png`, cdnRateLimiter, (req, res) => {
         res.sendFile(path.resolve(`./assets/banner.png`), {
             maxAge: 1000 * 60 * 60 * 24 * 1,

@@ -23,15 +23,9 @@ export class CreateModRoutes {
             // #swagger.tags = ['Mods']
             // #swagger.summary = 'Create a mod.'
             // #swagger.description = 'Create a mod.'
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 schema: {
-                    name: 'string',
-                    summary: 'string',
-                    description: 'string',
-                    gitUrl: 'string',
-                    category: 'string',
-                    gameName: 'string',
+                    $ref: '#/definitions/CreateMod'
                 }
             }
             #swagger.parameters['icon'] = {
@@ -112,13 +106,9 @@ export class CreateModRoutes {
             // #swagger.summary = 'Upload a mod version.'
             // #swagger.description = 'Upload a mod version.'
             // #swagger.parameters['modIdParam'] = { description: 'Mod ID.', type: 'number' }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 schema: {
-                    supportedGameVersionIds: [1],
-                    modVersion: '1.0.0',
-                    dependencies: [1],
-                    platform: 'string',
+                    $ref: '#/definitions/CreateEditModVersion'
                 }
             }
             #swagger.parameters['file'] = {

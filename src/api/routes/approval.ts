@@ -21,7 +21,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Get new mods & modVersions pending approval.'
             // #swagger.description = 'Get a list of mods & modVersions pending their first approval.'
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string' }
-            // #swagger.responses[200] = { description: 'List of mods pending first approval', schema: { mods: [], modVersions: [] } }
+            // #swagger.responses[200] = { description: 'List of mods pending first approval', schema: { mods: [{$ref: '#/components/schemas/ModDBObject'}], modVersions: [{$ref: '#/components/schemas/ModVersionDBObject'}] } }
             // #swagger.responses[204] = { description: 'No mods found.' }
             // #swagger.responses[400] = { description: 'Missing game name.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -61,7 +61,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Get edits pending approval.'
             // #swagger.description = 'Get a list of already existing mod & modVersions that are pending approval.'
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get edits for.', type: 'string' }
-            // #swagger.responses[200] = { description: 'List of edits pending approval', schema: { edits: [] } }
+            // #swagger.responses[200] = { description: 'List of edits pending approval', schema: { edits: [{$ref: '#/components/schemas/EditApprovalQueueDBObject'}] } }
             // #swagger.responses[204] = { description: 'No edits found.' }
             // #swagger.responses[400] = { description: 'Missing game name.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -104,8 +104,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve a mod.'
             // #swagger.description = 'Approve a mod for public visibility.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to approve.', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
+            /* #swagger.requestBody = {
                     required: true,
                     description: 'The status to set the mod to.',
                     schema: {
@@ -113,11 +112,11 @@ export class ApprovalRoutes {
                     }
                 }
             */
-            // #swagger.responses[200] = { description: 'Mod status updated.' }
-            // #swagger.responses[400] = { description: 'Missing status.' }
-            // #swagger.responses[401] = { description: 'Unauthorized.' }
-            // #swagger.responses[404] = { description: 'Mod not found.' }
-            // #swagger.responses[500] = { description: 'Error approving mod.' }
+            // #swagger.responses[200] = { description: 'Mod status updated.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[400] = { description: 'Missing status.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[401] = { description: 'Unauthorized.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[404] = { description: 'Mod not found.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[500] = { description: 'Error approving mod.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
             let modId = Validator.zDBID.safeParse(req.params.modIdParam);
             let status = Validator.zStatus.safeParse(req.body.status);
             if (!modId.success || !status.success) {
@@ -157,8 +156,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve a modVersion.'
             // #swagger.description = 'Approve a modVersion for public visibility.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to approve.', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
+            /* #swagger.requestBody = {
                     required: true,
                     description: 'The status to set the modVersion to.',
                     schema: {
@@ -166,11 +164,11 @@ export class ApprovalRoutes {
                     }
                 }
             */
-            // #swagger.responses[200] = { description: 'ModVersion status updated.' }
-            // #swagger.responses[400] = { description: 'Missing status.' }
-            // #swagger.responses[401] = { description: 'Unauthorized.' }
-            // #swagger.responses[404] = { description: 'ModVersion not found.' }
-            // #swagger.responses[500] = { description: 'Error approving modVersion.' }
+            // #swagger.responses[200] = { description: 'ModVersion status updated.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[400] = { description: 'Missing status.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[401] = { description: 'Unauthorized.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[404] = { description: 'ModVersion not found.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[500] = { description: 'Error approving modVersion.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             let status = Validator.zStatus.safeParse(req.body.status);
             if (!modVersionId.success || !status.success) {
@@ -215,8 +213,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Approve an edit.'
             // #swagger.description = 'Approve an edit for public visibility.'
             // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to approve.', type: 'integer' }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The accepted value.',
                 schema: {
@@ -292,8 +289,7 @@ export class ApprovalRoutes {
             // #swagger.description = 'Edit a mod in the approval queue.'
             // #swagger.parameters['modIdParam'] = { description: 'The id of the mod to edit.', type: 'integer', required: true }
             // #swagger.deprecated = true
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The mod object to update.',
                 schema: {
@@ -374,8 +370,7 @@ export class ApprovalRoutes {
             // #swagger.description = 'Edit a modVersion in the approval queue.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to edit.', type: 'integer', required: true }
             // #swagger.deprecated = true
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The modVersion object to update.',
                 schema: {
@@ -444,8 +439,7 @@ export class ApprovalRoutes {
             // #swagger.summary = 'Edit an edit in the approval queue.'
             // #swagger.description = 'Edit an edit in the approval queue.'
             // #swagger.parameters['editIdParam'] = { description: 'The id of the edit to edit.', type: 'integer', required: true }
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 required: true,
                 description: 'The edit object to update.',
                 schema: {
@@ -463,11 +457,16 @@ export class ApprovalRoutes {
                     dependencies: [1, 2, 3],
                 }
             } */
-            // #swagger.responses[200] = { description: 'Edit updated.', schema: { edit: {} } }
-            // #swagger.responses[400] = { description: 'No changes provided.' }
-            // #swagger.responses[401] = { description: 'Unauthorized.' }
-            // #swagger.responses[404] = { description: 'Edit not found.' }
-            // #swagger.responses[500] = { description: 'Error updating edit.' }
+            /* #swagger.responses[200] = { description: 'Edit updated.', schema: {
+                    message: 'Edit updated.',
+                    edit: { '$ref': '#/components/schemas/EditApprovalQueueDBObject' }
+                }
+            }
+            */
+            // #swagger.responses[400] = { description: 'No changes provided.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[401] = { description: 'Unauthorized.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[404] = { description: 'Edit not found.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
+            // #swagger.responses[500] = { description: 'Error updating edit.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
             let editId = Validator.zDBID.safeParse(req.params.editIdParam);
             if (!editId.success) {
                 return res.status(400).send({ message: `Invalid edit id.` });
@@ -586,6 +585,7 @@ export class ApprovalRoutes {
             // #swagger.description = 'Revoke a modVersion\'s verification status.\n\nThis will also revoke the verification status of any modVersions that depend on this modVersion.'
             // #swagger.parameters['modVersionIdParam'] = { description: 'The id of the modVersion to revoke.', type: 'integer', required: true }
             // #swagger.parameters['allowDependants'] = { description: 'Allow dependants to remain verified. This is dangerous.', type: 'boolean', required: true }
+            // #swagger.responses[200] = { description: 'ModVersion revoked.', content: { 'application/json': { schema: { $ref: '#/components/schemas/ServerMessage' } } } }
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             if (!modVersionId.success) {
                 return res.status(400).send({ message: `Invalid mod version id.` });

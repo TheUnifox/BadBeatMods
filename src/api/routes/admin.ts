@@ -169,8 +169,7 @@ export class AdminRoutes {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Mark all versions as compatible with another gameversion.'
             // #swagger.description = 'Link two versions together.'
-            /* #swagger.parameters['body'] = {
-                in: 'body',
+            /* #swagger.requestBody = {
                 description: 'The versions to link.',
                 required: true,
                 schema: {
@@ -215,8 +214,8 @@ export class AdminRoutes {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Add a role to a user.'
             // #swagger.description = 'Add a role to a user.'
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
+            /* #swagger.requestBody = {
+                    
                     description: 'The role to add.',
                     required: true,
                     schema: {
@@ -355,8 +354,8 @@ export class AdminRoutes {
             // #swagger.tags = ['Admin']
             // #swagger.summary = 'Remove a role from a user.'
             // #swagger.description = 'Remove a role from a user.'
-            /* #swagger.parameters['body'] = {
-                    in: 'body',
+            /* #swagger.requestBody = {
+                    
                     description: 'The role to remove.',
                     required: true,
                     schema: {

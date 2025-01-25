@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "buildDocs",
+            "type": "shell",
+            "command": "npm run swagger",
+        },
+        {
+
+            "label": "buildTS",
+            "dependsOn": [
+                "tsc: build - tsconfig.json"
+            ]
+        },
+        {
+            "label": "vscode start",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "buildDocs",
+                "buildTS"
+            ]
+        },
+    ]
+}
