@@ -1383,6 +1383,11 @@ export class DatabaseHelper {
             editApprovalQueue: [],
             motd: [],
         };
+    private static readmeCache: {
+        modId: number,
+        readme: string,
+        refreshTime: Date,
+    }[] = [];
 
     constructor(database: DatabaseManager) {
         DatabaseHelper.database = database;
@@ -1418,6 +1423,64 @@ export class DatabaseHelper {
                 DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
                 break;
         }
+    }
+
+    private static async replaceReadMes() {
+        for (let mod of DatabaseHelper.cache.mods) {
+            if (mod.description.length > 0) {
+                continue;
+            }
+
+            let readme = DatabaseHelper.readmeCache.find((readme) => readme.modId == mod.id);
+            if (readme) {
+                mod.description = readme.readme;
+            } else {
+                await DatabaseHelper.getReadme(mod.id).then((readme) => {
+                    if (readme) {
+                        let trimmpedReadMe = readme.substring(0, 4000);
+                        mod.description = trimmpedReadMe + (readme.length > 4000 ? `...` : ``) + `\n\n*Generated from this mod's README.md file.*`;
+                        DatabaseHelper.readmeCache.push({
+                            modId: mod.id,
+                            readme: readme,
+                            refreshTime: new Date(Date.now()),
+                        });
+                    }
+                });
+            }
+        }
+    }
+
+    private static async getReadme(modId: number): Promise<string | null> {
+        let mod = DatabaseHelper.cache.mods.find((mod) => mod.id == modId);
+        if (!mod) {
+            return null;
+        }
+
+        let repoInfo = /https?:\/\/(github\.com|gitlab\.com)\/([\w\d-]+)\/([\w\d-]+)/g.exec(mod.gitUrl);
+        if (!repoInfo) {
+            return null;
+        }
+
+        let host = repoInfo[1];
+        let repoOwner = repoInfo[2];
+        let repoName = repoInfo[3];
+
+        if (host == `github.com`) {
+            //https://raw.githubusercontent.com/owner/repo/main/README.md
+            let readme = await fetch(`https://raw.githubusercontent.com/${encodeURIComponent(repoOwner)}/${encodeURIComponent(repoName)}/main/README.md`);
+            if (readme.ok) {
+                return await readme.text();
+            }
+        } else if (host == `gitlab.com`) {
+            //https://gitlab.com/owner/repo/-/raw/main/README.md
+            let readme = await fetch(`https://gitlab.com/${encodeURIComponent(repoOwner)}/${encodeURIComponent(repoName)}/-/raw/main/README.md`);
+            if (readme.ok) {
+                return await readme.text();
+            }
+
+        }
+
+        return null;
     }
 
     public static getGameNameFromModId(id: number): SupportedGames | null {
