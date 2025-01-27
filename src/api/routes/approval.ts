@@ -24,7 +24,7 @@ export class ApprovalRoutes {
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string', required: true }
             /*
             #swagger.responses[200] = {
-                description: 'List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified.',
+                description: 'List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified. The edit objects `Original` property will contain the original mod or modVersion object.',
                 schema: {
                     mods: [
                         {
@@ -39,11 +39,17 @@ export class ApprovalRoutes {
                             '$ref': '#/components/schemas/ModVersionDBObject'
                         }
                     }],
-                    edits: [
-                        {
+                    edits: [{
+                        mod: {
+                            '$ref': '#/components/schemas/ModAPIPublicResponse'
+                        },
+                        original: {
+                            '$ref': '#/components/schemas/ModVersionDBObject'
+                        },
+                        edit:{
                             '$ref': '#/components/schemas/EditApprovalQueueDBObject'
                         }
-                    ]
+                    }]
                 }
             }
             */
@@ -65,8 +71,14 @@ export class ApprovalRoutes {
 
             let response: {
                 mods: ModAPIPublicResponse[] | undefined,
-                modVersions: { mod: ModAPIPublicResponse, version: ReturnType<typeof ModVersion.prototype.toRawAPIResonse>}[] | undefined,
-                edits: EditQueue[] | undefined
+                modVersions: {
+                    mod: ModAPIPublicResponse,
+                    version: ReturnType<typeof ModVersion.prototype.toRawAPIResonse>}[] | undefined,
+                edits: {
+                    mod: ModAPIPublicResponse,
+                    original: Mod | ModVersion
+                    edit: EditQueue,
+                }[] | undefined
             } = {
                 mods: undefined,
                 modVersions: undefined,
@@ -105,8 +117,28 @@ export class ApprovalRoutes {
                                 return gV.gameName === gameName.data;
                             }).length > 0;
                         }
-                    });
+                    }).map((edit) => {
+                        let isMod = `name` in edit.object;
+                        if (isMod) {
+                            let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === edit.objectId);
+                            if (!mod) {
+                                return null;
+                            }
+                            return { mod: mod.toAPIResponse(), original: mod, edit: edit };
+                        } else {
+                            let modVersion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+                            if (!modVersion) {
+                                return null;
+                            }
+                            let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
+                            if (!mod) {
+                                return null;
+                            }
+                            return { mod: mod.toAPIResponse(), original: modVersion, edit: edit };
+                        }
+                    }).filter((obj) => obj !== null);
                     break;
+                        
             }
 
             if (response.mods?.length === 0 && response.modVersions?.length === 0 && response.edits?.length === 0) {
