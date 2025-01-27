@@ -1400,6 +1400,7 @@ export class DatabaseHelper {
         DatabaseHelper.cache.gameVersions = await DatabaseHelper.database.GameVersions.findAll();
         DatabaseHelper.cache.modVersions = await DatabaseHelper.database.ModVersions.findAll();
         DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
+        Config.flags.enableGitReadmeCheck ? this.replaceReadMes() : null;
         DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
         DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
         DatabaseHelper.cache.motd = await DatabaseHelper.database.MOTDs.findAll();
@@ -1415,6 +1416,7 @@ export class DatabaseHelper {
                 break;
             case `mods`:
                 DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
+                this.replaceReadMes();
                 break;
             case `users`:
                 DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
