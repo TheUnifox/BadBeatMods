@@ -24,7 +24,7 @@ export class ApprovalRoutes {
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string', required: true }
             /*
             #swagger.responses[200] = {
-                description: 'List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified. The edit objects `Original` property will contain the original mod or modVersion object.',
+                description: 'List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified. The edit objects `original` property will contain the original mod or modVersion object.',
                 schema: {
                     mods: [
                         {
@@ -118,7 +118,7 @@ export class ApprovalRoutes {
                             }).length > 0;
                         }
                     }).map((edit) => {
-                        let isMod = `name` in edit.object;
+                        let isMod = edit.objectTableName === `mods`;
                         if (isMod) {
                             let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === edit.objectId);
                             if (!mod) {

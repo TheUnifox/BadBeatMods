@@ -1166,7 +1166,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified.",
+            "description": "List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified. The edit objects `original` property will contain the original mod or modVersion object.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1195,7 +1195,18 @@
                     "edits": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "original": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          },
+                          "edit": {
+                            "$ref": "#/components/schemas/EditApprovalQueueDBObject"
+                          }
+                        }
                       }
                     }
                   },
@@ -1231,7 +1242,18 @@
                     "edits": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "original": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          },
+                          "edit": {
+                            "$ref": "#/components/schemas/EditApprovalQueueDBObject"
+                          }
+                        }
                       }
                     }
                   },
