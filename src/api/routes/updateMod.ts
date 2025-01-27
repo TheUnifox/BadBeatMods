@@ -4,6 +4,8 @@ import { validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { Validator } from '../../shared/Validator';
 import { SemVer } from 'semver';
+import path from 'node:path';
+import { Config } from '../../shared/Config';
 
 export class UpdateModRoutes {
     private router: Router;
@@ -128,6 +130,75 @@ export class UpdateModRoutes {
                     res.status(500).send({ message: `Error updating mod ${mod.id}.` });
                 });
             }
+        });
+
+        this.router.post(`/mods/:modIdParam/icon`, async (req, res) => {
+            /* #swagger.parameters['icon'] = {
+                in: 'formData',
+                type: 'file',
+                description: 'Mod icon.',
+                required: false
+            } */
+            // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Update a mod icon.'
+            // #swagger.description = 'Update a mod icon.'
+            // #swagger.parameters['modIdParam'] = { description: 'Mod ID.', type: 'number' }
+            let modId = Validator.zDBID.safeParse(req.params.modIdParam);
+            if (!modId.success) {
+                return res.status(400).send({ message: `Invalid modId.` });
+            }
+            let gameName = DatabaseHelper.getGameNameFromModId(modId.data);
+            if (!gameName) {
+                return res.status(400).send({ message: `Invalid modId.` });
+            }
+            let session = await validateSession(req, res, true, gameName);
+            if (!session.user) {
+                return;
+            }
+
+            let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId.data } });
+            if (!mod) {
+                return res.status(404).send({ message: `Mod not found.` });
+            }
+
+            let icon = req.files?.icon;
+            
+            // validate icon if it exists
+            if (icon !== undefined && !Array.isArray(icon)) {
+                if (icon.size > 8 * 1024 * 1024) {
+                    return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
+                } else {
+                    let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
+            
+                    if (!isAcceptableImage) {
+                        return res.status(400).send({ error: `Invalid file type.` });
+                    }
+                }
+            } else {
+                return res.status(400).send({ message: `Invalid file.` });
+            }
+            
+            // if the icon is invalid, we don't need to do anything since it was delt with above
+            let filePath = ``;
+            // this is jsut so that the following code doesn't have to cast icon as UploadedFile every time
+            // move the icon to the correct location
+            filePath = `${path.resolve(Config.storage.iconsDir)}/${icon.md5}${path.extname(icon.name)}`;
+            if (filePath.startsWith(`${path.resolve(Config.storage.iconsDir)}`) == false) {
+                return res.status(400).send({ message: `Invalid icon.` });
+            }
+            let oldFileName = mod.iconFileName;
+            mod.iconFileName = `${icon.md5}${path.extname(icon.name)}`;
+            mod.save().then((mod) => {
+                icon.mv(filePath, (error) => {
+                    if (error) {
+                        Logger.error(`Error moving icon: ${error}`);
+                        mod.iconFileName = oldFileName;
+                        mod.save();
+                        return res.status(500).send({ message: `Error moving icon.` });
+                    }
+                    res.status(200).send({ message: `Icon updated.`, mod });
+                });
+            });
         });
         // #endregion Update Mod
 

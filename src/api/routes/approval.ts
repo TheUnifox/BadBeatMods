@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseHelper, UserRoles, Status, ModVersion } from '../../shared/Database';
+import { DatabaseHelper, UserRoles, Status, ModVersion, Mod, EditQueue, ModAPIPublicResponse } from '../../shared/Database';
 import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
@@ -16,12 +16,43 @@ export class ApprovalRoutes {
 
     private async loadRoutes() {
         // #region Get Approvals
-        this.router.get(`/approval/new`, async (req, res) => {
+        this.router.get(`/approval/:queueType`, async (req, res) => {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Get new mods & modVersions pending approval.'
             // #swagger.description = 'Get a list of mods & modVersions pending their first approval.'
-            // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string' }
-            // #swagger.responses[200] = { description: 'List of mods pending first approval', schema: { mods: [{$ref: '#/components/schemas/ModDBObject'}], modVersions: [{$ref: '#/components/schemas/ModVersionDBObject'}] } }
+            // #swagger.parameters['queueType'] = { description: 'The type of queue to get.', schema: { type: 'string', '@enum': ['mods', 'modVersions', 'edit'] }, required: true }
+            // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string', required: true }
+            /*
+            #swagger.responses[200] = {
+                description: 'List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified. The edit objects `original` property will contain the original mod or modVersion object.',
+                schema: {
+                    mods: [
+                        {
+                            '$ref': '#/components/schemas/ModAPIPublicResponse'
+                        }
+                    ],
+                    modVersions: [{
+                        mod: {
+                            '$ref': '#/components/schemas/ModAPIPublicResponse'
+                        },
+                        modVersion: {
+                            '$ref': '#/components/schemas/ModVersionDBObject'
+                        }
+                    }],
+                    edits: [{
+                        mod: {
+                            '$ref': '#/components/schemas/ModAPIPublicResponse'
+                        },
+                        original: {
+                            '$ref': '#/components/schemas/ModVersionDBObject'
+                        },
+                        edit:{
+                            '$ref': '#/components/schemas/EditApprovalQueueDBObject'
+                        }
+                    }]
+                }
+            }
+            */
             // #swagger.responses[204] = { description: 'No mods found.' }
             // #swagger.responses[400] = { description: 'Missing game name.' }
             // #swagger.responses[401] = { description: 'Unauthorized.' }
@@ -33,31 +64,92 @@ export class ApprovalRoutes {
             if (!session.user) {
                 return;
             }
-
-            //get mods and modVersions that are unverified (gameName filter on mods only)
-            let newMods = (await DatabaseHelper.database.Mods.findAll({ where: { status: `unverified`, gameName: gameName.data } })).map((mod) => mod.toAPIResponse());
-            let newModVersions = await DatabaseHelper.database.ModVersions.findAll({ where: { status: `unverified` } });
-            if (!newMods || !newModVersions) {
-                return res.status(204).send({ message: `No mods found.` });
+            let queueType = Validator.z.enum([`mods`, `modVersions`, `edit`]).safeParse(req.params.queueType);
+            if (!queueType.success) {
+                return res.status(400).send({ message: `Invalid queue type.` });
             }
 
-            // filter out modVersions that don't support the game specified
-            let modVersions = newModVersions.filter((modVersion) => {
-                for (let gameVersionId of modVersion.supportedGameVersionIds) {
-                    let gV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === gameVersionId);
-                    if (!gV || gV.gameName !== gameName.data) {
-                        return false;
-                    } else {
-                        return true;
+            let response: {
+                mods: ModAPIPublicResponse[] | undefined,
+                modVersions: {
+                    mod: ModAPIPublicResponse,
+                    version: ReturnType<typeof ModVersion.prototype.toRawAPIResonse>}[] | undefined,
+                edits: {
+                    mod: ModAPIPublicResponse,
+                    original: Mod | ModVersion
+                    edit: EditQueue,
+                }[] | undefined
+            } = {
+                mods: undefined,
+                modVersions: undefined,
+                edits: undefined
+            };
+            switch (queueType.data) {
+                case `mods`:
+                    //get mods and modVersions that are unverified (gameName filter on mods only)
+                    response.mods = (await DatabaseHelper.database.Mods.findAll({ where: { status: `unverified`, gameName: gameName.data } })).map((mod) => mod.toAPIResponse());
+                    break;
+                case `modVersions`:
+                    response.modVersions = (await DatabaseHelper.database.ModVersions.findAll({ where: { status: `unverified` } })).map((modVersion) => {
+                        let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
+                        if (!mod || mod.gameName !== gameName.data) {
+                            return null;
+                        }
+                        return { mod: mod.toAPIResponse(), version: modVersion.toRawAPIResonse() };
+                    }).filter((obj) => obj !== null);
+                    break;
+                case `edit`:
+                    let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: null }});
+                    if (!editQueue) {
+                        return res.status(204).send({ message: `No edits found.` });
                     }
-                }
-            });
 
-            res.status(200).send({ mods: newMods, modVersions: modVersions });
+                    // filter out edits that don't support the game specified
+                    response.edits = editQueue.filter((edit) => {
+                        if (`name` in edit.object) {
+                            return edit.object.gameName === gameName.data;
+                        } else {
+                            return edit.object.supportedGameVersionIds.filter((gameVersionId) => {
+                                let gV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === gameVersionId);
+                                if (!gV) {
+                                    return false;
+                                }
+                                return gV.gameName === gameName.data;
+                            }).length > 0;
+                        }
+                    }).map((edit) => {
+                        let isMod = edit.objectTableName === `mods`;
+                        if (isMod) {
+                            let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === edit.objectId);
+                            if (!mod) {
+                                return null;
+                            }
+                            return { mod: mod.toAPIResponse(), original: mod, edit: edit };
+                        } else {
+                            let modVersion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+                            if (!modVersion) {
+                                return null;
+                            }
+                            let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
+                            if (!mod) {
+                                return null;
+                            }
+                            return { mod: mod.toAPIResponse(), original: modVersion, edit: edit };
+                        }
+                    }).filter((obj) => obj !== null);
+                    break;
+                        
+            }
+
+            if (response.mods?.length === 0 && response.modVersions?.length === 0 && response.edits?.length === 0) {
+                return res.status(204).send({ message: `No ${queueType.data} found.` });
+            }
+            res.status(200).send(response);
         });
 
-        this.router.get(`/approval/edits`, async (req, res) => {
+        /*this.router.get(`/approval/edits`, async (req, res) => {
             // #swagger.tags = ['Approval']
+            //
             // #swagger.summary = 'Get edits pending approval.'
             // #swagger.description = 'Get a list of already existing mod & modVersions that are pending approval.'
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get edits for.', type: 'string' }
@@ -75,28 +167,9 @@ export class ApprovalRoutes {
             }
 
             // get all edits that are unapproved
-            let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: null }});
-            if (!editQueue) {
-                return res.status(204).send({ message: `No edits found.` });
-            }
-
-            // filter out edits that don't support the game specified
-            editQueue = editQueue.filter((edit) => {
-                if (`name` in edit.object) {
-                    return edit.object.gameName === gameName.data;
-                } else {
-                    return edit.object.supportedGameVersionIds.filter((gameVersionId) => {
-                        let gV = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.id === gameVersionId);
-                        if (!gV) {
-                            return false;
-                        }
-                        return gV.gameName === gameName.data;
-                    }).length > 0;
-                }
-            });
 
             res.status(200).send({ edits: editQueue });
-        });
+        });*/
         // #endregion
         // #region Accept/Reject Approvals
         this.router.post(`/approval/mod/:modIdParam/approve`, async (req, res) => {

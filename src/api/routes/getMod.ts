@@ -128,7 +128,7 @@ export class GetModRoutes {
                 }
                 // if raw is true, return the raw mod version info instead of attempting to resolve the dependencies & other fields
                 if (raw) {
-                    returnVal.push(await version.toRawAPIResonse());
+                    returnVal.push(version.toRawAPIResonse());
                 } else {
                     let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified, Status.Private, Status.Removed]);
                     if (resolvedVersion) {
@@ -206,7 +206,7 @@ export class GetModRoutes {
             for (const version of DatabaseHelper.cache.modVersions) {
                 if (hashArr.includes(version.zipHash)) {
                     if (raw) {
-                        retVal.push(version.toRawAPIResonse());
+                        retVal.push(Promise.resolve(version.toRawAPIResonse()));
                     } else {
                         retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
                     }
@@ -214,7 +214,7 @@ export class GetModRoutes {
                 for (const fileHash of version.contentHashes) {
                     if (hashArr.includes(fileHash.hash)) {
                         if (raw) {
-                            retVal.push(version.toRawAPIResonse());
+                            retVal.push(Promise.resolve(version.toRawAPIResonse()));
                         } else {
                             retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
                         }

@@ -1057,7 +1057,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.raw}`);
     }
 
-    public async toRawAPIResonse() {
+    public toRawAPIResonse() {
         return {
             id: this.id,
             modId: this.modId,
