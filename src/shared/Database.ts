@@ -1393,7 +1393,7 @@ export class DatabaseHelper {
         DatabaseHelper.database = database;
 
         DatabaseHelper.refreshAllCaches();
-        setInterval(DatabaseHelper.refreshAllCaches, 1000 * 60 * 1);
+        setInterval(DatabaseHelper.refreshAllCaches, 1000 * 60 * 5);
     }
 
     public static async refreshAllCaches() {
@@ -1416,7 +1416,7 @@ export class DatabaseHelper {
                 break;
             case `mods`:
                 DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
-                this.replaceReadMes();
+                Config.flags.enableGitReadmeCheck ? this.replaceReadMes() : null;
                 break;
             case `users`:
                 DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
