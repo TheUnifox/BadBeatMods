@@ -181,7 +181,14 @@ export class ApprovalRoutes {
                     required: true,
                     description: 'The status to set the mod to.',
                     schema: {
-                        status: 'string',
+                        type: 'object',
+                        properties: {
+                            status: {
+                                type: 'string',
+                                description: 'The status to set the mod to.',
+                                example: 'verified'
+                            }
+                        }
                     }
                 }
             */
@@ -233,7 +240,14 @@ export class ApprovalRoutes {
                     required: true,
                     description: 'The status to set the modVersion to.',
                     schema: {
-                        status: 'string',
+                        type: 'object',
+                        properties: {
+                            status: {
+                                type: 'string',
+                                description: 'The status to set the modVersion to.',
+                                example: 'verified'
+                            }
+                        }
                     }
                 }
             */
@@ -290,7 +304,13 @@ export class ApprovalRoutes {
                 required: true,
                 description: 'The accepted value.',
                 schema: {
-                    accepted: 'boolean',
+                    type: 'object',
+                    properties: {
+                        accepted: {
+                            type: 'boolean',
+                            description: 'Whether to accept the edit or not.'
+                        }
+                    },
                 }
             }
             */

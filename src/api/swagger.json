@@ -365,12 +365,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEditMod"
+                "$ref": "#/components/schemas/EditMod"
               }
             },
             "application/xml": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEditMod"
+                "$ref": "#/components/schemas/EditMod"
               }
             }
           }
@@ -1398,12 +1398,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the mod to.",
+                    "example": "verified"
+                  }
+                }
               }
             },
             "application/xml": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the mod to.",
+                    "example": "verified"
+                  }
+                }
               }
             }
           }
@@ -1486,12 +1500,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the modVersion to.",
+                    "example": "verified"
+                  }
+                }
               }
             },
             "application/xml": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the modVersion to.",
+                    "example": "verified"
+                  }
+                }
               }
             }
           }
@@ -1539,12 +1567,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "accepted": "boolean"
+                "type": "object",
+                "properties": {
+                  "accepted": {
+                    "type": "boolean",
+                    "description": "Whether to accept the edit or not."
+                  }
+                }
               }
             },
             "application/xml": {
               "schema": {
-                "accepted": "boolean"
+                "type": "object",
+                "properties": {
+                  "accepted": {
+                    "type": "boolean",
+                    "description": "Whether to accept the edit or not."
+                  }
+                }
               }
             }
           }

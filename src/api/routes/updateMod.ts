@@ -26,7 +26,7 @@ export class UpdateModRoutes {
                 description: 'Mod data',
                 required: true,
                 schema: {
-                    $ref: '#/definitions/CreateEditMod'
+                    $ref: '#/definitions/EditMod'
                 }
             }
             */
@@ -166,12 +166,12 @@ export class UpdateModRoutes {
             // validate icon if it exists
             if (icon !== undefined && !Array.isArray(icon)) {
                 if (icon.size > 8 * 1024 * 1024) {
-                    return res.status(413).send({ error: `Invalid file (Might be too large, 8MB max.)` });
+                    return res.status(413).send({ message: `Invalid file (Might be too large, 8MB max.)` });
                 } else {
                     let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
             
                     if (!isAcceptableImage) {
-                        return res.status(400).send({ error: `Invalid file type.` });
+                        return res.status(400).send({ message: `Invalid file type.` });
                     }
                 }
             } else {
