@@ -566,6 +566,52 @@
         }
       }
     },
+    "/mods/{modIdParam}/icon": {
+      "post": {
+        "tags": [
+          "Mods"
+        ],
+        "summary": "Update a mod icon.",
+        "description": "Update a mod icon.",
+        "parameters": [
+          {
+            "name": "modIdParam",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Mod ID."
+          },
+          {
+            "name": "icon",
+            "in": "formData",
+            "description": "Mod icon.",
+            "required": false,
+            "schema": {
+              "type": "file"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "413": {
+            "description": "Payload Too Large"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/modversion/{modVersionIdParam}": {
       "patch": {
         "tags": [
