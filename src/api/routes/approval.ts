@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseHelper, UserRoles, Status, ModVersion, Mod, EditQueue, ModAPIPublicResponse, ModVersionAPIPublicResponse } from '../../shared/Database';
+import { DatabaseHelper, UserRoles, Status, ModVersion, Mod, EditQueue, ModAPIPublicResponse } from '../../shared/Database';
 import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
