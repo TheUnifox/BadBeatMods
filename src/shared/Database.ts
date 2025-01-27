@@ -1472,6 +1472,11 @@ export class DatabaseHelper {
             let readme = await fetch(`https://raw.githubusercontent.com/${encodeURIComponent(repoOwner)}/${encodeURIComponent(repoName)}/main/README.md`);
             if (readme.ok) {
                 return await readme.text();
+            } else {
+                let readme2 = await fetch(`https://raw.githubusercontent.com/${encodeURIComponent(repoOwner)}/${encodeURIComponent(repoName)}/master/README.md`);
+                if (readme2.ok) {
+                    return await readme2.text();
+                }
             }
         } else if (host == `gitlab.com`) {
             //https://gitlab.com/owner/repo/-/raw/main/README.md
