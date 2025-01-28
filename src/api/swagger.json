@@ -1195,7 +1195,7 @@
               "enum": [
                 "mods",
                 "modVersions",
-                "edit"
+                "edits"
               ]
             },
             "description": "The type of queue to get."
