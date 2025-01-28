@@ -20,7 +20,7 @@ export class ApprovalRoutes {
             // #swagger.tags = ['Approval']
             // #swagger.summary = 'Get new mods & modVersions pending approval.'
             // #swagger.description = 'Get a list of mods & modVersions pending their first approval.'
-            // #swagger.parameters['queueType'] = { description: 'The type of queue to get.', schema: { type: 'string', '@enum': ['mods', 'modVersions', 'edit'] }, required: true }
+            // #swagger.parameters['queueType'] = { description: 'The type of queue to get.', schema: { type: 'string', '@enum': ['mods', 'modVersions', 'edits'] }, required: true }
             // #swagger.parameters['gameName'] = { description: 'The name of the game to get new mods for.', type: 'string', required: true }
             /*
             #swagger.responses[200] = {
@@ -64,7 +64,7 @@ export class ApprovalRoutes {
             if (!session.user) {
                 return;
             }
-            let queueType = Validator.z.enum([`mods`, `modVersions`, `edit`]).safeParse(req.params.queueType);
+            let queueType = Validator.z.enum([`mods`, `modVersions`, `edits`]).safeParse(req.params.queueType);
             if (!queueType.success) {
                 return res.status(400).send({ message: `Invalid queue type.` });
             }
@@ -98,7 +98,7 @@ export class ApprovalRoutes {
                         return { mod: mod.toAPIResponse(), version: modVersion.toRawAPIResonse() };
                     }).filter((obj) => obj !== null);
                     break;
-                case `edit`:
+                case `edits`:
                     let editQueue = await DatabaseHelper.database.EditApprovalQueue.findAll({where: { approved: null }});
                     if (!editQueue) {
                         return res.status(204).send({ message: `No edits found.` });
