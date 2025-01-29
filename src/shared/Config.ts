@@ -41,11 +41,11 @@ const DEFAULT_CONFIG = {
         cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
     },
     webhooks: {
-        enableWebhooks: false, // enables sending to all webhooks
-        enablePublicWebhook: false, // enables sending approved mods to the public webhook
-        loggingUrl: `http://localhost:5001/webhooks/logging`, // url for logging - sensitive data might be sent here
-        modLogUrl: `http://localhost:5001/webhooks/modlog`, // url for mod logging - new, approvals, and rejections
-        publicUrl: `http://localhost:5001/webhooks/public` // url for public webhook - approved mods only... might have a delay? hasn't been done yet.
+        enableWebhooks: false, // acts as a sort of master switch for all webhooks. useful for dev when you dont want to deal with webhooks.
+        loggingUrl: ``, // url for logging - sensitive data might be sent here
+        modLogUrl: ``, // url for mod logging - new, approvals, and rejections
+        modLog2Url: ``, // same as above
+        publicUrl: `` // url for public webhook - approved mods only... might have a delay? hasn't been done yet.
     },
     bot: {
         enabled: false,
@@ -60,7 +60,7 @@ const DEFAULT_CONFIG = {
         enableFavicon: false, // enables the favicon route /favicon.ico
         enableBanner: false, // enables the banner route /banner.png
         enableSwagger: true, // enables the swagger docs at /api/docs
-        enableDBHealthCheck: false, // enables the database health check at /api/health
+        enableDBHealthCheck: false, // enables the database health check
     }
 };
 
@@ -97,9 +97,9 @@ export class Config {
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
     private static _webhooks: {
         enableWebhooks: boolean;
-        enablePublicWebhook: boolean;
         loggingUrl: string;
         modLogUrl: string;
+        modLog2Url: string;
         publicUrl: string;
     };
     private static _bot: {
@@ -191,7 +191,7 @@ export class Config {
                     process.exit(1);
                 }
 
-                console.warn(`Config file is invalid at keys ${success.join(`, `)}.`);
+                console.warn(`Config is invalid or missing at keys ${success.join(`, `)}.`);
                 if (disableDefaults) {
                     console.error(`Defaults are disabled, and the config file was invalid. Please check the config file and try again.`);
                     process.exit(1);
@@ -460,12 +460,6 @@ export class Config {
                 failedToLoad.push(`webhooks.enableWebhooks`);
             }
 
-            if (process.env.WEBHOOKS_ENABLEPUBLICWEBHOOK) {
-                Config._webhooks.enablePublicWebhook = process.env.WEBHOOKS_ENABLEPUBLICWEBHOOK === `true`;
-            } else {
-                failedToLoad.push(`webhooks.enablePublicWebhook`);
-            }
-
             if (process.env.WEBHOOKS_LOGGINGURL) {
                 Config._webhooks.loggingUrl = process.env.WEBHOOKS_LOGGINGURL;
             } else {
@@ -476,6 +470,12 @@ export class Config {
                 Config._webhooks.modLogUrl = process.env.WEBHOOKS_MODLOGURL;
             } else {
                 failedToLoad.push(`webhooks.modLogUrl`);
+            }
+
+            if (process.env.WEBHOOKS_MODLOG2URL) {
+                Config._webhooks.modLog2Url = process.env.WEBHOOKS_MODLOG2URL;
+            } else {
+                failedToLoad.push(`webhooks.modLog2Url`);
             }
 
             if (process.env.WEBHOOKS_PUBLICURL) {
