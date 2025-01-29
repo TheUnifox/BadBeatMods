@@ -335,6 +335,10 @@ export class ApprovalRoutes {
                 return res.status(404).send({ message: `Edit not found.` });
             }
 
+            if (edit.approved !== null) {
+                return res.status(400).send({ message: `Edit already ${edit.approved ? `approved` : `denied`}. Please submit a new edit.` });
+            }
+
             let isMod = `name` in edit.object;
             let modId = isMod ? edit.objectId : await DatabaseHelper.database.ModVersions.findOne({ where: { id: edit.objectId } }).then((modVersion) => {
                 if (!modVersion) {
