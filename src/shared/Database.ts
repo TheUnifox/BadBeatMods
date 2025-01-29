@@ -4,7 +4,7 @@ import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, 
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
-import { sendModLog, sendModVersionLog } from "./ModWebhooks";
+import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -1175,12 +1175,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         this.approverId = approver.id;
         this.save().then(() => {
             Logger.log(`Edit ${this.id} approved by ${approver.username}`);
-
-            if (this.isMod()) {
-                sendModLog(record as Mod, approver, `Approved`);
-            } else {
-                sendModVersionLog(this.object as ModVersion, approver, `Approved`);
-            }
+            sendEditLog(this, approver, `Approved`);
         }).catch((error) => {
             Logger.error(`Error approving edit ${this.id}: ${error}`);
         });
@@ -1197,11 +1192,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         this.approverId = approver.id;
         this.save().then(() => {
             Logger.log(`Edit ${this.id} denied by ${approver.username}`);
-            if (this.isMod()) {
-                sendModLog(record as Mod, approver, `Rejected`);
-            } else {
-                sendModVersionLog(record as ModVersion, approver, `Rejected`);
-            }
+            sendEditLog(this, approver, `Rejected`);
         }).catch((error) => {
             Logger.error(`Error denying edit ${this.id}: ${error}`);
         });

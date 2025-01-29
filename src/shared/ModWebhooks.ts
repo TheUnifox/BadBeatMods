@@ -1,7 +1,8 @@
-import { APIMessage, MessagePayload, WebhookClient, WebhookMessageCreateOptions } from "discord.js";
-import { DatabaseHelper, Mod, ModVersion, Status, User } from "./Database";
+import { APIMessage, Embed, EmbedBuilder, MessagePayload, WebhookClient, WebhookMessageCreateOptions } from "discord.js";
+import { DatabaseHelper, EditQueue, Mod, ModApproval, ModVersion, ModVersionApproval, Status, User } from "./Database";
 import { Config } from "./Config";
 import { Logger } from "./Logger";
+import { send } from "node:process";
 
 let webhookClient1: WebhookClient;
 let webhookClient2: WebhookClient;
@@ -26,6 +27,15 @@ async function sendToWebhooks(options: string | MessagePayload | WebhookMessageC
     }
 
     return Promise.all(retVal);
+}
+
+async function sendEmbedToWebhooks(embed: EmbedBuilder) {
+    let faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
+    sendToWebhooks({ 
+        username: `BadBeatMods`,
+        avatarURL: faviconUrl,
+        embeds: [embed]
+    });
 }
 
 export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New` | `Approved` | `Rejected`) {
@@ -183,4 +193,75 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
             },
         ],
     });
+}
+
+export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action: `New` | `Approved` | `Rejected`) {
+    const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
+    let color = 0x00FF00;
+
+    if (action === `Rejected`) {
+        color = 0xFF0000;
+    } else if (action === `New`) {
+        color = 0x0000FF;
+    }
+
+    let modId = edit.objectTableName === `mods` ? edit.objectId : null;
+    if (!modId) {
+        let modVersion = DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+        if (!modVersion) {
+            return Logger.error(`Mod version not found for edit ${edit.id}`);
+        }
+        modId = modVersion.modId;
+    }
+
+    let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modId);
+    if (!mod) {
+        return Logger.error(`Mod not found for edit ${edit.id}`);
+    }
+
+    let embed = new EmbedBuilder();
+    embed.setColor(color);
+    embed.setTimestamp(new Date(Date.now()));
+    embed.setAuthor({
+        name: userMakingChanges.username,
+        iconURL: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`
+    });
+    embed.setFooter({
+        text: `Mod ID: ${mod.id} | Edit ID: ${edit.id}`,
+        iconURL: faviconUrl,
+    });
+    embed.setTitle(`${action} Edit: ${mod.name}`);
+    embed.setURL(`${Config.server.url}/mods/${mod.id}`);
+    let original = edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+    if (!original) {
+        return Logger.error(`Original not found for edit ${edit.id}`);
+    }
+
+    let description = ``;
+
+    if (edit.isMod() && `name` in original) {
+        for (let key of Object.keys(edit.object) as (keyof ModApproval)[]) {
+            if (edit.object[key] != original[key]) {
+                if (key === `description`) {
+                    description += `**${key}**: ${(original[key] as string).substring(0, 100)} -> ${(edit.object[key] as string).substring(0, 100)}\n`;
+                    continue;
+                }
+                description += `**${key}**: ${original[key]} -> ${edit.object[key]}\n`;
+            }
+        }
+    } else if (edit.isModVersion() && `platform` in original) {
+        for (let key of Object.keys(edit.object) as (keyof ModVersionApproval)[]) {
+            if (edit.object[key] != original[key]) {
+                description += `**${key}**: ${original[key]} -> ${edit.object[key]}\n`;
+            }
+        }
+    }
+
+    if (description.length > 4096) {
+        description = description.substring(0, 4096);
+    }
+
+    embed.setDescription(description);
+
+    sendEmbedToWebhooks(embed);
 }
