@@ -867,7 +867,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
             Logger.error(`Error setting status: ${error}`);
             throw error;
         }
-        Logger.log(`Mod ${this.id} approved by ${user.username}`);
+        Logger.log(`Mod ${this.id} set to status ${status} by ${user.username}`);
         switch (status) {
             case Status.Unverified:
                 sendModLog(this, user, `New`);
