@@ -358,6 +358,7 @@ export class ApprovalRoutes {
                 edit.approve(session.user).then((record) => {
                     Logger.log(`Edit ${editId.data} accepted by ${session.user.username}.`);
                     isMod ? DatabaseHelper.refreshCache(`mods`) : DatabaseHelper.refreshCache(`modVersions`);
+                    DatabaseHelper.refreshCache(`editApprovalQueue`);
                     return res.status(200).send({ message: `Edit accepted.`, record: record });
                 }).catch((error) => {
                     Logger.error(`Error approving edit ${editId.data}: ${error}`);
@@ -367,6 +368,7 @@ export class ApprovalRoutes {
                 edit.deny(session.user).then(() => {
                     Logger.log(`Edit ${editId.data} rejected by ${session.user.username}.`);
                     isMod ? DatabaseHelper.refreshCache(`mods`) : DatabaseHelper.refreshCache(`modVersions`);
+                    DatabaseHelper.refreshCache(`editApprovalQueue`);
                     return res.status(200).send({ message: `Edit rejected.` });
                 }).catch((error) => {
                     Logger.error(`Error rejecting edit ${editId}: ${error}`);
