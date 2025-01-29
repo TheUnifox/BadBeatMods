@@ -1157,6 +1157,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
             let mod = await DatabaseHelper.database.Mods.findByPk(this.objectId);
             if (mod) {
                 mod.name = this.object.name || mod.name;
+                mod.summary = this.object.summary || mod.summary;
                 mod.description = this.object.description || mod.description;
                 mod.category = this.object.category || mod.category;
                 mod.gitUrl = this.object.gitUrl || mod.gitUrl;
