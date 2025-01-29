@@ -1,5 +1,6 @@
 import express from 'express';
 import session from 'express-session';
+import connectSessionSequelize from 'connect-session-sequelize';
 import MemoryStore from 'memorystore';
 import fileUpload from 'express-fileupload';
 import rateLimit from 'express-rate-limit';
@@ -30,11 +31,13 @@ import { StatusRoutes } from './api/routes/status';
 import { BulkActionsRoutes } from './api/routes/bulkActions';
 
 import swaggerDocument from './api/swagger.json';
+import { Sequelize } from 'sequelize';
 
 console.log(`Starting setup...`);
 new Config();
 const app = express();
 const memstore = MemoryStore(session);
+const sessionStore = connectSessionSequelize(session.Store);
 const port = Config.server.port;
 let database = new DatabaseManager();
 
@@ -53,13 +56,24 @@ app.use(fileUpload({
     abortOnLimit: true,
 }));
 
+let sessionsDb = new Sequelize(`sessions`, {
+    dialect: `sqlite`,
+    storage: path.resolve(Config.storage.sessions),
+    logging: false,
+});
+
 // session handling
 app.use(session({
     secret: Config.server.sessionSecret,
     name: `bbm_session`,
-    store: new memstore({
-        checkPeriod: 86400000
-    }),
+    store: Config.server.storeSessions ?
+        new sessionStore({
+            db: sessionsDb,
+            expiration: 86400000,
+        }) :
+        new memstore({
+            checkPeriod: 86400000
+        }),
     resave: false,
     saveUninitialized: false,
     unset: `destroy`,

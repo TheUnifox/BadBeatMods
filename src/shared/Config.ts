@@ -27,13 +27,15 @@ const DEFAULT_CONFIG = {
     },
     storage: {
         modsDir: `./storage/uploads`,
-        iconsDir: `./storage/icons`
+        iconsDir: `./storage/icons`,
+        sessions: `./storage/sessions.sqlite` // only used if storeSessions is true
     },
     devmode: false, // enables devmode features + increased logging
     authBypass: false, // bypasses auth for all routes. uses ServerAdmin user.
     server: {
         port: 5001, // port to run the server on
         url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
+        storeSessions: false, // stores sessions in a database.
         sessionSecret: `supersecret`, // secret for the session cookie
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
         corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
@@ -84,10 +86,12 @@ export class Config {
     private static _storage: {
         modsDir: string;
         iconsDir: string;
+        sessions: string;
     };
     private static _server: {
         port: number;
         url: string;
+        storeSessions: boolean;
         sessionSecret: string;
         iHateSecurity: boolean;
         corsOrigins: string | string[];
@@ -398,6 +402,12 @@ export class Config {
             } else {
                 failedToLoad.push(`storage.iconsDir`);
             }
+
+            if (process.env.STORAGE_SESSIONS) {
+                Config._storage.sessions = process.env.STORAGE_SESSIONS;
+            } else {
+                failedToLoad.push(`storage.sessions`);
+            }
             // #endregion
             // #region Server & Devmode & authBypass
             if (process.env.DEVMODE) {
@@ -422,6 +432,12 @@ export class Config {
                 Config._server.url = process.env.SERVER_URL;
             } else {
                 failedToLoad.push(`server.url`);
+            }
+
+            if (process.env.SERVER_STORESESSIONS) {
+                Config._server.storeSessions = process.env.SERVER_STORESESSIONS === `true`;
+            } else {
+                failedToLoad.push(`server.storeSessions`);
             }
 
             if (process.env.SERVER_SESSION_SECRET) {
