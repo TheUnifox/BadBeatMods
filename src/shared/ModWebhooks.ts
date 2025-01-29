@@ -6,6 +6,7 @@ import { Logger } from "./Logger";
 let webhookClient: WebhookClient;
 
 export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New` | `Approved` | `Rejected`) {
+    const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
     if (Config.webhooks.enableWebhooks) {
         if (!webhookClient) {
             webhookClient = new WebhookClient({ url: Config.webhooks.modLogUrl });
@@ -32,7 +33,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
 
         webhookClient.send({
             username: `BadBeatMods`,
-            avatarURL: `${Config.server.url}/favicon.ico`,
+            avatarURL: faviconUrl,
             embeds: [
                 {
                     title: `${action} Mod: ${mod.name}`,
@@ -40,7 +41,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
                     description: `${mod.description} `,
                     author: {
                         name: `${userMakingChanges.username} `,
-                        icon_url: userMakingChanges.username === `ServerAdmin` ? `${Config.server.url}/favicon.ico` : `https://github.com/${userMakingChanges.username}.png`,
+                        icon_url: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`,
                     },
                     fields: [
                         {
@@ -67,7 +68,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
                     timestamp: new Date().toISOString(),
                     footer: {
                         text: `Mod ID: ${mod.id}`,
-                        icon_url: `${Config.server.url}/favicon.ico`,
+                        icon_url: faviconUrl,
                     },
                 },
             ],
