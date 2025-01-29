@@ -37,7 +37,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
             embeds: [
                 {
                     title: `${action} Mod: ${mod.name}`,
-                    url: `${Config.server.url}/api/mods/${mod.id}`,
+                    url: `${Config.server.url}/mods/${mod.id}`,
                     description: `${mod.description} `,
                     author: {
                         name: `${userMakingChanges.username} `,
@@ -122,7 +122,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
             embeds: [
                 {
                     title: `${action} Mod Version: ${mod.name} v${modVersion.modVersion.raw}`,
-                    url: `${Config.server.url}/api/modversions/${modVersion.id}`,
+                    url: `${Config.server.url}/mods/${mod.id}`,
                     description: `${mod.description} `,
                     author: {
                         name: `${userMakingChanges.username} `,
