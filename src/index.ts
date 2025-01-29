@@ -1,7 +1,7 @@
 import express from 'express';
-import session from 'express-session';
-import connectSessionSequelize from 'connect-session-sequelize';
+import session, { SessionOptions } from 'express-session';
 import MemoryStore from 'memorystore';
+import connectSqlite3 from 'connect-sqlite3';
 import fileUpload from 'express-fileupload';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
@@ -31,13 +31,11 @@ import { StatusRoutes } from './api/routes/status';
 import { BulkActionsRoutes } from './api/routes/bulkActions';
 
 import swaggerDocument from './api/swagger.json';
-import { Sequelize } from 'sequelize';
 
 console.log(`Starting setup...`);
 new Config();
 const app = express();
 const memstore = MemoryStore(session);
-const sessionStore = connectSessionSequelize(session.Store);
 const port = Config.server.port;
 let database = new DatabaseManager();
 
@@ -56,24 +54,9 @@ app.use(fileUpload({
     abortOnLimit: true,
 }));
 
-let sessionsDb = new Sequelize(`sessions`, {
-    dialect: `sqlite`,
-    storage: path.resolve(Config.storage.sessions),
-    logging: false,
-});
-
-// session handling
-app.use(session({
+const sessionConfigData: SessionOptions = {
     secret: Config.server.sessionSecret,
     name: `bbm_session`,
-    store: Config.server.storeSessions ?
-        new sessionStore({
-            db: sessionsDb,
-            expiration: 86400000,
-        }) :
-        new memstore({
-            checkPeriod: 86400000
-        }),
     resave: false,
     saveUninitialized: false,
     unset: `destroy`,
@@ -83,7 +66,25 @@ app.use(session({
         httpOnly: true,
         sameSite: Config.server.iHateSecurity ? `none` : `strict`,
     }
-}));
+}
+
+if (Config.server.storeSessions) {
+    const sqlite3sessions = connectSqlite3(session);
+    sessionConfigData.store = new sqlite3sessions({
+        db: `./storage/sessions.sqlite`,
+        dir: `./storage`,
+        table: `sessions`,
+        ttl: 86400000,
+        concurrentDB: true,
+    });
+} else {
+    sessionConfigData.store = new memstore({
+        checkPeriod: 86400000,
+    });
+}
+
+app.use(session(sessionConfigData));
+
 app.set(`trust proxy`, `uniquelocal, loopback`);
 
 app.use((req, res, next) => {

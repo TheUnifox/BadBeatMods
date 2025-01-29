@@ -35,7 +35,7 @@ const DEFAULT_CONFIG = {
     server: {
         port: 5001, // port to run the server on
         url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
-        storeSessions: false, // stores sessions in a database.
+        storeSessions: false, // stores sessions in a database. untested.
         sessionSecret: `supersecret`, // secret for the session cookie
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
         corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
