@@ -41,6 +41,7 @@ const DEFAULT_CONFIG = {
         cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
     },
     webhooks: {
+        // If you don't want to use the webhook, just leave it blank. if a urls is under 8 characters, it will be ignored.
         enableWebhooks: false, // acts as a sort of master switch for all webhooks. useful for dev when you dont want to deal with webhooks.
         loggingUrl: ``, // url for logging - sensitive data might be sent here
         modLogUrl: ``, // url for mod logging - new, approvals, and rejections
