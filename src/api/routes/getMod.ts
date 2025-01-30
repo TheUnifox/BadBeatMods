@@ -128,7 +128,7 @@ export class GetModRoutes {
                 }
                 // if raw is true, return the raw mod version info instead of attempting to resolve the dependencies & other fields
                 if (raw) {
-                    returnVal.push(await version.toRawAPIResonse());
+                    returnVal.push(version.toRawAPIResonse());
                 } else {
                     let resolvedVersion = await version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified, Status.Private, Status.Removed]);
                     if (resolvedVersion) {
@@ -170,15 +170,16 @@ export class GetModRoutes {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
-            // this does not check the mod as a whole, only the mod version's author. i'd prefer to not make another call to the database or the cache to get the mod's author
-            if (this.shouldShowItem([modVersion.authorId], modVersion.status, null, await validateSession(req, res, false, null, false)) == false) {
+            let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
+            
+            if (this.shouldShowItem(mod ? mod.authorIds : [modVersion.authorId], modVersion.status, null, await validateSession(req, res, false, null, false)) == false) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
             if (raw === `true`) {
-                return res.status(200).send({ modVersion: await modVersion.toRawAPIResonse() });
+                return res.status(200).send({ mod: mod ? mod.toAPIResponse() : undefined, modVersion: modVersion.toRawAPIResonse() });
             } else {
-                return res.status(200).send({ modVersion: await modVersion.toAPIResonse(modVersion.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]) });
+                return res.status(200).send({ mod: mod ? mod.toAPIResponse() : undefined, modVersion: await modVersion.toAPIResonse(modVersion.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]) });
             }
         });
 
@@ -206,7 +207,7 @@ export class GetModRoutes {
             for (const version of DatabaseHelper.cache.modVersions) {
                 if (hashArr.includes(version.zipHash)) {
                     if (raw) {
-                        retVal.push(version.toRawAPIResonse());
+                        retVal.push(Promise.resolve(version.toRawAPIResonse()));
                     } else {
                         retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
                     }
@@ -214,7 +215,7 @@ export class GetModRoutes {
                 for (const fileHash of version.contentHashes) {
                     if (hashArr.includes(fileHash.hash)) {
                         if (raw) {
-                            retVal.push(version.toRawAPIResonse());
+                            retVal.push(Promise.resolve(version.toRawAPIResonse()));
                         } else {
                             retVal.push(version.toAPIResonse(version.supportedGameVersionIds[0], [Status.Verified, Status.Unverified]));
                         }

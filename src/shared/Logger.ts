@@ -62,18 +62,24 @@ export class Logger {
             .setTimestamp();
 
         if (Config.webhooks.enableWebhooks) {
-            if (!Logger.webhook) {
+            if (!Logger.webhook && Config.webhooks.loggingUrl.length > 8) {
                 Logger.webhook = new WebhookClient({url: Config.webhooks.loggingUrl});
             }
-            Logger.webhook.send({embeds: [loggingEmbed], allowedMentions: { users: [`213074932458979330`], roles: []}});
+    
+            if (Logger.webhook) {
+                Logger.webhook.send({content: message, allowedMentions: { users: [], roles: []}}).catch(console.error);
+            }
         }
     }
     private static sendWebhookLog(message:any) {
         if (Config.webhooks.enableWebhooks) {
-            if (!Logger.webhook) {
+            if (!Logger.webhook && Config.webhooks.loggingUrl.length > 8) {
                 Logger.webhook = new WebhookClient({url: Config.webhooks.loggingUrl});
             }
-            Logger.webhook.send({content: message, allowedMentions: { users: [], roles: []}}).catch(console.error);
+
+            if (Logger.webhook) {
+                Logger.webhook.send({content: message, allowedMentions: { users: [], roles: []}}).catch(console.error);
+            }
         }
     }
 }

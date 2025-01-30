@@ -365,12 +365,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEditMod"
+                "$ref": "#/components/schemas/EditMod"
               }
             },
             "application/xml": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEditMod"
+                "$ref": "#/components/schemas/EditMod"
               }
             }
           }
@@ -562,6 +562,52 @@
                 "$ref": "#/components/schemas/CreateEditModVersion"
               }
             }
+          }
+        }
+      }
+    },
+    "/mods/{modIdParam}/icon": {
+      "post": {
+        "tags": [
+          "Mods"
+        ],
+        "summary": "Update a mod icon.",
+        "description": "Update a mod icon.",
+        "parameters": [
+          {
+            "name": "modIdParam",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Mod ID."
+          },
+          {
+            "name": "icon",
+            "in": "formData",
+            "description": "Mod icon.",
+            "required": false,
+            "schema": {
+              "type": "file"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "413": {
+            "description": "Payload Too Large"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -822,24 +868,6 @@
           "Versions"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "version",
-            "description": "The version to add",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "gameName",
-            "description": "The game name to add the version to",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -852,6 +880,42 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "description": "The gameName and version to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameName": {
+                    "type": "string",
+                    "description": "The game name"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "The version to create"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameName": {
+                    "type": "string",
+                    "description": "The game name"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "The version to create"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1132,7 +1196,7 @@
         }
       }
     },
-    "/approval/new": {
+    "/approval/{queueType}": {
       "get": {
         "tags": [
           "Approval"
@@ -1141,8 +1205,23 @@
         "description": "Get a list of mods & modVersions pending their first approval.",
         "parameters": [
           {
+            "name": "queueType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mods",
+                "modVersions",
+                "edits"
+              ]
+            },
+            "description": "The type of queue to get."
+          },
+          {
             "name": "gameName",
             "description": "The name of the game to get new mods for.",
+            "required": true,
             "in": "query",
             "schema": {
               "type": "string"
@@ -1151,7 +1230,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of mods pending first approval",
+            "description": "List of mods pending first approval. The response will contain the mods, modVersions, and edits that are pending approval. Note that mods, modVersions, and edits will only be returned depending on the queueType specified. The edit objects `original` property will contain the original mod or modVersion object.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1160,13 +1239,38 @@
                     "mods": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModDBObject"
+                        "$ref": "#/components/schemas/ModAPIPublicResponse"
                       }
                     },
                     "modVersions": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModVersionDBObject"
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "modVersion": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          }
+                        }
+                      }
+                    },
+                    "edits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "original": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          },
+                          "edit": {
+                            "$ref": "#/components/schemas/EditApprovalQueueDBObject"
+                          }
+                        }
                       }
                     }
                   },
@@ -1182,13 +1286,38 @@
                     "mods": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModDBObject"
+                        "$ref": "#/components/schemas/ModAPIPublicResponse"
                       }
                     },
                     "modVersions": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModVersionDBObject"
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "modVersion": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          }
+                        }
+                      }
+                    },
+                    "edits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mod": {
+                            "$ref": "#/components/schemas/ModAPIPublicResponse"
+                          },
+                          "original": {
+                            "$ref": "#/components/schemas/ModVersionDBObject"
+                          },
+                          "edit": {
+                            "$ref": "#/components/schemas/EditApprovalQueueDBObject"
+                          }
+                        }
                       }
                     }
                   },
@@ -1201,73 +1330,6 @@
           },
           "204": {
             "description": "No mods found."
-          },
-          "400": {
-            "description": "Missing game name."
-          },
-          "401": {
-            "description": "Unauthorized."
-          }
-        }
-      }
-    },
-    "/approval/edits": {
-      "get": {
-        "tags": [
-          "Approval"
-        ],
-        "summary": "Get edits pending approval.",
-        "description": "Get a list of already existing mod & modVersions that are pending approval.",
-        "parameters": [
-          {
-            "name": "gameName",
-            "description": "The name of the game to get edits for.",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of edits pending approval",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "edits": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
-                      }
-                    }
-                  },
-                  "xml": {
-                    "name": "main"
-                  }
-                }
-              },
-              "application/xml": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "edits": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/EditApprovalQueueDBObject"
-                      }
-                    }
-                  },
-                  "xml": {
-                    "name": "main"
-                  }
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No edits found."
           },
           "400": {
             "description": "Missing game name."
@@ -1354,12 +1416,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the mod to.",
+                    "example": "verified"
+                  }
+                }
               }
             },
             "application/xml": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the mod to.",
+                    "example": "verified"
+                  }
+                }
               }
             }
           }
@@ -1442,12 +1518,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the modVersion to.",
+                    "example": "verified"
+                  }
+                }
               }
             },
             "application/xml": {
               "schema": {
-                "status": "string"
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "The status to set the modVersion to.",
+                    "example": "verified"
+                  }
+                }
               }
             }
           }
@@ -1495,12 +1585,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "accepted": "boolean"
+                "type": "object",
+                "properties": {
+                  "accepted": {
+                    "type": "boolean",
+                    "description": "Whether to accept the edit or not."
+                  }
+                }
               }
             },
             "application/xml": {
               "schema": {
-                "accepted": "boolean"
+                "type": "object",
+                "properties": {
+                  "accepted": {
+                    "type": "boolean",
+                    "description": "Whether to accept the edit or not."
+                  }
+                }
               }
             }
           }
@@ -2277,6 +2379,128 @@
                     "type": "number"
                   },
                   "modVersionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ba/linkVersionsExclude": {
+      "post": {
+        "tags": [
+          "Bulk Actions"
+        ],
+        "summary": "",
+        "description": "Submits edits if the mod is already approved, otherwise queues an edit for approval. Requires the user to be an approver.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "editIds": {
+                      "type": "array",
+                      "example": [
+                        1,
+                        2
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "errorIds": {
+                      "type": "array",
+                      "example": [
+                        3
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "editPreformedIds": {
+                      "type": "array",
+                      "example": [
+                        4
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "editIds": {
+                      "type": "array",
+                      "example": [
+                        1,
+                        2
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "errorIds": {
+                      "type": "array",
+                      "example": [
+                        3
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "editPreformedIds": {
+                      "type": "array",
+                      "example": [
+                        4
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameVersionIdFrom": {
+                    "type": "number"
+                  },
+                  "gameVersionIdTo": {
+                    "type": "number"
+                  },
+                  "modVersionIdsToExclude": {
                     "type": "array",
                     "items": {
                       "type": "number"

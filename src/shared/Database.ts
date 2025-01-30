@@ -4,7 +4,7 @@ import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, 
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
-import { sendModLog, sendModVersionLog } from "./ModWebhooks";
+import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -867,7 +867,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
             Logger.error(`Error setting status: ${error}`);
             throw error;
         }
-        Logger.log(`Mod ${this.id} approved by ${user.username}`);
+        Logger.log(`Mod ${this.id} set to status ${status} by ${user.username}`);
         switch (status) {
             case Status.Unverified:
                 sendModLog(this, user, `New`);
@@ -1057,7 +1057,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return satisfies(newVersion.modVersion, `^${originalVersion.modVersion.raw}`);
     }
 
-    public async toRawAPIResonse() {
+    public toRawAPIResonse() {
         return {
             id: this.id,
             modId: this.modId,
@@ -1157,6 +1157,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
             let mod = await DatabaseHelper.database.Mods.findByPk(this.objectId);
             if (mod) {
                 mod.name = this.object.name || mod.name;
+                mod.summary = this.object.summary || mod.summary;
                 mod.description = this.object.description || mod.description;
                 mod.category = this.object.category || mod.category;
                 mod.gitUrl = this.object.gitUrl || mod.gitUrl;
@@ -1175,12 +1176,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         this.approverId = approver.id;
         this.save().then(() => {
             Logger.log(`Edit ${this.id} approved by ${approver.username}`);
-
-            if (this.isMod()) {
-                sendModLog(record as Mod, approver, `Approved`);
-            } else {
-                sendModVersionLog(this.object as ModVersion, approver, `Approved`);
-            }
+            sendEditLog(this, approver, `Approved`);
         }).catch((error) => {
             Logger.error(`Error approving edit ${this.id}: ${error}`);
         });
@@ -1197,11 +1193,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         this.approverId = approver.id;
         this.save().then(() => {
             Logger.log(`Edit ${this.id} denied by ${approver.username}`);
-            if (this.isMod()) {
-                sendModLog(record as Mod, approver, `Rejected`);
-            } else {
-                sendModVersionLog(record as ModVersion, approver, `Rejected`);
-            }
+            sendEditLog(this, approver, `Rejected`);
         }).catch((error) => {
             Logger.error(`Error denying edit ${this.id}: ${error}`);
         });

@@ -1,6 +1,7 @@
 import express from 'express';
-import session from 'express-session';
+import session, { SessionOptions } from 'express-session';
 import MemoryStore from 'memorystore';
+import connectSqlite3 from 'connect-sqlite3';
 import fileUpload from 'express-fileupload';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
@@ -53,13 +54,9 @@ app.use(fileUpload({
     abortOnLimit: true,
 }));
 
-// session handling
-app.use(session({
+const sessionConfigData: SessionOptions = {
     secret: Config.server.sessionSecret,
     name: `bbm_session`,
-    store: new memstore({
-        checkPeriod: 86400000
-    }),
     resave: false,
     saveUninitialized: false,
     unset: `destroy`,
@@ -69,8 +66,30 @@ app.use(session({
         httpOnly: true,
         sameSite: Config.server.iHateSecurity ? `none` : `strict`,
     }
-}));
-app.set(`trust proxy`, `uniquelocal, loopback`);
+};
+
+if (Config.server.storeSessions) {
+    const sqlite3sessions = connectSqlite3(session);
+    let dbpath = Config.storage.sessions.split(`/`);
+    let name = dbpath.pop();
+    if (name === undefined) {
+        throw new Error(`Invalid session storage path.`);
+    }
+    name = name.split(`.`)[0];
+    sessionConfigData.store = new (sqlite3sessions as any)({
+        db: name,
+        dir: path.resolve(dbpath.join(`/`)),
+        table: `sessions`
+    });
+} else {
+    sessionConfigData.store = new memstore({
+        checkPeriod: 86400000,
+    });
+}
+
+app.use(session(sessionConfigData));
+
+app.set(`trust proxy`, true);
 
 app.use((req, res, next) => {
     if (Config.devmode) {
@@ -102,6 +121,7 @@ apiRouter.use(rateLimit({
     statusCode: 429,
     message: {message: `Rate limit exceeded.`},
     skipSuccessfulRequests: false,
+    validate: {trustProxy: false},
 }));
 
 const cdnRateLimiter = rateLimit({
@@ -110,6 +130,7 @@ const cdnRateLimiter = rateLimit({
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: false,
+    validate: {trustProxy: false},
 });
 
 cdnRouter.use(cdnRateLimiter);

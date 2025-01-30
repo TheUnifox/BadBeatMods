@@ -27,13 +27,15 @@ const DEFAULT_CONFIG = {
     },
     storage: {
         modsDir: `./storage/uploads`,
-        iconsDir: `./storage/icons`
+        iconsDir: `./storage/icons`,
+        sessions: `./storage/sessions.sqlite` // only used if storeSessions is true
     },
     devmode: false, // enables devmode features + increased logging
     authBypass: false, // bypasses auth for all routes. uses ServerAdmin user.
     server: {
         port: 5001, // port to run the server on
         url: `http://localhost:5001`, // base url of the api wihtout the trailing slash or /api part. used for internal testing & swagger docs
+        storeSessions: false, // stores sessions in a database. untested.
         sessionSecret: `supersecret`, // secret for the session cookie
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
         corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
@@ -41,11 +43,12 @@ const DEFAULT_CONFIG = {
         cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
     },
     webhooks: {
-        enableWebhooks: false, // enables sending to all webhooks
-        enablePublicWebhook: false, // enables sending approved mods to the public webhook
-        loggingUrl: `http://localhost:5001/webhooks/logging`, // url for logging - sensitive data might be sent here
-        modLogUrl: `http://localhost:5001/webhooks/modlog`, // url for mod logging - new, approvals, and rejections
-        publicUrl: `http://localhost:5001/webhooks/public` // url for public webhook - approved mods only... might have a delay? hasn't been done yet.
+        // If you don't want to use the webhook, just leave it blank. if a urls is under 8 characters, it will be ignored.
+        enableWebhooks: false, // acts as a sort of master switch for all webhooks. useful for dev when you dont want to deal with webhooks.
+        loggingUrl: ``, // url for logging - sensitive data might be sent here
+        modLogUrl: ``, // url for mod logging - new, approvals, and rejections
+        modLog2Url: ``, // same as above
+        publicUrl: `` // url for public webhook - approved mods only... might have a delay? hasn't been done yet.
     },
     bot: {
         enabled: false,
@@ -84,10 +87,12 @@ export class Config {
     private static _storage: {
         modsDir: string;
         iconsDir: string;
+        sessions: string;
     };
     private static _server: {
         port: number;
         url: string;
+        storeSessions: boolean;
         sessionSecret: string;
         iHateSecurity: boolean;
         corsOrigins: string | string[];
@@ -98,9 +103,9 @@ export class Config {
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
     private static _webhooks: {
         enableWebhooks: boolean;
-        enablePublicWebhook: boolean;
         loggingUrl: string;
         modLogUrl: string;
+        modLog2Url: string;
         publicUrl: string;
     };
     private static _bot: {
@@ -193,7 +198,7 @@ export class Config {
                     process.exit(1);
                 }
 
-                console.warn(`Config file is invalid at keys ${success.join(`, `)}.`);
+                console.warn(`Config is invalid or missing at keys ${success.join(`, `)}.`);
                 if (disableDefaults) {
                     console.error(`Defaults are disabled, and the config file was invalid. Please check the config file and try again.`);
                     process.exit(1);
@@ -399,6 +404,12 @@ export class Config {
             } else {
                 failedToLoad.push(`storage.iconsDir`);
             }
+
+            if (process.env.STORAGE_SESSIONS) {
+                Config._storage.sessions = process.env.STORAGE_SESSIONS;
+            } else {
+                failedToLoad.push(`storage.sessions`);
+            }
             // #endregion
             // #region Server & Devmode & authBypass
             if (process.env.DEVMODE) {
@@ -423,6 +434,12 @@ export class Config {
                 Config._server.url = process.env.SERVER_URL;
             } else {
                 failedToLoad.push(`server.url`);
+            }
+
+            if (process.env.SERVER_STORESESSIONS) {
+                Config._server.storeSessions = process.env.SERVER_STORESESSIONS === `true`;
+            } else {
+                failedToLoad.push(`server.storeSessions`);
             }
 
             if (process.env.SERVER_SESSION_SECRET) {
@@ -462,12 +479,6 @@ export class Config {
                 failedToLoad.push(`webhooks.enableWebhooks`);
             }
 
-            if (process.env.WEBHOOKS_ENABLEPUBLICWEBHOOK) {
-                Config._webhooks.enablePublicWebhook = process.env.WEBHOOKS_ENABLEPUBLICWEBHOOK === `true`;
-            } else {
-                failedToLoad.push(`webhooks.enablePublicWebhook`);
-            }
-
             if (process.env.WEBHOOKS_LOGGINGURL) {
                 Config._webhooks.loggingUrl = process.env.WEBHOOKS_LOGGINGURL;
             } else {
@@ -478,6 +489,12 @@ export class Config {
                 Config._webhooks.modLogUrl = process.env.WEBHOOKS_MODLOGURL;
             } else {
                 failedToLoad.push(`webhooks.modLogUrl`);
+            }
+
+            if (process.env.WEBHOOKS_MODLOG2URL) {
+                Config._webhooks.modLog2Url = process.env.WEBHOOKS_MODLOG2URL;
+            } else {
+                failedToLoad.push(`webhooks.modLog2Url`);
             }
 
             if (process.env.WEBHOOKS_PUBLICURL) {

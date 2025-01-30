@@ -50,8 +50,19 @@ export class VersionsRoutes {
 
         this.router.post(`/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            // #swagger.parameters['version'] = { description: 'The version to add', type: 'string' }
-            // #swagger.parameters['gameName'] = { description: 'The game name to add the version to', type: 'string' }
+            /*
+            #swagger.requestBody = {
+                description: 'The gameName and version to create',
+                required: true,
+                schema: {
+                    type: 'object',
+                    properties: {
+                        gameName: { type: 'string', description: 'The game name' },
+                        version: { type: 'string', description: 'The version to create' }
+                    }
+                }
+            }
+            */
             let reqBody = Validator.zCreateGameVersion.safeParse(req.body);
             if (!reqBody.success) {
                 return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
@@ -72,7 +83,8 @@ export class VersionsRoutes {
                 version: reqBody.data.version,
                 defaultVersion: false,
             }).then((version) => {
-                Logger.log(`Version ${version} added by ${session.user.username}.`);
+                Logger.log(`Version ${version.gameName} ${version.version} added by ${session.user.username}.`);
+                DatabaseHelper.refreshCache(`gameVersions`);
                 return res.status(200).send({ version });
             }).catch((error) => {
                 Logger.error(`Error creating version: ${error}`);
