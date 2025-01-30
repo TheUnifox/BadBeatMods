@@ -440,7 +440,7 @@ const doc = {
         { name: `BeatMods`, description: `Legacy BeatMods API endpoints` },
     ],
     components: {
-        "@securitySchemes": {
+        securitySchemes: {
             cookieAuth: {
                 type: `apiKey`,
                 in: `cookie`,

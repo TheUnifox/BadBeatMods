@@ -2477,7 +2477,7 @@
     }
   },
   "components": {
-    "@securitySchemes": {
+    "securitySchemes": {
       "cookieAuth": {
         "type": "apiKey",
         "in": "cookie",
