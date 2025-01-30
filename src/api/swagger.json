@@ -868,24 +868,6 @@
           "Versions"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "version",
-            "description": "The version to add",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "gameName",
-            "description": "The game name to add the version to",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -898,6 +880,42 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "description": "The gameName and version to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameName": {
+                    "type": "string",
+                    "description": "The game name"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "The version to create"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameName": {
+                    "type": "string",
+                    "description": "The game name"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "The version to create"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2361,6 +2379,128 @@
                     "type": "number"
                   },
                   "modVersionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ba/linkVersionsExclude": {
+      "post": {
+        "tags": [
+          "Bulk Actions"
+        ],
+        "summary": "",
+        "description": "Submits edits if the mod is already approved, otherwise queues an edit for approval. Requires the user to be an approver.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "editIds": {
+                      "type": "array",
+                      "example": [
+                        1,
+                        2
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "errorIds": {
+                      "type": "array",
+                      "example": [
+                        3
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "editPreformedIds": {
+                      "type": "array",
+                      "example": [
+                        4
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "editIds": {
+                      "type": "array",
+                      "example": [
+                        1,
+                        2
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "errorIds": {
+                      "type": "array",
+                      "example": [
+                        3
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "editPreformedIds": {
+                      "type": "array",
+                      "example": [
+                        4
+                      ],
+                      "items": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gameVersionIdFrom": {
+                    "type": "number"
+                  },
+                  "gameVersionIdTo": {
+                    "type": "number"
+                  },
+                  "modVersionIdsToExclude": {
                     "type": "array",
                     "items": {
                       "type": "number"

@@ -83,7 +83,7 @@ export class VersionsRoutes {
                 version: reqBody.data.version,
                 defaultVersion: false,
             }).then((version) => {
-                Logger.log(`Version ${version} added by ${session.user.username}.`);
+                Logger.log(`Version ${version.gameName} ${version.version} added by ${session.user.username}.`);
                 DatabaseHelper.refreshCache(`gameVersions`);
                 return res.status(200).send({ version });
             }).catch((error) => {
