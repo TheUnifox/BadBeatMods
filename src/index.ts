@@ -9,6 +9,9 @@ import cors from 'cors';
 import path from 'node:path';
 import fs from 'node:fs';
 import { ActivityType } from 'discord.js';
+import passport from 'passport';
+import { Strategy as BearerStrategy } from 'passport-http-bearer';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 
 import { DatabaseHelper, DatabaseManager } from './shared/Database';
 import { Logger } from './shared/Logger';
@@ -60,6 +63,7 @@ const sessionConfigData: SessionOptions = {
     resave: false,
     saveUninitialized: false,
     unset: `destroy`,
+    rolling: true,
     cookie: {
         maxAge: 86400000,
         secure: `auto`,
@@ -88,6 +92,52 @@ if (Config.server.storeSessions) {
 }
 
 app.use(session(sessionConfigData));
+import(`@octokit/rest`).then((Octokit) => {
+    passport.use(`bearer`, new BearerStrategy(
+        function(token, done) {
+            const octokit = new Octokit.Octokit({ auth: token });
+
+            // Compare: https://docs.github.com/en/rest/reference/users#get-the-authenticated-user
+            octokit.rest.users.getAuthenticated().then((response) => {
+                if (response.status !== 200 || response.data === undefined) {
+                    return done(null, false);
+                }
+                let profile = response.data;
+                DatabaseHelper.database.Users.findOne({ where: { githubId: profile.id.toString() } }).then((user) => {
+                    if (!user) {
+                        return done(null, false);
+                    } else {
+                        return done(null, user);
+                    }
+                }).catch((err) => {
+                    Logger.error(`Error finding user: ${err}`, `Auth`);
+                    return done(err, null);
+                });
+            }).catch((err) => {
+                Logger.error(`Error getting user: ${err}`, `Auth`);
+                return done(err, null);
+            });
+        }
+    ));
+});
+
+app.use(async (req, res, next) => {
+    if (req.session.userId || Config.flags.enableGithubPAT == false) {
+        next();
+    } else {
+        passport.authenticate(`bearer`, { session: false }, (err:any, user:any) => {
+            if (err) {
+                return next(err);
+            }
+            if (!user || !user.id) {
+                return res.status(401).send({message: `Unauthorized`});
+            }
+            req.session.userId = user.id;
+            req.session.goodMorning47YourTargetIsThisSession = true;
+            next();
+        })(req, res, next);
+    }
+});
 
 app.set(`trust proxy`, `uniquelocal, loopback`);
 
@@ -95,6 +145,7 @@ app.use((req, res, next) => {
     if (Config.devmode) {
         if (Config.authBypass) {
             req.session.userId = 1;
+            req.session.goodMorning47YourTargetIsThisSession = true;
         }
         if (!req.url.includes(`hashlookup`)) {
             console.log(req.url);
@@ -217,6 +268,18 @@ apiRouter.use((err:any, req:any, res:any, next:any) => {
 cdnRouter.use((err:any, req:any, res:any, next:any) => {
     console.error(err.stack);
     return res.status(500).send({message: `Server error`});
+});
+
+// destroy the auth session if its marked to be destoryed
+app.use((req, res, next) => {
+    if (req.session.goodMorning47YourTargetIsThisSession) {
+        req.session.destroy((err) => {
+            if (err) {
+                Logger.error(`Error destroying session: ${err}`, `Session`);
+            }
+        });
+    }
+    next();
 });
 
 process.on(`exit`, (code) => {
