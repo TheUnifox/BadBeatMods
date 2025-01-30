@@ -89,7 +89,7 @@ if (Config.server.storeSessions) {
 
 app.use(session(sessionConfigData));
 
-app.set(`trust proxy`, `uniquelocal, loopback`);
+app.set(`trust proxy`, true);
 
 app.use((req, res, next) => {
     if (Config.devmode) {
