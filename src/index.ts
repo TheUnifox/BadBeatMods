@@ -70,12 +70,16 @@ const sessionConfigData: SessionOptions = {
 
 if (Config.server.storeSessions) {
     const sqlite3sessions = connectSqlite3(session);
-    sessionConfigData.store = new sqlite3sessions({
-        db: `./storage/sessions.sqlite`,
-        dir: `./storage`,
-        table: `sessions`,
-        ttl: 86400000,
-        concurrentDB: true,
+    let dbpath = Config.storage.sessions.split(`/`);
+    let name = dbpath.pop();
+    if (name === undefined) {
+        throw new Error(`Invalid session storage path.`);
+    }
+    name = name.split(`.`)[0];
+    sessionConfigData.store = new (sqlite3sessions as any)({
+        db: name,
+        dir: path.resolve(dbpath.join(`/`)),
+        table: `sessions`
     });
 } else {
     sessionConfigData.store = new memstore({
