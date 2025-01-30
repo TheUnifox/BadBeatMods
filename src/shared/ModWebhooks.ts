@@ -1,8 +1,8 @@
-import { APIMessage, Embed, EmbedBuilder, MessagePayload, WebhookClient, WebhookMessageCreateOptions } from "discord.js";
+import { APIMessage, EmbedBuilder, MessagePayload, WebhookClient, WebhookMessageCreateOptions } from "discord.js";
 import { DatabaseHelper, EditQueue, Mod, ModApproval, ModVersion, ModVersionApproval, Status, User } from "./Database";
 import { Config } from "./Config";
 import { Logger } from "./Logger";
-import { send } from "node:process";
+import { SemVer } from "semver";
 
 let webhookClient1: WebhookClient;
 let webhookClient2: WebhookClient;
@@ -30,8 +30,8 @@ async function sendToWebhooks(options: string | MessagePayload | WebhookMessageC
 }
 
 async function sendEmbedToWebhooks(embed: EmbedBuilder) {
-    let faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
-    sendToWebhooks({ 
+    const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
+    sendToWebhooks({
         username: `BadBeatMods`,
         avatarURL: faviconUrl,
         embeds: [embed]
@@ -107,6 +107,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
 }
 
 export async function sendModVersionLog(modVersion: ModVersion, userMakingChanges:User, action: `New` | `Approved` | `Rejected`, modObj?:Mod) {
+    const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
     let author = await DatabaseHelper.database.Users.findOne({ where: { id: modVersion.authorId } });
     let mod = modObj ? modObj : await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
     let gameVersions = await modVersion.getSupportedGameVersions();
@@ -144,7 +145,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
 
     sendToWebhooks({
         username: `BadBeatMods`,
-        avatarURL: `${Config.server.url}/favicon.ico`,
+        avatarURL: faviconUrl,
         embeds: [
             {
                 title: `${action} Mod Version: ${mod.name} v${modVersion.modVersion.raw}`,
@@ -152,7 +153,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
                 description: `${mod.description} `,
                 author: {
                     name: `${userMakingChanges.username} `,
-                    icon_url: userMakingChanges.username === `ServerAdmin` ? `${Config.server.url}/favicon.ico` : `https://github.com/${userMakingChanges.username}.png`,
+                    icon_url: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`,
                 },
                 fields: [
                     {
@@ -188,7 +189,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
                 timestamp: new Date().toISOString(),
                 footer: {
                     text: `Mod ID: ${mod.id} | Mod Version ID: ${modVersion.id}`,
-                    icon_url: `${Config.server.url}/favicon.ico`,
+                    icon_url: faviconUrl,
                 },
             },
         ],
@@ -241,18 +242,46 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
 
     if (edit.isMod() && `name` in original) {
         for (let key of Object.keys(edit.object) as (keyof ModApproval)[]) {
-            if (edit.object[key] != original[key]) {
+            let editProp = edit.object[key];
+            let originalProp = original[key];
+            if (Array.isArray(editProp) && Array.isArray(originalProp)) {
+                // this is cursed. im not sorry
+                if (!editProp.every((v) => v === originalProp.find((o) => o === v)) || !originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                    description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
+                }
+                continue;
+            }
+
+            if (editProp != originalProp) {
                 if (key === `description`) {
-                    description += `**${key}**: ${(original[key] as string).substring(0, 100)} -> ${(edit.object[key] as string).substring(0, 100)}\n`;
+                    description += `**${key}**: ${(originalProp as string).substring(0, 100)} -> ${(editProp as string).substring(0, 100)}\n`;
                     continue;
                 }
-                description += `**${key}**: ${original[key]} -> ${edit.object[key]}\n`;
+                description += `**${key}**: ${originalProp} -> ${editProp}\n`;
             }
         }
     } else if (edit.isModVersion() && `platform` in original) {
         for (let key of Object.keys(edit.object) as (keyof ModVersionApproval)[]) {
-            if (edit.object[key] != original[key]) {
-                description += `**${key}**: ${original[key]} -> ${edit.object[key]}\n`;
+            let editProp = edit.object[key];
+            let originalProp = original[key];
+            if (Array.isArray(editProp) && Array.isArray(originalProp)) {
+                // this is cursed. im not sorry
+                if (!editProp.every((v) => v === originalProp.find((o) => o === v)) || !originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                    description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
+                }
+                continue;
+            }
+
+            if (editProp != originalProp) {
+                if (key === `modVersion`) {
+                    if ((originalProp as SemVer).raw === (editProp as SemVer).raw) {
+                        continue;
+                    } else {
+                        description += `**${key}**: ${(originalProp as SemVer).raw} -> ${(editProp as SemVer).raw}\n\n`;
+                        continue;
+                    }
+                }
+                description += `**${key}**: ${originalProp} -> ${editProp}\n\n`;
             }
         }
     }
@@ -261,7 +290,7 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
         description = description.substring(0, 4096);
     }
 
-    embed.setDescription(description);
+    embed.setDescription(description.length > 0 ? description : `No changes detected.`);
 
     sendEmbedToWebhooks(embed);
 }

@@ -49,7 +49,7 @@ module.exports = {
                 value: versions[0].modVersion.raw
             });
             
-            return interaction.reply({ embeds: [embed], ephemeral: false });
+            return interaction.reply({ embeds: [embed] });
         },
         autocomplete: async function exec(luma: Luma, interaction: AutocompleteInteraction) {
             const search = interaction.options.getString(`search`);

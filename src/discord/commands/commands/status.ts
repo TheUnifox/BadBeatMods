@@ -1,4 +1,4 @@
-import { CommandInteraction, SlashCommandBuilder, EmbedBuilder, InteractionContextType } from "discord.js";
+import { CommandInteraction, SlashCommandBuilder, EmbedBuilder, InteractionContextType, MessageFlags } from "discord.js";
 import { Command } from "../../classes/Command";
 import { Luma } from "../../classes/Luma";
 import swaggerDocument from '../../../api/swagger.json';
@@ -37,7 +37,7 @@ module.exports = {
             }
 
             if (!luma.user) {
-                return await interaction.reply({ content: `Luma is not connected to Discord. idk how that happened.`, ephemeral: true });
+                return await interaction.reply({ content: `Luma is not connected to Discord. idk how that happened.`, flags: MessageFlags.Ephemeral });
             }
 
             const embed = new EmbedBuilder()
@@ -82,7 +82,7 @@ module.exports = {
                     iconURL: luma.user.displayAvatarURL({ size: 512 }),
                 });
 
-            await interaction.reply({ embeds: [embed], ephemeral: true});
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral});
         }
     })
 };

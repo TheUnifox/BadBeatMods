@@ -320,7 +320,7 @@ export class ApprovalRoutes {
             // #swagger.responses[404] = { description: 'Edit not found.' }
             // #swagger.responses[500] = { description: 'Error approving edit.' }
             let editId = Validator.zDBID.safeParse(req.params.editIdParam);
-            let accepted = Validator.zBool.safeParse(req.body.accepted);
+            let accepted = Validator.z.boolean().safeParse(req.body.accepted);
             if (!editId.success || !accepted.success) {
                 return res.status(400).send({ message: `Invalid edit id or accepted value.` });
             }
