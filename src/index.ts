@@ -204,7 +204,7 @@ if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
 
 new CDNRoutes(cdnRouter);
 
-app.use(session(sessionConfigData));
+apiRouter.use(session(sessionConfigData));
 import(`@octokit/rest`).then((Octokit) => {
     passport.use(`bearer`, new BearerStrategy(
         function(token, done) {
