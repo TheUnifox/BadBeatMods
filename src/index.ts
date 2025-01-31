@@ -70,7 +70,7 @@ const sessionConfigData: SessionOptions = {
         httpOnly: true,
         sameSite: Config.server.iHateSecurity ? `none` : `strict`,
     }
-}
+};
 
 if (Config.server.storeSessions) {
     const sqlite3sessions = connectSqlite3(session);
@@ -146,7 +146,7 @@ app.use(async (req, res, next) => {
     }
 });
 
-app.set(`trust proxy`, `uniquelocal, loopback`);
+app.set(`trust proxy`, true);
 
 app.use((req, res, next) => {
     if (Config.devmode) {
@@ -179,6 +179,7 @@ apiRouter.use(rateLimit({
     statusCode: 429,
     message: {message: `Rate limit exceeded.`},
     skipSuccessfulRequests: false,
+    validate: {trustProxy: false},
 }));
 
 const cdnRateLimiter = rateLimit({
@@ -187,6 +188,7 @@ const cdnRateLimiter = rateLimit({
     statusCode: 429,
     message: `Rate limit exceeded.`,
     skipSuccessfulRequests: false,
+    validate: {trustProxy: false},
 });
 
 cdnRouter.use(cdnRateLimiter);

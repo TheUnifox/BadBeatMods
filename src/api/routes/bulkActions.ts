@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { DatabaseHelper, EditQueue } from '../../shared/Database';
+import { DatabaseHelper, EditQueue, ModVersion, Status, UserRoles } from '../../shared/Database';
 import { validateSession } from '../../shared/AuthHelper';
 import { Validator } from '../../shared/Validator';
 import { Op } from 'sequelize';
 import { Logger } from '../../shared/Logger';
+import { SemVer } from 'semver';
 
 export class BulkActionsRoutes {
     private router: Router;
@@ -99,6 +100,119 @@ export class BulkActionsRoutes {
                     }
                 } else {
                     results.errorIds.push(modVersion.id);
+                }
+            }
+
+            DatabaseHelper.refreshCache(`editApprovalQueue`);
+            res.status(200).send(results);
+        });
+
+        this.router.post(`/ba/linkVersionsExclude`, async (req, res) => {
+            /*
+            #swagger.tags = ['Bulk Actions']
+            #swagger.summary = ''
+            #swagger.description = 'Submits edits if the mod is already approved, otherwise queues an edit for approval. Requires the user to be an approver.'
+            #swagger.requestBody = {
+                required: true,
+                content: {
+                    "application/json": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                "gameVersionIdFrom": { type: "number" },
+                                "gameVersionIdTo": { type: "number" },
+                                "modVersionIdsToExclude": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+                    
+            #swagger.responses[200] = {
+                description: 'Success',
+                schema: {
+                    "editIds": [1, 2],
+                    "errorIds": [3],
+                    "editPreformedIds": [4]
+                }
+            }
+            */
+            let modVersionIds = Validator.zDBIDArray.safeParse(req.body.modVersionIdsToExclude);
+            let gameVersionId1 = Validator.zDBID.safeParse(req.body.gameVersionIdFrom);
+            let gameVersionId2 = Validator.zDBID.safeParse(req.body.gameVersionIdTo);
+            if (!modVersionIds.success || !gameVersionId1.success || !gameVersionId2.success) {
+                res.status(400).send({ message: `Invalid parameters.`});
+                return;
+            }
+
+            let gameVersion1 = DatabaseHelper.cache.gameVersions.find((gv) => gv.id === gameVersionId1.data);
+            let gameVersion2 = DatabaseHelper.cache.gameVersions.find((gv) => gv.id === gameVersionId2.data);
+            if (!gameVersion1 || !gameVersion2) {
+                res.status(404).send({ message: `Game versions not found.`});
+                return;
+            }
+
+            if (gameVersion1.id === gameVersion2.id) {
+                res.status(400).send({ message: `Game versions cannot be the same.`});
+                return;
+            }
+
+            if (gameVersion1.gameName !== gameVersion2.gameName) {
+                res.status(400).send({ message: `Game versions must be for the same game.`});
+                return;
+            }
+
+            let session = await validateSession(req, res, UserRoles.Approver, gameVersion1.gameName);
+            if (!session.user) {
+                return;
+            }
+
+            if (await Validator.validateIDArray(modVersionIds.data, `modVersions`, false, false) == false) {
+                res.status(404).send({ message: `One or more mod versions not found`});
+                return;
+            }
+
+            let modVersions = await DatabaseHelper.database.ModVersions.findAll();
+            modVersions = modVersions.filter((mv) => {
+                return mv.supportedGameVersionIds.includes(gameVersion1.id) && mv.status == Status.Verified && !modVersionIds.data.includes(mv.id);
+            });
+
+            let modVersionFiltered:{modId:number, modVersion:ModVersion}[] = [];
+            for (let modVersion of modVersions) {
+                let existing = modVersionFiltered.find((mv) => mv.modId === modVersion.modId);
+                if (existing) {
+                    if (modVersion.modVersion.compare(existing.modVersion.modVersion) == 1) {
+                        modVersionFiltered = modVersionFiltered.filter((mv) => mv.modId !== modVersion.modId);
+                        modVersionFiltered.push({modId: modVersion.modId, modVersion: modVersion});
+                    }
+                } else {
+                    modVersionFiltered.push({modId: modVersion.modId, modVersion: modVersion});
+                }
+            }
+
+            modVersionFiltered.sort((a, b) => a.modId - b.modId);
+
+            let results = {
+                editIds: [] as number[],
+                errorIds: [] as number[],
+                editPreformedIds: [] as number[],
+            };
+
+            for (let modVersion of modVersionFiltered) {
+                let outObj = await modVersion.modVersion.addGameVersionId(gameVersion2.id, session.user.id);
+                if (outObj) {
+                    if (outObj instanceof EditQueue) {
+                        results.editIds.push(outObj.id);
+                    } else {
+                        results.editPreformedIds.push(outObj.id);
+                    }
+                } else {
+                    results.errorIds.push(modVersion.modVersion.id);
                 }
             }
 
