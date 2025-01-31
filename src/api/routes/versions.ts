@@ -50,8 +50,20 @@ export class VersionsRoutes {
 
         this.router.post(`/versions`, async (req, res) => {
             // #swagger.tags = ['Versions']
-            // #swagger.parameters['version'] = { description: 'The version to add', type: 'string' }
-            // #swagger.parameters['gameName'] = { description: 'The game name to add the version to', type: 'string' }
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
+            /* #swagger.requestBody = {
+                description: 'The gameName and version to create',
+                required: true,
+                type: 'object',
+                schema: {
+                    "gameName": "BeatSaber",
+                    "version": "1.0.0"
+                }
+            }
+            */
             let reqBody = Validator.zCreateGameVersion.safeParse(req.body);
             if (!reqBody.success) {
                 return res.status(400).send({ message: `Invalid parameters.`, errors: reqBody.error.issues });
@@ -94,6 +106,10 @@ export class VersionsRoutes {
 
         this.router.post(`/versions/default`, async (req, res) => {
             // #swagger.tags = ['Versions']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
             /* #swagger.requestBody = {
                 description: 'The ID of the version to set as default',
                 required: true,
