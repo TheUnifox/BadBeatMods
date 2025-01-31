@@ -96,10 +96,13 @@ import(`@octokit/rest`).then((Octokit) => {
     passport.use(`bearer`, new BearerStrategy(
         function(token, done) {
             const octokit = new Octokit.Octokit({ auth: token });
-
+            if (invalidAttempts.filter((t) => token === t).length > 5) {
+                return done(null, false);
+            }
             // Compare: https://docs.github.com/en/rest/reference/users#get-the-authenticated-user
             octokit.rest.users.getAuthenticated().then((response) => {
                 if (response.status !== 200 || response.data === undefined) {
+                    invalidAttempts.push(token ? token : `unknown`);
                     return done(null, false);
                 }
                 let profile = response.data;
@@ -114,26 +117,27 @@ import(`@octokit/rest`).then((Octokit) => {
                     return done(err, null);
                 });
             }).catch((err) => {
-                Logger.error(`Error getting user: ${err}`, `Auth`);
+                invalidAttempts.push(token ? token : `unknown`);
+                Logger.warn(`Error getting user: ${err}`, `Auth`);
                 return done(err, null);
             });
         }
     ));
 });
 
+let invalidAttempts: string[] = [];
 app.use(async (req, res, next) => {
     if (req.session.userId || Config.flags.enableGithubPAT == false) {
         next();
     } else {
         passport.authenticate(`bearer`, { session: false }, (err:any, user:any) => {
             if (err) {
-                return next(err);
+                return res.status(401).send({ message: `Unauthorized` });
             }
-            if (!user || !user.id) {
-                return res.status(401).send({message: `Unauthorized`});
+            if (user && user.id) {
+                req.session.userId = user.id;
+                req.session.goodMorning47YourTargetIsThisSession = true;
             }
-            req.session.userId = user.id;
-            req.session.goodMorning47YourTargetIsThisSession = true;
             next();
         })(req, res, next);
     }
@@ -203,6 +207,10 @@ new BulkActionsRoutes(apiRouter);
 
 if (Config.flags.enableSwagger) {
     swaggerDocument.servers = [{url: `${Config.server.url}${Config.server.apiRoute}`}];
+    if (!Config.flags.enableGithubPAT) {
+        // @ts-expect-error it complains about it not being undefineable. this just in! i dont care.
+        swaggerDocument.components.securitySchemes.bearerAuth = undefined;
+    }
     apiRouter.use(`/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
         swaggerOptions: {
             docExpansion: `list`,
