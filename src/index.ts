@@ -96,7 +96,7 @@ import(`@octokit/rest`).then((Octokit) => {
     passport.use(`bearer`, new BearerStrategy(
         function(token, done) {
             const octokit = new Octokit.Octokit({ auth: token });
-            if (invalidAttempts.filter((t) => token === t).length > 5) {
+            if (invalidAttempts.filter((t) => token === t).length > 2) {
                 return done(null, false);
             }
             // Compare: https://docs.github.com/en/rest/reference/users#get-the-authenticated-user
@@ -117,7 +117,10 @@ import(`@octokit/rest`).then((Octokit) => {
                     return done(err, null);
                 });
             }).catch((err) => {
-                invalidAttempts.push(token ? token : `unknown`);
+                if (err.status === 401) {
+                    invalidAttempts.push(token ? token : `unknown`);
+                    return done(null, false);
+                }
                 Logger.warn(`Error getting user: ${err}`, `Auth`);
                 return done(err, null);
             });
