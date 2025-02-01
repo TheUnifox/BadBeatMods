@@ -13,7 +13,6 @@ export enum SupportedGames {
     SpinRhythmXD = `SpinRhythmXD`,
 }
 
-
 function isValidDialect(dialect: string): dialect is `sqlite` |`postgres` {
     return [`sqlite`, `postgres`].includes(dialect);
 }
@@ -26,6 +25,7 @@ export class DatabaseManager {
     public GameVersions: ModelStatic<GameVersion>;
     public EditApprovalQueue: ModelStatic<EditQueue>;
     public MOTDs: ModelStatic<MOTD>;
+    public serverAdmin: User;
 
     constructor() {
         Logger.log(`Loading Database...`);
@@ -65,13 +65,14 @@ export class DatabaseManager {
 
         await this.sequelize.sync({
             alter: Config.database.alter,
-        }).then(() => {
+        }).then(async () => {
             Logger.log(`Database Loaded.`);
-            new DatabaseHelper(this);
+            new DatabaseHelper(this, false);
+            await DatabaseHelper.refreshAllCaches();
 
-            this.Users.findByPk(1).then((user) => {
+            let serverAdmin = await this.Users.findByPk(1).then((user) => {
                 if (!user) {
-                    this.Users.create({
+                    return this.Users.create({
                         username: `ServerAdmin`,
                         discordId: `1`,
                         roles: {
@@ -82,10 +83,12 @@ export class DatabaseManager {
                         sponsorUrl: ``,
                         displayName: ``,
                         bio: ``
-                    }).then(() => {
+                    }).then((user) => {
                         Logger.log(`Created built in server account.`);
+                        return user;
                     }).catch((error) => {
                         Logger.error(`Error creating built in server account: ${error}`);
+                        return null;
                     });
                 } else {
                     if (!user.roles.sitewide.includes(UserRoles.AllPermissions)) {
@@ -96,8 +99,16 @@ export class DatabaseManager {
                             Logger.log(`Added AllPermissions role to server account.`);
                         }
                     }
+                    return user;
                 }
             });
+
+            if (!serverAdmin) {
+                Logger.error(`Server account not found.`);
+                exit(-1);
+            }
+
+            this.serverAdmin = serverAdmin;
 
             if (Config.flags.enableDBHealthCheck) {
                 if (Config.database.dialect === `sqlite`) {
@@ -1082,9 +1093,14 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         }
 
         let author = DatabaseHelper.cache.users.find((user) => user.id == this.authorId);
-        let resolvedAuthor;
         if (!author) {
-            throw new Error(`Author not found for mod version ${this.id}`);
+            let dbAuthor = await DatabaseHelper.database.Users.findByPk(this.authorId);
+            if (dbAuthor) {
+                author = dbAuthor;
+            } else {
+                Logger.error(`Failed to find author ${this.authorId} for mod version ${this.id}`);
+                author = DatabaseHelper.database.serverAdmin;
+            }
         }
 
         return {
@@ -1376,10 +1392,12 @@ export class DatabaseHelper {
             motd: [],
         };
 
-    constructor(database: DatabaseManager) {
+    constructor(database: DatabaseManager, loadCache = true) {
         DatabaseHelper.database = database;
+        if (loadCache) {
+            DatabaseHelper.refreshAllCaches();
+        }
 
-        DatabaseHelper.refreshAllCaches();
         setInterval(DatabaseHelper.refreshAllCaches, 1000 * 60 * 1);
     }
 
