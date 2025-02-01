@@ -231,6 +231,59 @@ export class GetModRoutes {
                 return res.status(404).send({ message: `Hash not found.` });
             }
         });
+
+        this.router.get(`/multihashlookup`, async (req, res) => {
+            // #swagger.tags = ['Mods']
+            // #swagger.summary = 'Get a specific mod version that has a file with the specified hash.'
+            // #swagger.description = 'Look up multiple hashes at once, and sort the results by hash. Developed for PinkModManager.'
+            // #swagger.responses[200] = { description: 'Returns the mod version.' }
+            // #swagger.responses[400] = { description: 'Missing hash.' }
+            // #swagger.responses[404] = { description: 'Hash not found.' }
+            // #swagger.parameters['hash'] = { description: 'The hash to look up.', type: 'string', required: true }
+
+            const hash = Validator.zHashStringOrArray.safeParse(req.query.hash).data;
+
+            if (!hash) {
+                return res.status(400).send({ message: `Missing hash.` });
+            }
+
+            // i'm dont have a type for the raw mod version
+            let retVal: Map<string, any[]> = new Map();
+            let hashArr = Array.isArray(hash) ? hash : [hash];
+
+            for (const version of DatabaseHelper.cache.modVersions) {
+                if (hashArr.includes(version.zipHash)) {
+                    let existing = retVal.get(version.zipHash);
+                    if (existing) {
+                        existing.push(version.toRawAPIResonse());
+                    } else {
+                        retVal.set(version.zipHash, [version.toRawAPIResonse()]);
+                    }
+                }
+                for (const fileHash of version.contentHashes) {
+                    if (hashArr.includes(fileHash.hash)) {
+                        let existing = retVal.get(fileHash.hash);
+                        if (existing) {
+                            existing.push(version.toRawAPIResonse());
+                        } else {
+                            retVal.set(fileHash.hash, [version.toRawAPIResonse()]);
+                        }
+                    }
+                }
+            }
+
+            if (retVal.size > 0) {
+                let retObj: any = {};
+                retVal.forEach((value, key) => {
+                    // so it does an automatic this shit
+                    retObj[key] = value;
+                });
+
+                return res.status(200).send({ modVersions: retObj });
+            } else {
+                return res.status(404).send({ message: `Hash not found.` });
+            }
+        });
     }
 
     private shouldShowItem(authorIds: number[], status: Status, game:SupportedGames | null, session: {user: User|null}): boolean {

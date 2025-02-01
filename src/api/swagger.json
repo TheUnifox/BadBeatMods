@@ -455,6 +455,37 @@
         }
       }
     },
+    "/multihashlookup": {
+      "get": {
+        "tags": [
+          "Mods"
+        ],
+        "summary": "Get a specific mod version that has a file with the specified hash.",
+        "description": "Look up multiple hashes at once, and sort the results by hash. Developed for PinkModManager.",
+        "parameters": [
+          {
+            "name": "hash",
+            "description": "The hash to look up.",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the mod version."
+          },
+          "400": {
+            "description": "Missing hash."
+          },
+          "404": {
+            "description": "Hash not found."
+          }
+        }
+      }
+    },
     "/mods/create": {
       "post": {
         "tags": [
