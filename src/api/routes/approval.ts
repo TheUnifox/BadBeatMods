@@ -696,7 +696,10 @@ export class ApprovalRoutes {
 
             //get db objects
             //let status = Validator.zStatus.safeParse(req.body.status);
-            let allowDependants = Validator.zBool.safeParse(req.body.allowDependants);
+            let allowDependants = Validator.z.boolean().safeParse(req.body.allowDependants);
+            if (!allowDependants.success) {
+                return res.status(400).send({ message: `Missing allowDependants.` });
+            }
 
             let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { id: modVersionId.data } });
             if (!modVersion) {
@@ -704,7 +707,7 @@ export class ApprovalRoutes {
             }
 
             // i have to filter twice since in the database, the dependants are stored as a string.
-            let dependants = (await DatabaseHelper.database.ModVersions.findAll({ where: { dependencies: { [Op.contains]: [modVersionId.data] } } })).filter((modVersion) => modVersion.dependencies.includes(modVersionId.data));
+            let dependants = (await DatabaseHelper.database.ModVersions.findAll()).filter((modVersion) => modVersion.dependencies.includes(modVersionId.data));
             
             // for each dependant, revoke their verification status
             let revokedIds:number[] = [];
