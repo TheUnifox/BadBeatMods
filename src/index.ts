@@ -204,7 +204,7 @@ if (Config.devmode && fs.existsSync(path.resolve(`./storage/frontend`))) {
 
 new CDNRoutes(cdnRouter);
 
-apiRouter.use(session(sessionConfigData));
+app.use(session(sessionConfigData));
 import(`@octokit/rest`).then((Octokit) => {
     passport.use(`bearer`, new BearerStrategy(
         function(token, done) {
@@ -242,7 +242,7 @@ import(`@octokit/rest`).then((Octokit) => {
 });
 
 let invalidAttempts: string[] = [];
-app.use(async (req, res, next) => {
+apiRouter.use(async (req, res, next) => {
     if (req.session.userId || Config.flags.enableGithubPAT == false) {
         next();
     } else {
