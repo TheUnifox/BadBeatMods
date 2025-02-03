@@ -1,3 +1,5 @@
+require(`ts-node/register`);
+
 import express from 'express';
 import session, { SessionOptions } from 'express-session';
 import MemoryStore from 'memorystore';
@@ -35,12 +37,32 @@ import { BulkActionsRoutes } from './api/routes/bulkActions';
 
 import swaggerDocument from './api/swagger.json';
 
+import { Umzug, SequelizeStorage } from "umzug";
+
+// since umzug requires a logger with an info
+class UmzugLogger extends Logger {
+    public static info(message:any, moduleName?:string) {
+        Logger.log(message, moduleName);
+    }
+}
+
 console.log(`Starting setup...`);
 new Config();
 const app = express();
 const memstore = MemoryStore(session);
 const port = Config.server.port;
 let database = new DatabaseManager();
+
+export const umzug = new Umzug({
+    migrations: {
+        glob: `src/shared/migrations/*.ts`,
+    },
+    storage: new SequelizeStorage({sequelize: database.sequelize}),
+    context: database.sequelize.getQueryInterface(),
+    logger: UmzugLogger
+});
+
+umzug.up();
 
 // handle parsing request bodies
 app.use(express.json({ limit: 100000 }));
@@ -346,3 +368,5 @@ async function startServer() {
     }
 }
 startServer();
+
+export type Migration = typeof umzug._types.migration;

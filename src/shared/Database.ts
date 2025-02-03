@@ -37,11 +37,11 @@ export class DatabaseManager {
             logging: Config.flags.logRawSQL ? console.log : false,
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
-
-        this.loadTables();
     }
 
     public async init() {
+        this.loadTables();
+
         /*if (Config.database.dialect === `postgres`) {
             const client = new Client({
                 user: Config.database.username,
