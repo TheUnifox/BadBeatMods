@@ -1,10 +1,12 @@
+require(`ts-node/register`); // needed for uzmug to execute the migrations as intended
 import path from "path";
 import { exit } from "process";
-import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, Sequelize } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, QueryInterface, Sequelize } from "sequelize";
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
+import { SequelizeStorage, Umzug, Migration } from "umzug";
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -17,6 +19,8 @@ function isValidDialect(dialect: string): dialect is `sqlite` |`postgres` {
     return [`sqlite`, `postgres`].includes(dialect);
 }
 
+export type Migration = typeof DatabaseManager.prototype.umzug._types.migration;
+
 export class DatabaseManager {
     public sequelize: Sequelize;
     public Users: ModelStatic<User>;
@@ -26,6 +30,7 @@ export class DatabaseManager {
     public EditApprovalQueue: ModelStatic<EditQueue>;
     public MOTDs: ModelStatic<MOTD>;
     public serverAdmin: User;
+    public umzug: Umzug<QueryInterface>;
 
     constructor() {
         Logger.log(`Loading Database...`);
@@ -37,6 +42,19 @@ export class DatabaseManager {
             logging: Config.flags.logRawSQL ? console.log : false,
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
+
+        this.umzug = new Umzug({
+            migrations: {
+                glob: `src/shared/migrations/*.ts`,
+            },
+            storage: new SequelizeStorage({sequelize: this.sequelize}),
+            context: this.sequelize.getQueryInterface(),
+            logger: Logger
+        });
+    }
+
+    public async migrate() {
+        await this.umzug.up();
     }
 
     public async init() {

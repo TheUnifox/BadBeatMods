@@ -34,6 +34,14 @@ export class Logger {
     }
 
     //compatibility
+    public static info(message:any, moduleName?:string) {
+        Logger.log(message, moduleName);
+    }
+    
+    public info(message:any, moduleName?:string) {
+        Logger.log(message, moduleName);
+    }
+
     public debug(message:any, moduleName?:string) {
         Logger.debug(message, moduleName);
     }
