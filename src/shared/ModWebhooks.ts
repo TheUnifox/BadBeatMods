@@ -106,7 +106,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
     sendToWebhooks(whData);
 }
 
-export async function sendModVersionLog(modVersion: ModVersion, userMakingChanges:User, action: `New` | `Approved` | `Rejected`, modObj?:Mod) {
+export async function sendModVersionLog(modVersion: ModVersion, userMakingChanges:User, action: `New` | `Approved` | `Rejected` | `Revoked`, modObj?:Mod) {
     const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
     let author = await DatabaseHelper.database.Users.findOne({ where: { id: modVersion.authorId } });
     let mod = modObj ? modObj : await DatabaseHelper.database.Mods.findOne({ where: { id: modVersion.modId } });
@@ -136,11 +136,12 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
         
 
     let color = 0x00FF00;
-
     if (action === `Rejected`) {
         color = 0xFF0000;
     } else if (action === `Approved`) {
         color = 0x0000FF;
+    } else if (action === `Revoked`) {
+        color = 0x7C0000;
     }
 
     sendToWebhooks({
