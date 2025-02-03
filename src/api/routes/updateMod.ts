@@ -285,6 +285,7 @@ export class UpdateModRoutes {
                         modVersion: reqBody.data.modVersion ? new SemVer(reqBody.data.modVersion) : modVersion.modVersion,
                         dependencies: reqBody.data.dependencies || modVersion.dependencies,
                         platform: reqBody.data.platform || modVersion.platform,
+                        fileSize: modVersion.fileSize
                     }
                 }).then((edit) => {
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });

@@ -423,6 +423,10 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
+            fileSize: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
             deletedAt: DataTypes.DATE,
@@ -939,6 +943,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare downloadCount: CreationOptional<number>;
     declare lastApprovedById: CreationOptional<number> | null;
     declare lastUpdatedById: number;
+    declare fileSize: number;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
     declare readonly deletedAt: CreationOptional<Date> | null;
@@ -985,6 +990,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
                     modVersion: this.modVersion,
                     platform: this.platform,
                     supportedGameVersionIds: [...this.supportedGameVersionIds, gameVersionId],
+                    fileSize: this.fileSize
                 },
             });
         }
@@ -1081,6 +1087,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             contentHashes: this.contentHashes,
             supportedGameVersions: this.supportedGameVersionIds,
             downloadCount: this.downloadCount,
+            fileSize: this.fileSize,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -1115,6 +1122,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             contentHashes: this.contentHashes,
             downloadCount: this.downloadCount,
             supportedGameVersions: await this.getSupportedGameVersions(),
+            fileSize: this.fileSize,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -1313,6 +1321,7 @@ export type ModVersionAPIPublicResponse = {
     dependencies: number[];
     supportedGameVersions: GameVersionAPIPublicResponse[];
     downloadCount: number;
+    fileSize: number;
     createdAt: Date;
     updatedAt: Date;
 }

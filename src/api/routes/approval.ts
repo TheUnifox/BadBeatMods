@@ -669,6 +669,7 @@ export class ApprovalRoutes {
                         supportedGameVersionIds: reqBodyv.data.supportedGameVersionIds || edit.object.supportedGameVersionIds,
                         dependencies: reqBodyv.data.dependencies || edit.object.dependencies,
                         platform: reqBodyv.data.platform || edit.object.platform,
+                        fileSize: edit.object.fileSize
                     };
                     edit.save();
                     break;
