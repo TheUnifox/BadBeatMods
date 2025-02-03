@@ -6,7 +6,9 @@ import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
-import { SequelizeStorage, Umzug, Migration } from "umzug";
+import { SequelizeStorage, Umzug } from "umzug";
+
+const CURRENT_MIGRATION = `001-init-migration`;
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -54,7 +56,7 @@ export class DatabaseManager {
     }
 
     public async migrate() {
-        await this.umzug.up();
+        await this.umzug.up({ to: CURRENT_MIGRATION });
     }
 
     public async init() {
