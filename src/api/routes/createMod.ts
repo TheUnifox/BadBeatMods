@@ -21,6 +21,10 @@ export class CreateModRoutes {
     private async loadRoutes() {
         this.router.post(`/mods/create`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
             // #swagger.summary = 'Create a mod.'
             // #swagger.description = 'Create a mod.'
             /* #swagger.requestBody = {
@@ -103,6 +107,10 @@ export class CreateModRoutes {
 
         this.router.post(`/mods/:modIdParam/upload`, async (req, res) => {
             // #swagger.tags = ['Mods']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
             // #swagger.summary = 'Upload a mod version.'
             // #swagger.description = 'Upload a mod version.'
             // #swagger.parameters['modIdParam'] = { description: 'Mod ID.', type: 'number' }
@@ -145,6 +153,10 @@ export class CreateModRoutes {
                 return res.status(401).send({ message: `You cannot upload to this mod.` });
             }
 
+            if (mod.status === Status.Removed) {
+                return res.status(401).send({ message: `This mod has been denied and removed` });
+            }
+
             if ((await Validator.validateIDArray(reqBody.data.supportedGameVersionIds, `gameVersions`, false, false)) == false) {
                 return res.status(400).send({ message: `Invalid game version.` });
             }
@@ -153,8 +165,12 @@ export class CreateModRoutes {
                 return res.status(400).send({ message: `Invalid dependency.` });
             }
 
-            if (!file || Array.isArray(file) || file.size > 75 * 1024 * 1024) {
-                return res.status(413).send({ message: `File missing or too large.` });
+            if (!file || Array.isArray(file)) {
+                return res.status(413).send({ message: `File missing.` });
+            }
+
+            if (file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
+                return res.status(413).send({ message: `File too large.` });
             }
             //#endregion
             let isZip = (file.mimetype === `application/zip` || file.mimetype === `application/x-zip-compressed`) && file.name.endsWith(`.zip`);
