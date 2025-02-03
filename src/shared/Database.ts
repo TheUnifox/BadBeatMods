@@ -603,7 +603,7 @@ export class DatabaseManager {
 
             await ModVersion.checkForExistingVersion(modVersion.modId, modVersion.modVersion, modVersion.platform).then((existingVersion) => {
                 if (existingVersion) {
-                    if (existingVersion.id != modVersion.id && modVersion.status == Status.Verified) {
+                    if (existingVersion.id != modVersion.id) {
                         throw new Error(`Edit would cause a duplicate version.`);
                     }
                 }
@@ -992,12 +992,12 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 
     // this function called to see if a duplicate version already exists in the database. if it does, creation of a new version should be halted.
     public static async checkForExistingVersion(modId: number, semver: SemVer, platform:Platform): Promise<ModVersion | null> {
-        let modVersion = DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
+        let modVersion = await DatabaseHelper.database.ModVersions.findOne({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
         return modVersion;
     }
 
     public static async countExistingVersions(modId: number, semver: SemVer, platform:Platform): Promise<number> {
-        let count = DatabaseHelper.database.ModVersions.count({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
+        let count = await DatabaseHelper.database.ModVersions.count({ where: { modId: modId, modVersion: semver.raw, platform: platform, [Op.or]: [{status: Status.Verified}, {status: Status.Unverified}, {status: Status.Private }] } });
         return count;
     }
 
