@@ -153,8 +153,12 @@ export class CreateModRoutes {
                 return res.status(400).send({ message: `Invalid dependency.` });
             }
 
-            if (!file || Array.isArray(file) || file.size > 75 * 1024 * 1024) {
-                return res.status(413).send({ message: `File missing or too large.` });
+            if (!file || Array.isArray(file)) {
+                return res.status(413).send({ message: `File missing.` });
+            }
+
+            if (file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
+                return res.status(413).send({ message: `File too large.` });
             }
             //#endregion
             let isZip = (file.mimetype === `application/zip` || file.mimetype === `application/x-zip-compressed`) && file.name.endsWith(`.zip`);
