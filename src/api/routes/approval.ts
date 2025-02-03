@@ -689,7 +689,7 @@ export class ApprovalRoutes {
             if (!modVersionId.success) {
                 return res.status(400).send({ message: `Invalid mod version id.` });
             }
-            let session = await validateSession(req, res, UserRoles.Admin, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
+            let session = await validateSession(req, res, UserRoles.Approver, DatabaseHelper.getGameNameFromModVersionId(modVersionId.data));
             if (!session.user) {
                 return;
             }
