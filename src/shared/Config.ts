@@ -40,7 +40,9 @@ const DEFAULT_CONFIG = {
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
         corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
         apiRoute: `/api`, // the base route for the api. no trailing slash
-        cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
+        cdnRoute: `/cdn`, // the base route for the cdn. no trailing slash
+        trustProxy: true, // if useing the env variable, will attempt to check for bool strings. if that doesn't work, it will check if the value is a number. otherwise, it will interpret it as a string and pass it directly to the trust proxy setting https://expressjs.com/en/guide/behind-proxies.html
+        fileUploadLimitMB: 75 // the file size limit for mod uploads
     },
     webhooks: {
         // If you don't want to use the webhook, just leave it blank. if a urls is under 8 characters, it will be ignored.
@@ -64,6 +66,7 @@ const DEFAULT_CONFIG = {
         enableBanner: false, // enables the banner route /banner.png
         enableSwagger: true, // enables the swagger docs at /api/docs
         enableDBHealthCheck: false, // enables the database health check
+        enableGithubPAT: false // enables the use of a GitHub Personal Access Token to auth API requests
     }
 };
 
@@ -97,6 +100,8 @@ export class Config {
         corsOrigins: string | string[];
         apiRoute: string;
         cdnRoute: string;
+        trustProxy: boolean | number | string;
+        fileUploadLimitMB: number;
     };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
@@ -121,6 +126,7 @@ export class Config {
         enableBanner: boolean;
         enableSwagger: boolean;
         enableDBHealthCheck: boolean;
+        enableGithubPAT: boolean;
     };
     // #endregion
     // #region Public Static Properties
@@ -469,6 +475,26 @@ export class Config {
             } else {
                 failedToLoad.push(`server.cdnRoute`);
             }
+
+            if (process.env.SERVER_TRUSTPROXY) {
+                if (process.env.SERVER_TRUSTPROXY === `true`) {
+                    Config._server.trustProxy = true;
+                } else if (process.env.SERVER_TRUSTPROXY === `false`) {
+                    Config._server.trustProxy = false;
+                } else if (isNaN(parseInt(process.env.SERVER_TRUSTPROXY, 10))) {
+                    Config._server.trustProxy = parseInt(process.env.SERVER_TRUSTPROXY, 10);
+                } else {
+                    Config._server.trustProxy = process.env.SERVER_TRUSTPROXY;
+                }
+            } else {
+                failedToLoad.push(`server.trustProxy`);
+            }
+
+            if (process.env.SERVER_FILE_UPLOAD_LIMIT_MB) {
+                Config._server.fileUploadLimitMB = parseInt(process.env.SERVER_FILE_UPLOAD_LIMIT_MB);
+            } else {
+                failedToLoad.push(`server.fileUploadLimitMB`);
+            }
             // #endregion
             // #region Webhooks
             if (process.env.WEBHOOKS_ENABLEWEBHOOKS) {
@@ -567,6 +593,12 @@ export class Config {
                 Config._flags.enableDBHealthCheck = process.env.FLAGS_ENABLEDBHEALTHCHECK === `true`;
             } else {
                 failedToLoad.push(`flags.enableDBHealthCheck`);
+            }
+
+            if (process.env.FLAGS_ENABLEGITHUBPAT) {
+                Config._flags.enableGithubPAT = process.env.FLAGS_ENABLEGITHUBPAT === `true`;
+            } else {
+                failedToLoad.push(`flags.enableGithubPAT`);
             }
             // #endregion
 
