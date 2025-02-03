@@ -1,10 +1,11 @@
 import path from "path";
 import { exit } from "process";
-import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, Sequelize } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, QueryInterface, Sequelize } from "sequelize";
 import { Logger } from "./Logger";
 import { satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
+import { SequelizeStorage, Umzug } from "umzug";
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -17,6 +18,8 @@ function isValidDialect(dialect: string): dialect is `sqlite` |`postgres` {
     return [`sqlite`, `postgres`].includes(dialect);
 }
 
+export type Migration = typeof DatabaseManager.prototype.umzug._types.migration;
+
 export class DatabaseManager {
     public sequelize: Sequelize;
     public Users: ModelStatic<User>;
@@ -26,6 +29,7 @@ export class DatabaseManager {
     public EditApprovalQueue: ModelStatic<EditQueue>;
     public MOTDs: ModelStatic<MOTD>;
     public serverAdmin: User;
+    public umzug: Umzug<QueryInterface>;
 
     constructor() {
         Logger.log(`Loading Database...`);
@@ -38,10 +42,29 @@ export class DatabaseManager {
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
 
-        this.loadTables();
+        this.umzug = new Umzug({
+            migrations: {
+                glob: `./build/shared/migrations/*.js`, // have to use the built versions because the source is not present in the final build
+            },
+            storage: new SequelizeStorage({sequelize: this.sequelize}),
+            context: this.sequelize.getQueryInterface(),
+            logger: console
+        });
+    }
+
+    public async migrate() {
+        Logger.log(`Running migrations...`);
+        return await this.umzug.up().then((migrations) => {
+            Logger.log(`Migrations complete. Ran ${migrations.length} migrations.`);
+            migrations.length != 0 ? Logger.log(`Migraions ran: ${migrations.map((migration) => migration.name).join(`, `)}`) : null;
+            return migrations;
+        });
     }
 
     public async init() {
+        await this.migrate();
+        this.loadTables();
+
         /*if (Config.database.dialect === `postgres`) {
             const client = new Client({
                 user: Config.database.username,
@@ -218,6 +241,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `users`,
+            tableName: `users`,
             paranoid: true,
         });
 
@@ -249,6 +273,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `gameVersions`,
+            tableName: `gameVersions`,
             paranoid: true,
         });
 
@@ -326,6 +351,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `mods`,
+            tableName: `mods`,
             paranoid: true,
         });
 
@@ -429,6 +455,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `modVersions`,
+            tableName: `modVersions`,
             paranoid: true,
         });
 
@@ -480,6 +507,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
+            tableName: `editApprovalQueues`, // fuck you sequelize.
             paranoid: true,
         });
 
@@ -573,6 +601,7 @@ export class DatabaseManager {
             updatedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
+            tableName: `motds`,
             modelName: `motds`,
             paranoid: true,
 
