@@ -5,7 +5,7 @@ import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
 import { Op } from 'sequelize';
 import { Validator } from '../../shared/Validator';
-import { sendModVersionLog } from 'src/shared/ModWebhooks';
+import { sendModVersionLog } from '../../shared/ModWebhooks';
 
 export class ApprovalRoutes {
     private router: Router;
