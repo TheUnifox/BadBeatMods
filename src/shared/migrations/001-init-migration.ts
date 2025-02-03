@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
-import { Migration } from "src";
-import { Platform, SupportedGames } from "../Database";
+import { Migration, Platform, SupportedGames } from "../Database";
 
 export const up: Migration = async ({ context: sequelize }) => {
     await sequelize.createTable(`users`, {
