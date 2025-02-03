@@ -97,7 +97,7 @@ export class CreateModRoutes {
                 Logger.log(`Mod ${mod.name} created by ${session.user.username}.`);
                 return res.status(200).send({ mod });
             }).catch((error) => {
-                return res.status(500).send({ message: `Error creating mod: ${error}` });
+                return res.status(500).send({ message: `Error creating mod: ${error} ${error?.name}` });
             });
         });
 
@@ -203,7 +203,7 @@ export class CreateModRoutes {
                 let retVal = await modVersion.toRawAPIResonse();
                 return res.status(200).send({ modVersion: retVal });
             }).catch((error) => {
-                return res.status(500).send({ message: `Error creating mod version: ${error} ${error?.errors}` });
+                return res.status(500).send({ message: `Error creating mod version: ${error} ${error?.errors} ${error?.name}` });
             });
         });
     }
