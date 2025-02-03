@@ -7,8 +7,6 @@ import { Config } from "./Config";
 import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
 import { SequelizeStorage, Umzug } from "umzug";
 
-const CURRENT_MIGRATION = `000-init.js`;
-
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
     ChroMapper = `ChroMapper`,
@@ -46,16 +44,21 @@ export class DatabaseManager {
 
         this.umzug = new Umzug({
             migrations: {
-                glob: `./src/shared/migrations/*.js`,
+                glob: `./build/shared/migrations/*.js`, // have to use the built versions because the source is not present in the final build
             },
             storage: new SequelizeStorage({sequelize: this.sequelize}),
             context: this.sequelize.getQueryInterface(),
-            logger: Logger
+            logger: console
         });
     }
 
     public async migrate() {
-        await this.umzug.up();//{ to: CURRENT_MIGRATION });
+        Logger.log(`Running migrations...`);
+        return await this.umzug.up().then((migrations) => {
+            Logger.log(`Migrations complete. Ran ${migrations.length} migrations.`);
+            migrations.length != 0 ? Logger.log(`Migraions ran: ${migrations.map((migration) => migration.name).join(`, `)}`) : null;
+            return migrations;
+        });
     }
 
     public async init() {
@@ -238,6 +241,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `users`,
+            tableName: `users`,
             paranoid: true,
         });
 
@@ -269,6 +273,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `gameVersions`,
+            tableName: `gameVersions`,
             paranoid: true,
         });
 
@@ -346,6 +351,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `mods`,
+            tableName: `mods`,
             paranoid: true,
         });
 
@@ -449,6 +455,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `modVersions`,
+            tableName: `modVersions`,
             paranoid: true,
         });
 
@@ -500,6 +507,7 @@ export class DatabaseManager {
         }, {
             sequelize: this.sequelize,
             modelName: `editApprovalQueue`,
+            tableName: `editApprovalQueues`, // fuck you sequelize.
             paranoid: true,
         });
 
@@ -593,6 +601,7 @@ export class DatabaseManager {
             updatedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
+            tableName: `motds`,
             modelName: `motds`,
             paranoid: true,
 

@@ -1,6 +1,12 @@
 import { DataTypes } from "sequelize";
 import { Migration, Platform, SupportedGames } from "../Database";
 
+/*
+    Inital Database structure.
+    Info on the Migration System can be found here: https://github.com/sequelize/umzug?tab=readme-ov-file#minimal-example
+    
+*/
+
 export const up: Migration = async ({ context: sequelize }) => {
     await sequelize.createTable(`users`, {
         id: {
