@@ -279,6 +279,13 @@ export class AdminRoutes {
                         }
                         user.addPerGameRole(gameName.data, UserRoles.Poster);
                         break;
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.addPerGameRole(gameName.data, UserRoles.LargeFiles);
+                        break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
                         if (!session.user) {
@@ -329,6 +336,14 @@ export class AdminRoutes {
                             return;
                         }
                         user.addSiteWideRole(UserRoles.Poster);
+                        break;
+                    
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.addSiteWideRole(UserRoles.LargeFiles);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
@@ -410,6 +425,14 @@ export class AdminRoutes {
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Poster);
                         break;
+                    
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.LargeFiles);
+                        break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
                         if (!session.user) {
@@ -449,6 +472,14 @@ export class AdminRoutes {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Poster);
+                        break;
+                    
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.LargeFiles);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
