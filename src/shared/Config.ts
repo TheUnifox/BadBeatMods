@@ -40,7 +40,8 @@ const DEFAULT_CONFIG = {
         iHateSecurity: false, //sets cookies to insecure & allows cors auth from all origins listed in corsOrigins (cannot be a wildcard)
         corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
         apiRoute: `/api`, // the base route for the api. no trailing slash
-        cdnRoute: `/cdn` // the base route for the cdn. no trailing slash
+        cdnRoute: `/cdn`, // the base route for the cdn. no trailing slash
+        fileUploadLimitMB: 75 // the file size limit for mod uploads
     },
     webhooks: {
         // If you don't want to use the webhook, just leave it blank. if a urls is under 8 characters, it will be ignored.
@@ -97,6 +98,7 @@ export class Config {
         corsOrigins: string | string[];
         apiRoute: string;
         cdnRoute: string;
+        fileUploadLimitMB: number;
     };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
@@ -468,6 +470,12 @@ export class Config {
                 Config._server.cdnRoute = process.env.SERVER_CDNROUTE;
             } else {
                 failedToLoad.push(`server.cdnRoute`);
+            }
+
+            if (process.env.SERVER_FILE_UPLOAD_LIMIT_MB) {
+                Config._server.fileUploadLimitMB = parseInt(process.env.SERVER_FILE_UPLOAD_LIMIT_MB);
+            } else {
+                failedToLoad.push(`server.fileUploadLimitMB`);
             }
             // #endregion
             // #region Webhooks
