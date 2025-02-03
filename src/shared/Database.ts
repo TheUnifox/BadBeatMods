@@ -1,4 +1,3 @@
-require(`ts-node/register`); // needed for uzmug to execute the migrations as intended
 import path from "path";
 import { exit } from "process";
 import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, QueryInterface, Sequelize } from "sequelize";
@@ -8,7 +7,7 @@ import { Config } from "./Config";
 import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
 import { SequelizeStorage, Umzug } from "umzug";
 
-const CURRENT_MIGRATION = `001-init-migration`;
+const CURRENT_MIGRATION = `000-init.js`;
 
 export enum SupportedGames {
     BeatSaber = `BeatSaber`,
@@ -47,7 +46,7 @@ export class DatabaseManager {
 
         this.umzug = new Umzug({
             migrations: {
-                glob: `src/shared/migrations/*.ts`,
+                glob: `./src/shared/migrations/*.js`,
             },
             storage: new SequelizeStorage({sequelize: this.sequelize}),
             context: this.sequelize.getQueryInterface(),
@@ -56,10 +55,11 @@ export class DatabaseManager {
     }
 
     public async migrate() {
-        await this.umzug.up({ to: CURRENT_MIGRATION });
+        await this.umzug.up();//{ to: CURRENT_MIGRATION });
     }
 
     public async init() {
+        await this.migrate();
         this.loadTables();
 
         /*if (Config.database.dialect === `postgres`) {
