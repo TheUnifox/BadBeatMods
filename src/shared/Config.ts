@@ -41,6 +41,7 @@ const DEFAULT_CONFIG = {
         corsOrigins: `*`, // can be a string or an array of strings. this is the setting for all endpoints
         apiRoute: `/api`, // the base route for the api. no trailing slash
         cdnRoute: `/cdn`, // the base route for the cdn. no trailing slash
+        trustProxy: true, // if useing the env variable, will attempt to check for bool strings. if that doesn't work, it will check if the value is a number. otherwise, it will interpret it as a string and pass it directly to the trust proxy setting https://expressjs.com/en/guide/behind-proxies.html
         fileUploadLimitMB: 75 // the file size limit for mod uploads
     },
     webhooks: {
@@ -99,6 +100,7 @@ export class Config {
         corsOrigins: string | string[];
         apiRoute: string;
         cdnRoute: string;
+        trustProxy: boolean | number | string;
         fileUploadLimitMB: number;
     };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
@@ -472,6 +474,20 @@ export class Config {
                 Config._server.cdnRoute = process.env.SERVER_CDNROUTE;
             } else {
                 failedToLoad.push(`server.cdnRoute`);
+            }
+
+            if (process.env.SERVER_TRUSTPROXY) {
+                if (process.env.SERVER_TRUSTPROXY === `true`) {
+                    Config._server.trustProxy = true;
+                } else if (process.env.SERVER_TRUSTPROXY === `false`) {
+                    Config._server.trustProxy = false;
+                } else if (isNaN(parseInt(process.env.SERVER_TRUSTPROXY, 10))) {
+                    Config._server.trustProxy = parseInt(process.env.SERVER_TRUSTPROXY, 10);
+                } else {
+                    Config._server.trustProxy = process.env.SERVER_TRUSTPROXY;
+                }
+            } else {
+                failedToLoad.push(`server.trustProxy`);
             }
 
             if (process.env.SERVER_FILE_UPLOAD_LIMIT_MB) {

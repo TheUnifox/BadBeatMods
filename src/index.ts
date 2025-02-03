@@ -91,7 +91,7 @@ if (Config.server.storeSessions) {
     });
 }
 
-app.set(`trust proxy`, true);
+app.set(`trust proxy`, Config.server.trustProxy);
 
 app.use((req, res, next) => {
     if (Config.devmode) {
