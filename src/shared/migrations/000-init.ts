@@ -210,7 +210,7 @@ export const up: Migration = async ({ context: sequelize }) => {
         deletedAt: DataTypes.DATE,
     });
 
-    await sequelize.createTable(`editApprovalQueue`, {
+    await sequelize.createTable(`editApprovalQueues`, {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -307,6 +307,6 @@ export const down: Migration = async ({ context: sequelize }) => {
     await sequelize.dropTable(`gameVersions`);
     await sequelize.dropTable(`mods`);
     await sequelize.dropTable(`modVersions`);
-    await sequelize.dropTable(`editApprovalQueue`);
+    await sequelize.dropTable(`editApprovalQueues`);
     await sequelize.dropTable(`motds`);
 };
