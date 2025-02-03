@@ -452,6 +452,7 @@ export class DatabaseManager {
             fileSize: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
+                defaultValue: 0
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
