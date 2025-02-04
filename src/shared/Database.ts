@@ -601,6 +601,7 @@ export class DatabaseManager {
             },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
+            deletedAt: DataTypes.DATE,
         }, {
             sequelize: this.sequelize,
             tableName: `motds`,
@@ -1261,6 +1262,7 @@ export class MOTD extends Model<InferAttributes<MOTD>, InferCreationAttributes<M
     declare endTime: Date;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
+    declare readonly deletedAt: CreationOptional<Date> | null;
 
     public static async getActiveMOTDs(gameName: SupportedGames, versions:number[]|undefined = undefined, platform:Platform|undefined, getExpired = false): Promise<MOTD[]> {
         return DatabaseHelper.cache.motd.filter((motd) => {
