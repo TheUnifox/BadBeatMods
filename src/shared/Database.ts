@@ -1429,7 +1429,7 @@ export class DatabaseHelper {
             DatabaseHelper.refreshAllCaches();
         }
 
-        setInterval(DatabaseHelper.refreshAllCaches, 1000 * 60 * 1);
+        setInterval(DatabaseHelper.refreshAllCaches, 1000 * 60 * 5);
     }
 
     public static async refreshAllCaches() {
