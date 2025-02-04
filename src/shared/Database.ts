@@ -62,7 +62,9 @@ export class DatabaseManager {
     }
 
     public async init() {
-        await this.migrate();
+        if (Config.flags.enableMigrations) {
+            await this.migrate();
+        }
         this.loadTables();
 
         /*if (Config.database.dialect === `postgres`) {
