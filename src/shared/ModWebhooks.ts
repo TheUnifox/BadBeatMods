@@ -247,7 +247,9 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
             let originalProp = original[key];
             if (Array.isArray(editProp) && Array.isArray(originalProp)) {
                 // this is cursed. im not sorry
-                if (!editProp.every((v) => v === originalProp.find((o) => o === v)) || !originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                if (editProp.every((v) => v === originalProp.find((o) => o === v)) && originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                    continue;
+                } else {
                     description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
                 }
                 continue;
@@ -267,7 +269,9 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
             let originalProp = original[key];
             if (Array.isArray(editProp) && Array.isArray(originalProp)) {
                 // this is cursed. im not sorry
-                if (!editProp.every((v) => v === originalProp.find((o) => o === v)) || !originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                if (editProp.every((v) => v === originalProp.find((o) => o === v)) && originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                    continue;
+                } else {
                     description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
                 }
                 continue;
