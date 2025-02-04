@@ -67,7 +67,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
             {
                 title: `${action} Mod: ${mod.name}`,
                 url: `${Config.server.url}/mods/${mod.id}`,
-                description: `${mod.description} `,
+                description: `${mod.description.length > 100 ? mod.description.substring(0, 100) : mod.description} `,
                 author: {
                     name: `${userMakingChanges.username} `,
                     icon_url: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`,
@@ -151,7 +151,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
             {
                 title: `${action} Mod Version: ${mod.name} v${modVersion.modVersion.raw}`,
                 url: `${Config.server.url}/mods/${mod.id}`,
-                description: `${mod.description} `,
+                description: `${mod.description.length > 100 ? mod.description.substring(0, 100) : mod.description} `,
                 author: {
                     name: `${userMakingChanges.username} `,
                     icon_url: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`,
