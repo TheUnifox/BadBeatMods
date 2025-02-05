@@ -176,7 +176,7 @@ export class UpdateModRoutes {
                 if (icon.size > 8 * 1024 * 1024) {
                     return res.status(413).send({ message: `Invalid file (Might be too large, 8MB max.)` });
                 } else {
-                    let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)));
+                    let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
             
                     if (!isAcceptableImage) {
                         return res.status(400).send({ message: `Invalid file type.` });
