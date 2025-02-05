@@ -205,7 +205,7 @@
           },
           {
             "name": "gameVersion",
-            "description": "The game version (ex. '1.29.1', '1.40.0').",
+            "description": "The game version (ex. '1.29.1', '1.40.0'). IF YOU DO NOT SPECIFY A VERSION, DEPENDENCIES ARE NOT GARUNTEED TO BE 100% ACCURATE.",
             "in": "query",
             "schema": {
               "type": "string"

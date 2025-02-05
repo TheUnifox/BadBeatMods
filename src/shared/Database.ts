@@ -850,6 +850,7 @@ export class GameVersion extends Model<InferAttributes<GameVersion>, InferCreati
 }
 // #endregion
 // #region Mod
+export type ModInfer = InferAttributes<Mod>;
 export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod>> {
     declare readonly id: CreationOptional<number>;
     declare name: string;
@@ -957,6 +958,7 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
 }
 // #endregion
 // #region ModVersion
+export type ModVersionInfer = InferAttributes<ModVersion>;
 export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreationAttributes<ModVersion>> {
     declare readonly id: CreationOptional<number>;
     declare modId: number;
@@ -1185,10 +1187,12 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         }
         
         let record: Mod | ModVersion | undefined = undefined;
+        let original: ModInfer | ModVersionInfer | undefined = undefined;
 
         if (this.objectTableName == `modVersions` && `modVersion` in this.object) {
             let modVersion = await DatabaseHelper.database.ModVersions.findByPk(this.objectId);
             if (modVersion) {
+                original = modVersion.toJSON();
                 modVersion.modVersion = this.object.modVersion || modVersion.modVersion;
                 modVersion.platform = this.object.platform || modVersion.platform;
                 modVersion.supportedGameVersionIds = this.object.supportedGameVersionIds || modVersion.supportedGameVersionIds;
@@ -1204,6 +1208,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         } else if (this.objectTableName == `mods` && `name` in this.object) {
             let mod = await DatabaseHelper.database.Mods.findByPk(this.objectId);
             if (mod) {
+                original = mod.toJSON();
                 mod.name = this.object.name || mod.name;
                 mod.summary = this.object.summary || mod.summary;
                 mod.description = this.object.description || mod.description;
@@ -1224,7 +1229,7 @@ export class EditQueue extends Model<InferAttributes<EditQueue>, InferCreationAt
         this.approverId = approver.id;
         this.save().then(() => {
             Logger.log(`Edit ${this.id} approved by ${approver.username}`);
-            sendEditLog(this, approver, `Approved`);
+            sendEditLog(this, approver, `Approved`, original);
         }).catch((error) => {
             Logger.error(`Error approving edit ${this.id}: ${error}`);
         });
