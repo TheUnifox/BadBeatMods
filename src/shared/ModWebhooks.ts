@@ -1,5 +1,5 @@
 import { APIMessage, EmbedBuilder, MessagePayload, WebhookClient, WebhookMessageCreateOptions } from "discord.js";
-import { DatabaseHelper, EditQueue, Mod, ModApproval, ModVersion, ModVersionApproval, Status, User } from "./Database";
+import { DatabaseHelper, EditQueue, Mod, ModApproval, ModInfer, ModVersion, ModVersionApproval, ModVersionInfer, Status, User } from "./Database";
 import { Config } from "./Config";
 import { Logger } from "./Logger";
 import { SemVer } from "semver";
@@ -197,7 +197,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
     });
 }
 
-export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action: `New` | `Approved` | `Rejected`) {
+export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action: `New` | `Approved` | `Rejected`, originalObj?: ModInfer | ModVersionInfer) {
     const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
     let color = 0x00FF00;
 
@@ -234,7 +234,12 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
     });
     embed.setTitle(`${action} Edit: ${mod.name}`);
     embed.setURL(`${Config.server.url}/mods/${mod.id}`);
-    let original = edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+    let original = undefined;
+    if (originalObj) {
+        original = originalObj;
+    } else {
+        edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+    }
     if (!original) {
         return Logger.error(`Original not found for edit ${edit.id}`);
     }
