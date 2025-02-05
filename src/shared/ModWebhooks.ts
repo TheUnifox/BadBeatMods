@@ -238,7 +238,7 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
     if (originalObj) {
         original = originalObj;
     } else {
-        edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+        original = edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
     }
     if (!original) {
         return Logger.error(`Original not found for edit ${edit.id}`);
