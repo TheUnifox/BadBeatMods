@@ -40,14 +40,14 @@ export class UserRoutes {
             // #swagger.responses[400] = { description: 'Invalid parameters.' }
             let id = Validator.zDBID.safeParse(req.params.id);
             if (!id.success) {
-                return res.status(400).send({ error: `Invalid parameters.` });
+                return res.status(400).send({ message: `Invalid parameters.` });
             }
 
             let user = DatabaseHelper.cache.users.find((u) => u.id === id.data);
             if (user) {
                 return res.status(200).send({ user: user.toAPIResponse() });
             } else {
-                return res.status(404).send({ error: `User not found.` });
+                return res.status(404).send({ message: `User not found.` });
             }
         });
 
@@ -70,7 +70,7 @@ export class UserRoutes {
             let status = Validator.zStatus.default(Status.Verified).safeParse(req.query.status);
             let platform = Validator.zPlatform.default(Platform.UniversalPC).safeParse(req.query.platform);
             if (!id.success || !status.success || !platform.success) {
-                return res.status(400).send({ error: `Invalid parameters.` });
+                return res.status(400).send({ message: `Invalid parameters.` });
             }
 
             let user = DatabaseHelper.cache.users.find((u) => u.id === id.data);
@@ -111,8 +111,33 @@ export class UserRoutes {
                 }
                 return res.status(200).send({ mods: mods });
             } else {
-                return res.status(404).send({ error: `User not found.` });
+                return res.status(404).send({ message: `User not found.` });
             }
+        });
+
+        this.router.get(`/users`, async (req, res) => {
+            // #swagger.tags = ['Users']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
+            // #swagger.summary = 'Get all users.'
+            // #swagger.description = 'Get all users.'
+            // #swagger.parameters['username'] = { description: 'Username to search for.', type: 'string' }
+            // #swagger.responses[200] = { description: 'Returns all users.' }
+            // #swagger.responses[500] = { description: 'Internal server error.' }
+            let session = await validateSession(req, res, false);
+            if (!session.user) {
+                return;
+            }
+
+            let unSearchString = Validator.z.string().min(3).max(32).safeParse(req.query.username);
+            if (!unSearchString.success) {
+                return res.status(400).send({ message: `Invalid parameters.`, error: unSearchString.error });
+            }
+
+            let users = DatabaseHelper.cache.users.filter((user) => user.username.toLowerCase().includes(unSearchString.data.toLowerCase()));
+            return res.status(200).send({ users: users });
         });
 
         /*

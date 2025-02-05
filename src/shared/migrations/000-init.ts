@@ -305,6 +305,7 @@ export const up: Migration = async ({ context: sequelize }) => {
         },
         createdAt: DataTypes.DATE, // just so that typescript isn't angy
         updatedAt: DataTypes.DATE,
+        deletedAt: DataTypes.DATE,
     });
 };
 
