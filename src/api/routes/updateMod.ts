@@ -6,7 +6,7 @@ import { Validator } from '../../shared/Validator';
 import { SemVer } from 'semver';
 import path from 'node:path';
 import { Config } from '../../shared/Config';
-import { sendEditLog } from 'src/shared/ModWebhooks';
+import { sendEditLog } from '../../shared/ModWebhooks';
 
 export class UpdateModRoutes {
     private router: Router;
