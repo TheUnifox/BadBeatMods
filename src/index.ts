@@ -93,19 +93,6 @@ if (Config.server.storeSessions) {
 
 app.set(`trust proxy`, Config.server.trustProxy);
 
-app.use((req, res, next) => {
-    if (Config.devmode) {
-        if (Config.authBypass) {
-            req.session.userId = 1;
-            req.session.goodMorning47YourTargetIsThisSession = true;
-        }
-        if (!req.url.includes(`hashlookup`)) {
-            console.log(req.url);
-        }
-    }
-    next();
-});
-
 let apiRouter = express.Router({
     caseSensitive: false,
     mergeParams: false,
@@ -257,6 +244,19 @@ apiRouter.use(async (req, res, next) => {
             next();
         })(req, res, next);
     }
+});
+
+app.use((req, res, next) => {
+    if (Config.devmode) {
+        if (Config.authBypass) {
+            req.session.userId = 1;
+            req.session.goodMorning47YourTargetIsThisSession = true;
+        }
+        if (!req.url.includes(`hashlookup`)) {
+            console.log(req.url);
+        }
+    }
+    next();
 });
 
 app.use(Config.server.apiRoute, apiRouter);

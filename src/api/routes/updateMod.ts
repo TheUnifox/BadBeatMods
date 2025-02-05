@@ -315,6 +315,7 @@ export class UpdateModRoutes {
                     dependencies: reqBody.data.dependencies || modVersion.dependencies,
                     platform: reqBody.data.platform || modVersion.platform,
                 }).then((modVersion) => {
+                    DatabaseHelper.refreshCache(`modVersions`);
                     res.status(200).send({ message: `Mod version updated.`, modVersion });
                 }).catch((error) => {
                     Logger.error(`Error updating mod version: ${error}`);
@@ -351,6 +352,7 @@ export class UpdateModRoutes {
 
             mod.setStatus(Status.Unverified, session.user).then((mod) => {
                 res.status(200).send({ message: `Mod submitted.`, mod });
+                DatabaseHelper.refreshCache(`mods`);
             }).catch((error) => {
                 res.status(500).send({ message: `Error submitting mod: ${error}` });
             });
@@ -388,6 +390,7 @@ export class UpdateModRoutes {
 
             modVersion.setStatus(Status.Unverified, session.user).then((modVersion) => {
                 res.status(200).send({ message: `Mod version submitted.`, modVersion });
+                DatabaseHelper.refreshCache(`modVersions`);
             }).catch((error) => {
                 res.status(500).send({ message: `Error submitting mod version: ${error}` });
             });
