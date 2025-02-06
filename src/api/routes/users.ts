@@ -126,16 +126,19 @@ export class UserRoutes {
             // #swagger.parameters['username'] = { description: 'Username to search for.', type: 'string' }
             // #swagger.responses[200] = { description: 'Returns all users.' }
             // #swagger.responses[500] = { description: 'Internal server error.' }
-            let session = await validateSession(req, res, false);
-            if (!session.user) {
-                return;
-            }
+            let session = await validateSession(req, res, false, null, false);
 
             let users = DatabaseHelper.cache.users;
 
             let unSearchString = Validator.z.string().min(3).max(32).safeParse(req.query.username);
             if (unSearchString.success) {
                 users = users.filter((user) => user.username.toLowerCase().includes(unSearchString.data.toLowerCase()));
+            }
+
+            if (users.length == DatabaseHelper.cache.users.length) {
+                if (!session.user) {
+                    return res.status(401).send({ message: `Unauthorized.` });
+                }
             }
 
             return res.status(200).send({ users: users.map((user) => user.toAPIResponse()) });
