@@ -2407,6 +2407,42 @@
         ]
       }
     },
+    "/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get all users.",
+        "description": "Get all users.",
+        "parameters": [
+          {
+            "name": "username",
+            "description": "Username to search for.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all users."
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/bbmStatusForBbmAlsoPinkEraAndLillieAreCuteBtwWilliamGay": {
       "get": {
         "tags": [
