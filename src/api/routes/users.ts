@@ -138,7 +138,7 @@ export class UserRoutes {
                 users = users.filter((user) => user.username.toLowerCase().includes(unSearchString.data.toLowerCase()));
             }
 
-            return res.status(200).send({ users: users });
+            return res.status(200).send({ users: users.map((user) => user.toAPIResponse()) });
         });
 
         /*
