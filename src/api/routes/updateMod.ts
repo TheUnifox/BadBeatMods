@@ -6,6 +6,7 @@ import { Validator } from '../../shared/Validator';
 import { SemVer } from 'semver';
 import path from 'node:path';
 import { Config } from '../../shared/Config';
+import { sendEditLog } from '../../shared/ModWebhooks';
 
 export class UpdateModRoutes {
     private router: Router;
@@ -113,6 +114,7 @@ export class UpdateModRoutes {
                     Logger.log(`Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`);
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
                     DatabaseHelper.refreshCache(`editApprovalQueue`);
+                    sendEditLog(edit, session.user, `New`);
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
                     res.status(500).send({ message: `Error creating edit submitted by ${session.user.id}.` });
@@ -301,6 +303,7 @@ export class UpdateModRoutes {
                 }).then((edit) => {
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });
                     DatabaseHelper.refreshCache(`editApprovalQueue`);
+                    sendEditLog(edit, session.user, `New`);
                 }).catch((error) => {
                     Logger.error(`Error submitting edit: ${error}`);
                     res.status(500).send({ message: `Error submitting edit.` });
@@ -312,6 +315,7 @@ export class UpdateModRoutes {
                     dependencies: reqBody.data.dependencies || modVersion.dependencies,
                     platform: reqBody.data.platform || modVersion.platform,
                 }).then((modVersion) => {
+                    DatabaseHelper.refreshCache(`modVersions`);
                     res.status(200).send({ message: `Mod version updated.`, modVersion });
                 }).catch((error) => {
                     Logger.error(`Error updating mod version: ${error}`);
@@ -348,6 +352,7 @@ export class UpdateModRoutes {
 
             mod.setStatus(Status.Unverified, session.user).then((mod) => {
                 res.status(200).send({ message: `Mod submitted.`, mod });
+                DatabaseHelper.refreshCache(`mods`);
             }).catch((error) => {
                 res.status(500).send({ message: `Error submitting mod: ${error}` });
             });
@@ -385,6 +390,7 @@ export class UpdateModRoutes {
 
             modVersion.setStatus(Status.Unverified, session.user).then((modVersion) => {
                 res.status(200).send({ message: `Mod version submitted.`, modVersion });
+                DatabaseHelper.refreshCache(`modVersions`);
             }).catch((error) => {
                 res.status(500).send({ message: `Error submitting mod version: ${error}` });
             });

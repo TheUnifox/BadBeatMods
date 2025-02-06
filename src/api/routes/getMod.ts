@@ -22,7 +22,7 @@ export class GetModRoutes {
             // #swagger.responses[200] = {'description':'Returns all mods.','schema':{'mods':[{'mod':{'$ref':'#/components/schemas/ModAPIPublicResponse'},'latest':{'$ref':'#/components/schemas/ModVersionAPIPublicResponse'}}]}}
             // #swagger.responses[400] = { description: 'Invalid gameVersion.' }
             // #swagger.parameters['gameName'] = { description: 'The game name.', type: 'string' }
-            // #swagger.parameters['gameVersion'] = { description: 'The game version (ex. \'1.29.1\', \'1.40.0\').', type: 'string' }
+            // #swagger.parameters['gameVersion'] = { description: 'The game version (ex. \'1.29.1\', \'1.40.0\'). IF YOU DO NOT SPECIFY A VERSION, DEPENDENCIES ARE NOT GARUNTEED TO BE 100% ACCURATE.', type: 'string' }
             // #swagger.parameters['status'] = { description: 'The status of the mod. Available status are: \'verified\'. Typing anything other than that will show you unverified mods too.', type: 'string' }
             // #swagger.parameters['platform'] = { description: 'The platform of the mod. Available platforms are: \'oculuspc\', \'universalpc\', \'steampc\'', type: 'string' }
             let reqQuery = Validator.zGetMods.safeParse(req.query);
@@ -34,7 +34,7 @@ export class GetModRoutes {
             if (reqQuery.data.gameVersion === undefined || reqQuery.data.gameVersion === null) {
                 await GameVersion.getDefaultVersion(reqQuery.data.gameName).then((gameVersion) => {
                     if (gameVersion) {
-                        reqQuery.data.gameVersion = gameVersion;
+                        reqQuery.data.gameVersion = undefined;
                     } else {
                         return res.status(400).send({ message: `Invalid game version.` });
                     }
@@ -46,45 +46,67 @@ export class GetModRoutes {
                 return res.status(400).send({ message: `Invalid status.` });
             }
 
-            let gameVersion = DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === reqQuery.data.gameVersion && gameVersion.gameName === reqQuery.data.gameName);
+            let gameVersion = reqQuery.data.gameVersion ? DatabaseHelper.cache.gameVersions.find((gameVersion) => gameVersion.version === reqQuery.data.gameVersion && gameVersion.gameName === reqQuery.data.gameName) : null;
 
-            if (!gameVersion) {
+            if (gameVersion === undefined) {
                 return res.status(400).send({ message: `Invalid game version.` });
             }
 
             let showUnverified = reqQuery.data.status !== `verified`;
             let statuses = showUnverified ? [Status.Verified, Status.Unverified] : [Status.Verified];
             let mods: {mod: ModAPIPublicResponse, latest: any}[] = [];
-            let modsFromDB = await gameVersion.getSupportedMods(reqQuery.data.platform, statuses);
-            let preLength = modsFromDB.length;
+            if (gameVersion === null) {
+                let modDb = DatabaseHelper.cache.mods.filter((mod) => mod.gameName == reqQuery.data.gameName && statuses.includes(mod.status));
 
-            for (let retMod of modsFromDB) {
-                let mod = retMod.mod.toAPIResponse();
-                let latest = await retMod.latest.toAPIResonse(gameVersion.id, statuses);
-                mods.push({ mod, latest });
-            }
+                for (let mod of modDb) {
+                    let modVersions = DatabaseHelper.cache.modVersions.filter((modVersion) => modVersion.modId === mod.id && statuses.includes(modVersion.status));
 
-            mods = mods.filter((mod) => {
-                if (!mod?.latest) {
-                    return false;
-                }
+                    modVersions = modVersions.sort((a, b) => {
+                        return b.modVersion.compare(a.modVersion);
+                    });
 
-                if (!mod?.latest?.dependencies) {
-                    return false;
-                }
+                    let latest = modVersions[0];
 
-                for (let dependency of mod.latest.dependencies) {
-                    if (!mods.find((mod) => mod?.latest?.id === dependency)) {
-                        return false;
+                    if (latest) {
+                        let latestVer = await latest.toAPIResonse(latest.supportedGameVersionIds[0], statuses);
+                        if (latestVer) {
+                            mods.push({ mod: mod.toAPIResponse(), latest: latestVer });
+                        }
                     }
                 }
+            } else {
+                let modsFromDB = await gameVersion.getSupportedMods(reqQuery.data.platform, statuses);
+                let preLength = modsFromDB.length;
 
-                return true;
-            });
+                for (let retMod of modsFromDB) {
+                    let mod = retMod.mod.toAPIResponse();
+                    let latest = await retMod.latest.toAPIResonse(gameVersion.id, statuses);
+                    mods.push({ mod, latest });
+                }
 
-            if (mods.length !== preLength) {
-                Logger.debugWarn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength} sent)`, `getMod`);
+                mods = mods.filter((mod) => {
+                    if (!mod?.latest) {
+                        return false;
+                    }
+
+                    if (!mod?.latest?.dependencies) {
+                        return false;
+                    }
+
+                    for (let dependency of mod.latest.dependencies) {
+                        if (!mods.find((mod) => mod?.latest?.id === dependency)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                if (mods.length !== preLength) {
+                    Logger.debugWarn(`Some mods were removed due to missing dependencies. (${mods.length} out of ${preLength} sent)`, `getMod`);
+                }
             }
+
             return res.status(200).send({ mods });
         });
 
@@ -106,10 +128,9 @@ export class GetModRoutes {
             if (!modId.success) {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
-            let parseRaw = Validator.zBool.safeParse(req.query.raw);
-            let raw = false;
-            if (parseRaw.success) {
-                raw = parseRaw.data;
+            let raw = Validator.z.boolean().default(false).safeParse(req.query.raw).data;
+            if (!raw) {
+                raw = false;
             }
 
             let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modId.data);

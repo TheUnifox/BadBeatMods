@@ -1,5 +1,5 @@
 import { APIMessage, EmbedBuilder, MessagePayload, WebhookClient, WebhookMessageCreateOptions } from "discord.js";
-import { DatabaseHelper, EditQueue, Mod, ModApproval, ModVersion, ModVersionApproval, Status, User } from "./Database";
+import { DatabaseHelper, EditQueue, Mod, ModApproval, ModInfer, ModVersion, ModVersionApproval, ModVersionInfer, Status, User } from "./Database";
 import { Config } from "./Config";
 import { Logger } from "./Logger";
 import { SemVer } from "semver";
@@ -67,7 +67,7 @@ export async function sendModLog(mod: Mod, userMakingChanges:User, action: `New`
             {
                 title: `${action} Mod: ${mod.name}`,
                 url: `${Config.server.url}/mods/${mod.id}`,
-                description: `${mod.description} `,
+                description: `${mod.description.length > 100 ? mod.description.substring(0, 100) : mod.description} `,
                 author: {
                     name: `${userMakingChanges.username} `,
                     icon_url: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`,
@@ -151,7 +151,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
             {
                 title: `${action} Mod Version: ${mod.name} v${modVersion.modVersion.raw}`,
                 url: `${Config.server.url}/mods/${mod.id}`,
-                description: `${mod.description} `,
+                description: `${mod.description.length > 100 ? mod.description.substring(0, 100) : mod.description} `,
                 author: {
                     name: `${userMakingChanges.username} `,
                     icon_url: userMakingChanges.username === `ServerAdmin` ? faviconUrl : `https://github.com/${userMakingChanges.username}.png`,
@@ -197,7 +197,7 @@ export async function sendModVersionLog(modVersion: ModVersion, userMakingChange
     });
 }
 
-export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action: `New` | `Approved` | `Rejected`) {
+export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action: `New` | `Approved` | `Rejected`, originalObj?: ModInfer | ModVersionInfer) {
     const faviconUrl = Config.flags.enableFavicon ? `${Config.server.url}/favicon.ico` : `https://raw.githubusercontent.com/Saeraphinx/BadBeatMods/refs/heads/main/assets/favicon.png`;
     let color = 0x00FF00;
 
@@ -234,7 +234,12 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
     });
     embed.setTitle(`${action} Edit: ${mod.name}`);
     embed.setURL(`${Config.server.url}/mods/${mod.id}`);
-    let original = edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+    let original = undefined;
+    if (originalObj) {
+        original = originalObj;
+    } else {
+        original = edit.objectTableName === `mods` ? mod : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id === edit.objectId);
+    }
     if (!original) {
         return Logger.error(`Original not found for edit ${edit.id}`);
     }
@@ -247,7 +252,9 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
             let originalProp = original[key];
             if (Array.isArray(editProp) && Array.isArray(originalProp)) {
                 // this is cursed. im not sorry
-                if (!editProp.every((v) => v === originalProp.find((o) => o === v)) || !originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                if (editProp.every((v) => v === originalProp.find((o) => o === v)) && originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                    continue;
+                } else {
                     description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
                 }
                 continue;
@@ -267,7 +274,9 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
             let originalProp = original[key];
             if (Array.isArray(editProp) && Array.isArray(originalProp)) {
                 // this is cursed. im not sorry
-                if (!editProp.every((v) => v === originalProp.find((o) => o === v)) || !originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                if (editProp.every((v) => v === originalProp.find((o) => o === v)) && originalProp.every((v) => v === editProp.find((o) => o === v))) {
+                    continue;
+                } else {
                     description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
                 }
                 continue;
