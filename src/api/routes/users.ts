@@ -131,12 +131,13 @@ export class UserRoutes {
                 return;
             }
 
+            let users = DatabaseHelper.cache.users;
+
             let unSearchString = Validator.z.string().min(3).max(32).safeParse(req.query.username);
-            if (!unSearchString.success) {
-                return res.status(400).send({ message: `Invalid parameters.`, error: unSearchString.error });
+            if (unSearchString.success) {
+                users = users.filter((user) => user.username.toLowerCase().includes(unSearchString.data.toLowerCase()));
             }
 
-            let users = DatabaseHelper.cache.users.filter((user) => user.username.toLowerCase().includes(unSearchString.data.toLowerCase()));
             return res.status(200).send({ users: users });
         });
 
