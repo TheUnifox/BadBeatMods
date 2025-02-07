@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'node:path';
-import { DatabaseHelper, ContentHash, Status } from '../../shared/Database';
+import { DatabaseHelper, ContentHash, Status, UserRoles } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
 import { validateSession } from '../../shared/AuthHelper';
@@ -170,7 +170,8 @@ export class CreateModRoutes {
             }
 
             if (file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
-                return res.status(413).send({ message: `File too large.` });
+                validateSession(req, res, UserRoles.LargeFiles);
+                Logger.warn(`User is uploading oversized file!`);
             }
             //#endregion
             let isZip = (file.mimetype === `application/zip` || file.mimetype === `application/x-zip-compressed`) && file.name.endsWith(`.zip`);
