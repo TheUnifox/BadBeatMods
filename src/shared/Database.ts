@@ -1120,7 +1120,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             status: this.status,
             dependencies: this.dependencies,
             contentHashes: this.contentHashes,
-            supportedGameVersions: this.supportedGameVersionIds,
+            supportedGameVersionIds: this.supportedGameVersionIds,
             downloadCount: this.downloadCount,
             fileSize: this.fileSize,
             createdAt: this.createdAt,
