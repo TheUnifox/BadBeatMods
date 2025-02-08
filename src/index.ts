@@ -336,6 +336,7 @@ async function startServer() {
         Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
         Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
         Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
+        Logger.log(`Server started.`);
     });
     
     if (Config.bot.enabled) {
@@ -344,5 +345,6 @@ async function startServer() {
             presence: {activities: [{name: `with your mods`, type: ActivityType.Playing}], status: `online`}});
         luma.login(Config.bot.token);
     }
+
 }
 startServer();

@@ -32,7 +32,7 @@ export class DatabaseManager {
     public umzug: Umzug<QueryInterface>;
 
     constructor() {
-        Logger.log(`Loading Database...`);
+        Logger.log(`Loading DatabaseManager...`);
 
         this.sequelize = new Sequelize(`bbm_database`, Config.database.username, Config.database.password, {
             host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
@@ -91,9 +91,12 @@ export class DatabaseManager {
         await this.sequelize.sync({
             alter: Config.database.alter,
         }).then(async () => {
-            Logger.log(`Database Loaded.`);
+            Logger.log(`DatabaseManager Loaded.`);
             new DatabaseHelper(this, false);
-            await DatabaseHelper.refreshAllCaches();
+
+            await DatabaseHelper.refreshAllCaches().then(() => {
+                Logger.log(`DatabaseHelper Loaded.`);
+            });
 
             let serverAdmin = await this.Users.findByPk(1).then((user) => {
                 if (!user) {
