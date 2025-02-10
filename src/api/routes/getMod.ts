@@ -128,7 +128,7 @@ export class GetModRoutes {
             if (!modId.success) {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
-            let raw = Validator.z.boolean().default(false).safeParse(req.query.raw).data;
+            let raw = Validator.zBool.default(false).safeParse(req.query.raw).data;
             if (!raw) {
                 raw = false;
             }
