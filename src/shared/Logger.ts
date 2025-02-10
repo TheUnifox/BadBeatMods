@@ -1,7 +1,6 @@
 import { Config } from "../shared/Config";
 import * as Winston from "winston";
 import { DiscordTransport } from "winston-transport-discord";
-import DailyRotateFile from "winston-daily-rotate-file";
 
 export class Logger {
     public static winston: Winston.Logger;
@@ -23,8 +22,30 @@ export class Logger {
             }));
         }
 
-        transports.push(new Winston.transports.Console({ forceConsole: true, level: Config.devmode ? `http` : `consoleInfo`, consoleWarnLevels: [`consoleWarn`, `warn`, `error`, `debugWarn`] }));
-        transports.push(new DailyRotateFile({ filename: `storage/logs/%DATE%.log`, datePattern: `MM/DD/YY HH:mm:ss`, zippedArchive: true, maxSize: `20m`, maxFiles: `14d`, level: Config.devmode ? `debug` : `info` }));
+        transports.push(new Winston.transports.Console({
+            forceConsole: true,
+            level: Config.devmode ? `http` : `consoleInfo`,
+            consoleWarnLevels: [`consoleWarn`, `warn`, `error`, `debugWarn`],
+            format: Winston.format.combine(
+                Winston.format.timestamp({ format: `MM/DD/YY HH:mm:ss` }),
+                Winston.format.printf(({ timestamp, level, message }) => {
+                    return `[BBM ${level.toUpperCase()}] ${timestamp} > ${message}`;
+                })
+            )
+        }));
+        transports.push(new Winston.transports.File({
+            filename: `storage/logs/${new Date(Date.now()).toLocaleDateString(`en-US`, { year: `numeric`, month: `numeric`, day: `numeric`}).replaceAll(`/`, `-`)}.log`,
+            zippedArchive: true,
+            maxsize: 20 * 1024 * 1024,
+            maxFiles: 30,
+            level: Config.devmode ? `debug` : `info`,
+            format: Winston.format.combine(
+                Winston.format.timestamp({ format: `MM-DD-YY HH:mm:ss` }),
+                Winston.format.printf(({ timestamp, level, message }) => {
+                    return `[${level.toUpperCase()}] ${timestamp} > ${message}`;
+                })
+            )
+        }));
 
         this.winston = Winston.createLogger({
             level: `info`,
@@ -38,15 +59,6 @@ export class Logger {
                 debug: 6,
                 http: 7,
             },
-            format: Winston.format.combine(
-                Winston.format.timestamp({ format: `MM-DD-YY HH:mm:ss` }),
-                Winston.format.printf(({ timestamp, level, message, category }) => {
-                    if (category) {
-                        return `[BBM ${level.toUpperCase()} ${category}] ${timestamp} > ${message}`;
-                    }
-                    return `[BBM ${level.toUpperCase()}] ${timestamp} > ${message}`;
-                })
-            ),
             transports: transports,
         });
 
@@ -54,7 +66,7 @@ export class Logger {
     }
 
     public static debug(message: any, category:string = ``) {
-        Logger.winston.log(`debug`, message, category);
+        Logger.winston.log(`debug`, message);
     }
 
     public static debugWarn(message: any, category:string = ``) {
