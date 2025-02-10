@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
+import { coerce } from 'semver';
 
 export class AdminRoutes {
     private router: Router;
@@ -224,6 +225,47 @@ export class AdminRoutes {
             }
 
             return res.status(200).send({ message: `Version ${version1.gameName} ${version1.version} & ${version2.gameName} ${version2.version} have been linked.` });
+        });
+
+        this.router.post(`/admin/sortgameversions`, async (req, res) => {
+            // #swagger.tags = ['Admin']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
+            // #swagger.summary = 'Sort all Game Versions in all mod versions.'
+            // #swagger.description = 'Sort all Game Versions in all mod versions.'
+            let session = await validateSession(req, res, UserRoles.Admin);
+            if (!session.user) {
+                return;
+            }
+
+            const modVersions = await DatabaseHelper.database.ModVersions.findAll();
+            const gameVersions = await DatabaseHelper.database.GameVersions.findAll();
+
+            res.status(200).send({ message: `Sorting ${modVersions.length} mod versions. Edits will not be created.` });
+
+            for (let modVersion of modVersions) {
+                modVersion.supportedGameVersionIds = modVersion.supportedGameVersionIds.sort((a, b) => {
+                    let gvA = gameVersions.find((gv) => gv.id == a);
+                    let gvB = gameVersions.find((gv) => gv.id == b);
+    
+                    if (!gvA || !gvB) {
+                        return 0;
+                    }
+    
+                    let svA = coerce(gvA.version, { loose: true });
+                    let svB = coerce(gvB.version, { loose: true });
+                    if (svA && svB) {
+                        return svA.compare(svB); // the earliest version is first in the array
+                    } else {
+                        return gvB.version.localeCompare(gvA.version);
+                    }
+                });
+                await modVersion.save();
+
+                Logger.debug(`Sorted ${modVersion.id}`);
+            }
         });
 
         this.router.post(`/admin/users/addRole`, async (req, res) => {

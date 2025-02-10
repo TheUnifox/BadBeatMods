@@ -1238,6 +1238,26 @@
         }
       }
     },
+    "/admin/sortgameversions": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Sort all Game Versions in all mod versions.",
+        "description": "Sort all Game Versions in all mod versions.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/admin/users/addRole": {
       "post": {
         "tags": [
