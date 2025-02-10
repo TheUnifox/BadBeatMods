@@ -159,7 +159,7 @@ export class GetModRoutes {
                     if (resolvedVersion) {
                         returnVal.push(resolvedVersion);
                     } else {
-                        Config.devmode ? console.log(`Failed to get mod version ${version.id} for mod ${mod.id}`) : null;
+                        Logger.debug(`Failed to get mod version ${version.id} for mod ${mod.id}`);
                     }
                 }
             }

@@ -38,7 +38,7 @@ export class DatabaseManager {
             host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
             port: Config.database.dialect === `sqlite` ? undefined : 5432,
             dialect: isValidDialect(Config.database.dialect) ? Config.database.dialect : `sqlite`,
-            logging: Config.flags.logRawSQL ? console.log : false,
+            logging: Config.flags.logRawSQL ? Logger.winston.log : false,
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
 
