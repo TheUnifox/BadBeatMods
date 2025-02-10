@@ -16,7 +16,7 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "no-console": "off", //temporary untill logger is ready
+        "no-console": "error", //temporary untill logger is ready
         "semi": ["warn", "always"],
         "quotes": ["warn", "backtick"],
         "arrow-spacing": ["warn", { "before": true, "after": true }],
