@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck i do not gaf about this file anymore since beatmods is dead
+/* eslint-disable no-console */ // see above
 
 import { Router } from 'express';
 import { validateSession } from '../../shared/AuthHelper';
