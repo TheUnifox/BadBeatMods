@@ -52,10 +52,13 @@ app.use(cors({
 }));
 app.use(fileUpload({
     limits: {
-        fileSize: Config.server.fileUploadLimitMB * 1024 * 1024, // here you go kaitlyn
+        fileSize: Math.floor(Config.server.fileUploadLimitMB * Config.server.fileUploadMultiplierMB * 1024 * 1024), // here you go kaitlyn
         files: 1
     },
     abortOnLimit: true,
+    limitHandler: (req, res, next) => {
+        return res.status(413).send({ message: `File size limit has been reached.` });
+    },
 }));
 
 const sessionConfigData: SessionOptions = {

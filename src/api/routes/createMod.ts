@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import e, { Router } from 'express';
 import path from 'node:path';
-import { DatabaseHelper, ContentHash, Status } from '../../shared/Database';
+import { DatabaseHelper, ContentHash, Status, UserRoles } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
-import { validateSession } from '../../shared/AuthHelper';
+import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
@@ -166,11 +166,16 @@ export class CreateModRoutes {
             }
 
             if (!file || Array.isArray(file)) {
-                return res.status(413).send({ message: `File missing.` });
+                return res.status(400).send({ message: `File missing.` });
             }
 
-            if (file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
-                return res.status(413).send({ message: `File too large.` });
+            if (file.truncated || file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
+                if (validateAdditionalGamePermissions(session, mod.gameName, UserRoles.LargeFiles)) {
+                    Logger.warn(`User ${session.user.username} (${session.user.id}) uploaded a file larger than ${Config.server.fileUploadLimitMB}MB for mod ${mod.name} (${mod.id}).`);
+                    // let it slide. truncated will catch anything above the limit
+                } else {
+                    return res.status(413).send({ message: `File too large. Max size is ${Config.server.fileUploadLimitMB}MB.` });
+                }
             }
             //#endregion
             let isZip = (file.mimetype === `application/zip` || file.mimetype === `application/x-zip-compressed`) && file.name.endsWith(`.zip`);
@@ -219,7 +224,11 @@ export class CreateModRoutes {
                 let retVal = await modVersion.toRawAPIResonse();
                 return res.status(200).send({ modVersion: retVal });
             }).catch((error) => {
-                return res.status(500).send({ message: `Error creating mod version: ${error} ${error?.errors} ${error?.name}` });
+                let message = `Error creating mod version.`;
+                if (Array.isArray(error?.errors) && error?.errors?.length > 0) {
+                    message = error.errors.map((e: any) => e.message).join(`, `);
+                }
+                return res.status(500).send({ message: `Error creating mod version: ${error} ${message} ${error?.name}` });
             });
         });
     }
