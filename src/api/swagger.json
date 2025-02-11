@@ -3108,6 +3108,7 @@
                     "poster",
                     "approver",
                     "moderator",
+                    "largefiles",
                     "banned"
                   ]
                 },
@@ -3622,6 +3623,7 @@
                     "poster",
                     "approver",
                     "moderator",
+                    "largefiles",
                     "banned"
                   ]
                 },
