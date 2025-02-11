@@ -69,7 +69,8 @@ const DEFAULT_CONFIG = {
         enableSwagger: true, // enables the swagger docs at /api/docs
         enableDBHealthCheck: false, // enables the database health check
         enableGithubPAT: false, // enables the use of a GitHub Personal Access Token to auth API requests
-        enableMigrations: true // enables the use of migrations
+        enableMigrations: true, // enables the use of migrations
+        enableUnlimitedLogs: false // Disables purging of old log files.
     }
 };
 
@@ -132,6 +133,7 @@ export class Config {
         enableDBHealthCheck: boolean;
         enableGithubPAT: boolean;
         enableMigrations: boolean;
+        enableUnlimitedLogs: boolean;
     };
     // #endregion
     // #region Public Static Properties
@@ -616,6 +618,12 @@ export class Config {
                 Config._flags.enableMigrations = process.env.FLAGS_ENABLEMIGRATIONS === `true`;
             } else {
                 failedToLoad.push(`flags.enableMigrations`);
+            }
+
+            if (process.env.FLAGS_ENABLEUNLIMITEDLOGS) {
+                Config._flags.enableUnlimitedLogs = process.env.FLAGS_ENABLEUNLIMITEDLOGS === `true`;
+            } else {
+                failedToLoad.push(`flags.enableUnlimitedLogs`);
             }
             // #endregion
 

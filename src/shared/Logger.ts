@@ -38,13 +38,11 @@ export class Logger {
             //filename: `storage/logs/${new Date(Date.now()).toLocaleDateString(`en-US`, { year: `numeric`, month: `numeric`, day: `numeric`}).replaceAll(`/`, `-`)}.log`,
             zippedArchive: true,
             maxsize: 20 * 1024 * 1024,
-            maxFiles: 30,
+            maxFiles: Config.flags.enableUnlimitedLogs ? undefined : 14,
             level: Config.devmode ? `debug` : `info`,
             format: Winston.format.combine(
-                Winston.format.timestamp({ format: `MM-DD-YY HH:mm:ss` }),
-                Winston.format.printf(({ timestamp, level, message }) => {
-                    return `[${level.toUpperCase()}] ${timestamp} > ${message}`;
-                })
+                Winston.format.timestamp(),
+                Winston.format.json()
             )
         }));
 
