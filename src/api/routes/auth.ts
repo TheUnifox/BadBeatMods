@@ -66,6 +66,7 @@ export class AuthRoutes {
                         bio: `${profile._json.bio}`,
                     }).then((user) => {
                         Logger.log(`User ${profile.username} signed up.`, `Auth`);
+                        DatabaseHelper.refreshCache(`users`);
                         return done(null, user);
                     }).catch((err) => {
                         Logger.error(`Error creating user: ${err}`, `Auth`);

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */ // Logger can't be initialized before Config, so we need to disable this here.
 import * as fs from 'fs';
 import * as path from 'path';
 import { HTTPTools } from './HTTPTools';

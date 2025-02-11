@@ -100,7 +100,7 @@ export class Luma extends Discord.Client {
                 continue;
             }
             rest.put(Discord.Routes.applicationGuildCommands(Config.bot.clientId, key), { body: value }).then(() => {
-                console.log(`Pushed commands for ${key}`, `Luma.pushCommands()`);
+                Logger.log(`Pushed commands for ${key}`, `Luma.pushCommands()`, true);
             }).catch(error => {
                 this.logger.error(error, `Luma.pushCommands()`);
             });

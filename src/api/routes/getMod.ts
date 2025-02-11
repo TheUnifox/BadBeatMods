@@ -128,7 +128,7 @@ export class GetModRoutes {
             if (!modId.success) {
                 return res.status(400).send({ message: `Invalid mod id.` });
             }
-            let raw = Validator.z.boolean().default(false).safeParse(req.query.raw).data;
+            let raw = Validator.zBool.default(false).safeParse(req.query.raw).data;
             if (!raw) {
                 raw = false;
             }
@@ -139,7 +139,7 @@ export class GetModRoutes {
             }
 
             // if the mod isn't verified or unverified (with the unverified flag present), don't show it unless the user is an admin or approver or the mod author
-            if (this.shouldShowItem(mod.authorIds, mod.status, mod.gameName, session) == false) {
+            if (mod.isAllowedToView(session.user) == false) {
                 return res.status(404).send({ message: `Mod not found.` });
             }
 
@@ -147,7 +147,7 @@ export class GetModRoutes {
             let returnVal: any[] = [];
 
             for (let version of (modVersions)) {
-                let allowedToSeeItems = this.shouldShowItem(mod.authorIds, version.status, mod.gameName, session);
+                let allowedToSeeItems = await version.isAllowedToView(session.user, mod);
                 if (allowedToSeeItems == false) {
                     continue;
                 }
@@ -159,7 +159,7 @@ export class GetModRoutes {
                     if (resolvedVersion) {
                         returnVal.push(resolvedVersion);
                     } else {
-                        Config.devmode ? console.log(`Failed to get mod version ${version.id} for mod ${mod.id}`) : null;
+                        Logger.debug(`Failed to get mod version ${version.id} for mod ${mod.id}`);
                     }
                 }
             }
@@ -188,6 +188,7 @@ export class GetModRoutes {
             // #swagger.responses[404] = { description: 'Mod version not found.' }
             // #swagger.parameters['modVersionIdParam'] = { in: 'path', description: 'The mod version ID.', type: 'number', required: true }
             // #swagger.parameters['raw'] = { description: 'Return the raw mod depedendcies without attempting to resolve them.', type: 'boolean' }
+            let session = await validateSession(req, res, false, null, false);
             let modVersionId = Validator.zDBID.safeParse(req.params.modVersionIdParam);
             let raw = req.query.raw;
             if (!modVersionId) {
@@ -201,7 +202,7 @@ export class GetModRoutes {
 
             let mod = DatabaseHelper.cache.mods.find((mod) => mod.id === modVersion.modId);
             
-            if (this.shouldShowItem(mod ? mod.authorIds : [modVersion.authorId], modVersion.status, null, await validateSession(req, res, false, null, false)) == false) {
+            if (!await modVersion.isAllowedToView(session.user, mod)) {
                 return res.status(404).send({ message: `Mod version not found.` });
             }
 
@@ -313,37 +314,5 @@ export class GetModRoutes {
                 return res.status(404).send({ message: `Hash not found.` });
             }
         });
-    }
-
-    private shouldShowItem(authorIds: number[], status: Status, game:SupportedGames | null, session: {user: User|null}): boolean {
-        if (status != Status.Unverified && status != Status.Verified) {
-            if (!session.user) {
-                return false;
-            }
-
-            if (session.user.roles.sitewide.includes(UserRoles.AllPermissions) ||
-            session.user.roles.sitewide.includes(UserRoles.Approver) ||
-            session.user.roles.sitewide.includes(UserRoles.Admin)) {
-                return true;
-            }
-
-            if (game) {
-                if (session.user.roles.perGame[game]) {
-                    if (session.user.roles.perGame[game].includes(UserRoles.AllPermissions) ||
-                    session.user.roles.perGame[game].includes(UserRoles.Approver) ||
-                    session.user.roles.perGame[game].includes(UserRoles.Admin)) {
-                        return true;
-                    }
-                }
-            }
-
-            if (authorIds.includes(session.user.id)) {
-                return true;
-            }
-
-            return false;
-        } else {
-            return true;
-        }
     }
 }

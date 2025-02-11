@@ -750,7 +750,7 @@ export class ApprovalRoutes {
                 revokedIds = [...revokedIds, ...ids];
             }
             Logger.log(`ModVersion ${modVersionId.data} & its ${dependants.length} have been revoked by ${session.user.username}. This totals to ${revokedIds.length} revoked modVersions.`);
-            console.log(`Revoked IDs:`, revokedIds);
+            Logger.log(`Revoked IDs: ${revokedIds.join(`, `)}`);
             DatabaseHelper.refreshCache(`modVersions`);
             return res.status(200).send({ message: `Mod version revoked.`, revokedIds: revokedIds });
         });
