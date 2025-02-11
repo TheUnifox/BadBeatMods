@@ -3,7 +3,7 @@ import path from 'node:path';
 import { DatabaseHelper, ContentHash, Status, UserRoles } from '../../shared/Database';
 import JSZip from 'jszip';
 import crypto from 'crypto';
-import { validateSession } from '../../shared/AuthHelper';
+import { validateAdditionalGamePermissions, validateSession } from '../../shared/AuthHelper';
 import { Config } from '../../shared/Config';
 import { Logger } from '../../shared/Logger';
 import { SemVer } from 'semver';
@@ -169,9 +169,13 @@ export class CreateModRoutes {
                 return res.status(413).send({ message: `File missing.` });
             }
 
-            if (file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
-                validateSession(req, res, UserRoles.LargeFiles);
-                Logger.warn(`User is uploading oversized file!`);
+            if (file.truncated || file.size > Config.server.fileUploadLimitMB * 1024 * 1024) {
+                if (validateAdditionalGamePermissions(session, mod.gameName, UserRoles.LargeFiles)) {
+                    Logger.warn(`User ${session.user.username} (${session.user.id}) uploaded a file larger than ${Config.server.fileUploadLimitMB}MB for mod ${mod.name} (${mod.id}).`);
+                    // let it slide. truncated will catch anything above the limit
+                } else {
+                    return res.status(413).send({ message: `File too large. Max size is ${Config.server.fileUploadLimitMB}MB.` });
+                }
             }
             //#endregion
             let isZip = (file.mimetype === `application/zip` || file.mimetype === `application/x-zip-compressed`) && file.name.endsWith(`.zip`);
