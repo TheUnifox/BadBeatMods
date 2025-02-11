@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { DatabaseHelper, GameVersion, ModAPIPublicResponse, Platform, Status, User } from '../../shared/Database';
-import { allowedToSeeMod, validateSession } from '../../shared/AuthHelper';
+import { validateSession } from '../../shared/AuthHelper';
 import { Validator } from '../../shared/Validator';
 
 export class UserRoutes {
@@ -92,7 +92,7 @@ export class UserRoutes {
                     }
 
                     if (status.data !== Status.Verified && status.data !== Status.Unverified) {
-                        if (!allowedToSeeMod(session, mod.gameName, mod.authorIds)) {
+                        if (!mod.isAllowedToView(session.user)) {
                             continue;
                         }
                     }
