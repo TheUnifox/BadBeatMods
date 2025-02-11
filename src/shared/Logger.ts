@@ -34,7 +34,8 @@ export class Logger {
             )
         }));
         transports.push(new Winston.transports.File({
-            filename: `storage/logs/${new Date(Date.now()).toLocaleDateString(`en-US`, { year: `numeric`, month: `numeric`, day: `numeric`}).replaceAll(`/`, `-`)}.log`,
+            filename: `storage/logs/bbm.log`,
+            //filename: `storage/logs/${new Date(Date.now()).toLocaleDateString(`en-US`, { year: `numeric`, month: `numeric`, day: `numeric`}).replaceAll(`/`, `-`)}.log`,
             zippedArchive: true,
             maxsize: 20 * 1024 * 1024,
             maxFiles: 30,
