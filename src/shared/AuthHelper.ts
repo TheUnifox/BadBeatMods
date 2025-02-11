@@ -1,5 +1,5 @@
 import { Config } from "./Config";
-import { DatabaseHelper, SupportedGames, User, UserRoles } from "./Database";
+import { DatabaseHelper, Mod, SupportedGames, User, UserRoles } from "./Database";
 
 // eslint-disable-next-line quotes
 declare module 'express-session' {
@@ -404,38 +404,6 @@ export function validateAdditionalGamePermissions(session: {user: User}, gameNam
     }
     if (session.user.roles.perGame[gameName]?.includes(UserRoles.AllPermissions) || session.user.roles.perGame[gameName]?.includes(role)) {
         return true;
-    }
-    return false;
-}
-
-export function allowedToSeeMod(session: { user: User|null }, gameName:SupportedGames, authorIds: number[]): boolean {
-    if (session.user) {
-        if (!session.user.roles) {
-            return false;
-        }
-
-        if (!session.user.roles.sitewide) {
-            return false;
-        }
-
-        if (
-            session.user.roles.sitewide.includes(UserRoles.Admin) ||
-            session.user.roles.sitewide.includes(UserRoles.Moderator) ||
-            session.user.roles.sitewide.includes(UserRoles.AllPermissions) ||
-            authorIds.includes(session.user.id)
-        ) {
-            return true;
-        } else {
-            if (!session.user.roles.perGame[gameName]) {
-                return false;
-            } else {
-                if (session.user.roles.perGame[gameName].includes(UserRoles.Admin) ||
-                    session.user.roles.perGame[gameName].includes(UserRoles.Moderator) ||
-                    session.user.roles.perGame[gameName].includes(UserRoles.AllPermissions)) {
-                    return true;
-                }
-            }
-        }
     }
     return false;
 }

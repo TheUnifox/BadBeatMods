@@ -32,13 +32,13 @@ export class DatabaseManager {
     public umzug: Umzug<QueryInterface>;
 
     constructor() {
-        Logger.log(`Loading Database...`);
+        Logger.log(`Loading DatabaseManager...`);
 
         this.sequelize = new Sequelize(`bbm_database`, Config.database.username, Config.database.password, {
             host: Config.database.dialect === `sqlite` ? `localhost` : Config.database.url,
             port: Config.database.dialect === `sqlite` ? undefined : 5432,
             dialect: isValidDialect(Config.database.dialect) ? Config.database.dialect : `sqlite`,
-            logging: Config.flags.logRawSQL ? console.log : false,
+            logging: Config.flags.logRawSQL ? Logger.winston.log : false,
             storage: Config.database.dialect === `sqlite` ? path.resolve(Config.database.url) : undefined,
         });
 
@@ -91,9 +91,12 @@ export class DatabaseManager {
         await this.sequelize.sync({
             alter: Config.database.alter,
         }).then(async () => {
-            Logger.log(`Database Loaded.`);
+            Logger.log(`DatabaseManager Loaded.`);
             new DatabaseHelper(this, false);
-            await DatabaseHelper.refreshAllCaches();
+
+            await DatabaseHelper.refreshAllCaches().then(() => {
+                Logger.log(`DatabaseHelper Loaded.`);
+            });
 
             let serverAdmin = await this.Users.findByPk(1).then((user) => {
                 if (!user) {
@@ -869,6 +872,42 @@ export class Mod extends Model<InferAttributes<Mod>, InferCreationAttributes<Mod
     declare readonly updatedAt: CreationOptional<Date>;
     declare readonly deletedAt: CreationOptional<Date>;
 
+    public isAllowedToView(user: User|null) {
+        if (this.status == Status.Verified || this.status == Status.Unverified) {
+            return true;
+        }
+        // Private & Removed are the only mods that are not viewable by the public
+        if (!user || !user.roles || !user.roles.sitewide) {
+            return false;
+        }
+        
+        if (
+            user.roles.sitewide.includes(UserRoles.Admin) ||
+            user.roles.sitewide.includes(UserRoles.Moderator) ||
+            user.roles.sitewide.includes(UserRoles.AllPermissions) ||
+            user.roles.sitewide.includes(UserRoles.Approver) ||
+            this.authorIds.includes(user.id)
+        ) {
+            return true;
+        } else {
+            if (!user.roles.perGame[this.gameName]) {
+                return false;
+            } else {
+                let roles = user.roles.perGame[this.gameName];
+                if (!roles) {
+                    return false;
+                }
+                if (roles.includes(UserRoles.Admin) ||
+                    roles.includes(UserRoles.Moderator) ||
+                    roles.includes(UserRoles.Approver) ||
+                    roles.includes(UserRoles.AllPermissions)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+
     public async getLatestVersion(gameVersionId: number, platform: Platform, statusesToSearchFor: Status[]): Promise<ModVersion | null> {
         let versions = DatabaseHelper.cache.modVersions.filter((version) => {
             // if the version is not for the correct platform
@@ -977,6 +1016,61 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
     declare readonly deletedAt: CreationOptional<Date> | null;
+
+    public async isAllowedToView(user: User|null, useCache:Mod|boolean = true) {
+        let parentMod: Mod | null | undefined;
+        if (typeof useCache === `object`) {
+            parentMod = useCache; // if a mod is passed in, use that as the parent mod
+        } else if (useCache) {
+            parentMod = DatabaseHelper.cache.mods.find((mod) => mod.id == this.modId);
+        } else {
+            parentMod = await DatabaseHelper.database.Mods.findByPk(this.modId);
+        }
+
+        if (!parentMod) {
+            Logger.error(`ModVersion ${this.id} does not have a valid parent mod (reading ${this.modId}).`);
+            return false;
+        }
+
+        let parentModVisible = parentMod.isAllowedToView(user);
+
+        if (!parentModVisible) {
+            return false;
+        }
+
+        if (this.status == Status.Verified || this.status == Status.Unverified) {
+            return true;
+        }
+
+        if (!user || !user.roles || !user.roles.sitewide) {
+            return false;
+        }
+
+        if (
+            user.roles.sitewide.includes(UserRoles.Admin) ||
+            user.roles.sitewide.includes(UserRoles.Moderator) ||
+            user.roles.sitewide.includes(UserRoles.AllPermissions) ||
+            user.roles.sitewide.includes(UserRoles.Approver) ||
+            this.authorId == user.id
+        ) {
+            return true;
+        } else {
+            if (!user.roles.perGame[parentMod.gameName]) {
+                return false;
+            } else {
+                let roles = user.roles.perGame[parentMod.gameName];
+                if (!roles) {
+                    return false;
+                }
+                if (roles.includes(UserRoles.Admin) ||
+                    roles.includes(UserRoles.Moderator) ||
+                    roles.includes(UserRoles.Approver) ||
+                    roles.includes(UserRoles.AllPermissions)) {
+                    return true;
+                }
+            }
+        }
+    }
 
     public async setStatus(status:Status, user: User) {
         this.status = status;
@@ -1441,15 +1535,18 @@ export class DatabaseHelper {
     }
 
     public static async refreshAllCaches() {
+        Logger.debug(`Refreshing all caches`);
         DatabaseHelper.cache.gameVersions = await DatabaseHelper.database.GameVersions.findAll();
         DatabaseHelper.cache.modVersions = await DatabaseHelper.database.ModVersions.findAll();
         DatabaseHelper.cache.mods = await DatabaseHelper.database.Mods.findAll();
         DatabaseHelper.cache.users = await DatabaseHelper.database.Users.findAll();
         DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
         DatabaseHelper.cache.motd = await DatabaseHelper.database.MOTDs.findAll();
+        Logger.debug(`Finished refreshing all caches`);
     }
 
     public static async refreshCache(tableName: `gameVersions` | `modVersions` | `mods` | `users` | `editApprovalQueue`) {
+        Logger.debug(`Refreshing cache for ${tableName}`);
         switch (tableName) {
             case `gameVersions`:
                 DatabaseHelper.cache.gameVersions = await DatabaseHelper.database.GameVersions.findAll();
@@ -1467,6 +1564,7 @@ export class DatabaseHelper {
                 DatabaseHelper.cache.editApprovalQueue = await DatabaseHelper.database.EditApprovalQueue.findAll();
                 break;
         }
+        Logger.debug(`Finished refreshing cache for ${tableName}`);
     }
 
     public static getGameNameFromModId(id: number): SupportedGames | null {
