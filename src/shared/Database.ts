@@ -2,7 +2,7 @@ import path from "path";
 import { exit } from "process";
 import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, ModelStatic, Op, QueryInterface, Sequelize } from "sequelize";
 import { Logger } from "./Logger";
-import { satisfies, SemVer } from "semver";
+import { coerce, satisfies, SemVer } from "semver";
 import { Config } from "./Config";
 import { sendEditLog, sendModLog, sendModVersionLog } from "./ModWebhooks";
 import { SequelizeStorage, Umzug } from "umzug";
@@ -670,6 +670,23 @@ export class DatabaseManager {
                 }
             }
 
+            modVersion.supportedGameVersionIds = modVersion.supportedGameVersionIds.sort((a, b) => {
+                let gvA = gameVersions.find((gv) => gv.id == a);
+                let gvB = gameVersions.find((gv) => gv.id == b);
+
+                if (!gvA || !gvB) {
+                    return 0;
+                }
+
+                let svA = coerce(gvA.version, { loose: true });
+                let svB = coerce(gvB.version, { loose: true });
+                if (svA && svB) {
+                    return svA.compare(svB); // the earliest version is first in the array
+                } else {
+                    return gvB.version.localeCompare(gvA.version);
+                }
+            });
+
             if (modVersion.dependencies.length > 0) {
                 //dedupe dependencies
                 modVersion.dependencies = [...new Set(modVersion.dependencies)];
@@ -681,6 +698,10 @@ export class DatabaseManager {
                 for (let dependency of dependencies) {
                     if (dependency.modId == modVersion.modId) {
                         throw new Error(`ModVersion cannot depend on itself.`);
+                    }
+
+                    if (!dependency.supportedGameVersionIds.includes(modVersion.supportedGameVersionIds[0])) {
+                        throw new Error(`Dependent cannot depend on a ModVersion that does not support the earliest supported Game Version of the dependent.`); // see sorting above
                     }
                 }
             }
