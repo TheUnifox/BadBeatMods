@@ -454,6 +454,11 @@ export class DatabaseManager {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
+            fileSize: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
             createdAt: DataTypes.DATE, // just so that typescript isn't angy
             updatedAt: DataTypes.DATE,
             deletedAt: DataTypes.DATE,
@@ -1013,6 +1018,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
     declare downloadCount: CreationOptional<number>;
     declare lastApprovedById: CreationOptional<number> | null;
     declare lastUpdatedById: number;
+    declare fileSize: number;
     declare readonly createdAt: CreationOptional<Date>;
     declare readonly updatedAt: CreationOptional<Date>;
     declare readonly deletedAt: CreationOptional<Date> | null;
@@ -1210,6 +1216,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             contentHashes: this.contentHashes,
             supportedGameVersionIds: this.supportedGameVersionIds,
             downloadCount: this.downloadCount,
+            fileSize: this.fileSize,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -1244,6 +1251,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             contentHashes: this.contentHashes,
             downloadCount: this.downloadCount,
             supportedGameVersions: await this.getSupportedGameVersions(),
+            fileSize: this.fileSize,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
         };
@@ -1251,7 +1259,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 }
 // #endregion
 // #region EditApprovalQueue
-export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `deletedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
+export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `deletedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `fileSize` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
 export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `deletedAt` | `iconFileName` | `status` | `lastApprovedById` | `lastUpdatedById` }>
 
 //this is gonna be fun :3
@@ -1446,6 +1454,7 @@ export type ModVersionAPIPublicResponse = {
     dependencies: number[];
     supportedGameVersions: GameVersionAPIPublicResponse[];
     downloadCount: number;
+    fileSize: number;
     createdAt: Date;
     updatedAt: Date;
 }

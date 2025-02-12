@@ -219,6 +219,7 @@ export class CreateModRoutes {
                 contentHashes: hashs,
                 zipHash: file.md5,
                 lastUpdatedById: session.user.id,
+                fileSize: file.size
             }).then(async (modVersion) => {
                 DatabaseHelper.refreshCache(`modVersions`);
                 let retVal = await modVersion.toRawAPIResonse();

@@ -146,6 +146,12 @@ const ModVersionDBObject: OpenAPIV3_1.SchemaObject = {
         downloadCount: {
             type: `integer`,
         },
+        fileSize: {
+            type: `integer`,
+            description: `The size of the file in bytes.`,
+            example: 12345678,
+            default: 0,
+        },
         ...DBObject.properties
     }
 };
