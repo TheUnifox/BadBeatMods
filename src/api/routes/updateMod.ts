@@ -178,7 +178,7 @@ export class UpdateModRoutes {
                 if (icon.size > 8 * 1024 * 1024) {
                     return res.status(413).send({ message: `Invalid file (Might be too large, 8MB max.)` });
                 } else {
-                    let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)));
+                    let isAcceptableImage = (icon.mimetype === `image/png` && icon.name.endsWith(`.png`)) || (icon.mimetype === `image/jpeg` && (icon.name.endsWith(`.jpeg`) || icon.name.endsWith(`.jpg`)) || (icon.mimetype === `image/webp` && icon.name.endsWith(`.webp`)));
             
                     if (!isAcceptableImage) {
                         return res.status(400).send({ message: `Invalid file type.` });
@@ -299,7 +299,6 @@ export class UpdateModRoutes {
                         modVersion: reqBody.data.modVersion ? new SemVer(reqBody.data.modVersion) : modVersion.modVersion,
                         dependencies: reqBody.data.dependencies || modVersion.dependencies,
                         platform: reqBody.data.platform || modVersion.platform,
-                        fileSize: modVersion.fileSize
                     }
                 }).then((edit) => {
                     res.status(200).send({ message: `Edit ${edit.id} (for ${edit.objectId}) submitted by ${session.user.id} for approval.`, edit: edit });

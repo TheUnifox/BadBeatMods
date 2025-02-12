@@ -1119,7 +1119,6 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
                     modVersion: this.modVersion,
                     platform: this.platform,
                     supportedGameVersionIds: [...this.supportedGameVersionIds, gameVersionId],
-                    fileSize: this.fileSize
                 },
             });
         }
@@ -1259,7 +1258,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
 }
 // #endregion
 // #region EditApprovalQueue
-export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `deletedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
+export type ModVersionApproval = InferAttributes<ModVersion, { omit: `modId` | `id` | `createdAt` | `updatedAt` | `deletedAt` | `authorId` | `status` | `contentHashes` | `zipHash` | `fileSize` | `lastApprovedById` | `lastUpdatedById` | `downloadCount` }>
 export type ModApproval = InferAttributes<Mod, { omit: `id` | `createdAt` | `updatedAt` | `deletedAt` | `iconFileName` | `status` | `lastApprovedById` | `lastUpdatedById` }>
 
 //this is gonna be fun :3
