@@ -1238,6 +1238,26 @@
         }
       }
     },
+    "/admin/database/loadBlankFileSizes": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Load blank file sizes into the database.",
+        "description": "Check each record in the modVersions table. If the file size is 0, attempt to get the file size from the zip file.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/admin/users/addRole": {
       "post": {
         "tags": [
