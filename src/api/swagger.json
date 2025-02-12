@@ -3573,6 +3573,12 @@
           "downloadCount": {
             "type": "integer"
           },
+          "fileSize": {
+            "type": "integer",
+            "description": "The size of the file in bytes.",
+            "example": 12345678,
+            "default": 0
+          },
           "id": {
             "type": "integer",
             "description": "The object's internal ID.",
