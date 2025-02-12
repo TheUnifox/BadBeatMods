@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
-import { up } from 'src/shared/migrations/001-add-fileSize-to-modVersions';
 
 export class AdminRoutes {
     private router: Router;
