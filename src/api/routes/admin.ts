@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Validator } from '../../shared/Validator';
 import { Logger } from '../../shared/Logger';
+import { up } from 'src/shared/migrations/001-add-fileSize-to-modVersions';
 
 export class AdminRoutes {
     private router: Router;
@@ -239,6 +240,7 @@ export class AdminRoutes {
                 return;
             }
 
+            let updateCount = 0;
             const versions = await DatabaseHelper.database.ModVersions.findAll({where: { fileSize: 0 }});
             for (let version of versions) {
                 let filePath = path.resolve(Config.storage.modsDir, `${version.zipHash}.zip`);
@@ -246,13 +248,14 @@ export class AdminRoutes {
                     let stats = fs.statSync(filePath);
                     version.fileSize = stats.size;
                     await version.save({ validate: false }); // skip validation to save time processing. validation isn't needed here.
+                    updateCount++;
                 } else {
                     Logger.error(`File ${filePath} does not exist.`);
                 }
             }
 
             DatabaseHelper.refreshCache(`modVersions`);
-            return res.status(200).send({ message: `All file sizes have been set to 0.` });
+            return res.status(200).send({ message: `Updated ${updateCount} records.` });
         });
 
         this.router.post(`/admin/users/addRole`, async (req, res) => {
