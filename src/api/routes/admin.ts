@@ -226,7 +226,7 @@ export class AdminRoutes {
 
             return res.status(200).send({ message: `Version ${version1.gameName} ${version1.version} & ${version2.gameName} ${version2.version} have been linked.` });
         });
-
+      
         this.router.post(`/admin/sortgameversions`, async (req, res) => {
             // #swagger.tags = ['Admin']
             /* #swagger.security = [{
@@ -266,6 +266,39 @@ export class AdminRoutes {
 
                 Logger.debug(`Sorted ${modVersion.id}`);
             }
+        });
+      
+      
+
+        this.router.post(`/admin/database/loadBlankFileSizes`, async (req, res) => {
+            // #swagger.tags = ['Admin']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
+            // #swagger.summary = 'Load blank file sizes into the database.'
+            // #swagger.description = 'Check each record in the modVersions table. If the file size is 0, attempt to get the file size from the zip file.'
+            let session = await validateSession(req, res, UserRoles.Admin);
+            if (!session.user) {
+                return;
+            }
+
+            let updateCount = 0;
+            const versions = await DatabaseHelper.database.ModVersions.findAll({where: { fileSize: 0 }});
+            for (let version of versions) {
+                let filePath = path.resolve(Config.storage.modsDir, `${version.zipHash}.zip`);
+                if (fs.existsSync(filePath)) {
+                    let stats = fs.statSync(filePath);
+                    version.fileSize = stats.size;
+                    await version.save({ validate: false }); // skip validation to save time processing. validation isn't needed here.
+                    updateCount++;
+                } else {
+                    Logger.error(`File ${filePath} does not exist.`);
+                }
+            }
+
+            DatabaseHelper.refreshCache(`modVersions`);
+            return res.status(200).send({ message: `Updated ${updateCount} records.` });
         });
 
         this.router.post(`/admin/users/addRole`, async (req, res) => {
@@ -341,6 +374,13 @@ export class AdminRoutes {
                         }
                         user.addPerGameRole(gameName.data, UserRoles.Poster);
                         break;
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.addPerGameRole(gameName.data, UserRoles.LargeFiles);
+                        break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
                         if (!session.user) {
@@ -391,6 +431,14 @@ export class AdminRoutes {
                             return;
                         }
                         user.addSiteWideRole(UserRoles.Poster);
+                        break;
+                    
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.addSiteWideRole(UserRoles.LargeFiles);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
@@ -476,6 +524,14 @@ export class AdminRoutes {
                         }
                         user.removePerGameRole(gameName.data, UserRoles.Poster);
                         break;
+                    
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.removePerGameRole(gameName.data, UserRoles.LargeFiles);
+                        break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);
                         if (!session.user) {
@@ -515,6 +571,14 @@ export class AdminRoutes {
                             return;
                         }
                         user.removeSiteWideRole(UserRoles.Poster);
+                        break;
+                    
+                    case UserRoles.LargeFiles:
+                        session = await validateSession(req, res, UserRoles.Admin);
+                        if (!session.user) {
+                            return;
+                        }
+                        user.removeSiteWideRole(UserRoles.LargeFiles);
                         break;
                     case UserRoles.Banned:
                         session = await validateSession(req, res, UserRoles.Approver);

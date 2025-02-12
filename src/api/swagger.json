@@ -1238,13 +1238,13 @@
         }
       }
     },
-    "/admin/sortgameversions": {
+    "/admin/database/loadBlankFileSizes": {
       "post": {
         "tags": [
           "Admin"
         ],
-        "summary": "Sort all Game Versions in all mod versions.",
-        "description": "Sort all Game Versions in all mod versions.",
+        "summary": "Load blank file sizes into the database.",
+        "description": "Check each record in the modVersions table. If the file size is 0, attempt to get the file size from the zip file.",
         "responses": {
           "200": {
             "description": "OK"
@@ -3128,6 +3128,7 @@
                     "poster",
                     "approver",
                     "moderator",
+                    "largefiles",
                     "banned"
                   ]
                 },
@@ -3573,6 +3574,12 @@
           "downloadCount": {
             "type": "integer"
           },
+          "fileSize": {
+            "type": "integer",
+            "description": "The size of the file in bytes.",
+            "example": 12345678,
+            "default": 0
+          },
           "id": {
             "type": "integer",
             "description": "The object's internal ID.",
@@ -3642,6 +3649,7 @@
                     "poster",
                     "approver",
                     "moderator",
+                    "largefiles",
                     "banned"
                   ]
                 },

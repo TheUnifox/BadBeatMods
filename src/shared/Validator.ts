@@ -37,7 +37,7 @@ const ZodUserRoles = z.nativeEnum(UserRoles);
 const ZodMod = z.object({
     id: ZodDBID,
     name: z.string().min(3).max(64),
-    summary: z.string().min(3).max(100),
+    summary: z.string().min(3).max(160),
     description: z.string().min(3).max(4096),
     category: ZodCategory,
     gitUrl: z.string().min(5).max(256).url(),

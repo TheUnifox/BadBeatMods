@@ -1,3 +1,4 @@
+/* eslint-disable no-console */ // Logger can't be initialized before Config, so we need to disable this here.
 import * as fs from 'fs';
 import * as path from 'path';
 import { HTTPTools } from './HTTPTools';
@@ -42,7 +43,8 @@ const DEFAULT_CONFIG = {
         apiRoute: `/api`, // the base route for the api. no trailing slash
         cdnRoute: `/cdn`, // the base route for the cdn. no trailing slash
         trustProxy: true, // if useing the env variable, will attempt to check for bool strings. if that doesn't work, it will check if the value is a number. otherwise, it will interpret it as a string and pass it directly to the trust proxy setting https://expressjs.com/en/guide/behind-proxies.html
-        fileUploadLimitMB: 75 // the file size limit for mod uploads
+        fileUploadLimitMB: 50, // the file size limit for mod uploads
+        fileUploadMultiplierMB: 3.0 // the multiplier for the file size limit for the largefiles role. the resulting equation is Math.floor(Config.server.fileUploadLimitMB * Config.server.fileUploadMultiplierMB * 1024 * 1024) to get the value in bytes
     },
     webhooks: {
         // If you don't want to use the webhook, just leave it blank. if a urls is under 8 characters, it will be ignored.
@@ -67,7 +69,8 @@ const DEFAULT_CONFIG = {
         enableSwagger: true, // enables the swagger docs at /api/docs
         enableDBHealthCheck: false, // enables the database health check
         enableGithubPAT: false, // enables the use of a GitHub Personal Access Token to auth API requests
-        enableMigrations: true // enables the use of migrations
+        enableMigrations: true, // enables the use of migrations
+        enableUnlimitedLogs: false // Disables purging of old log files.
     }
 };
 
@@ -103,6 +106,7 @@ export class Config {
         cdnRoute: string;
         trustProxy: boolean | number | string;
         fileUploadLimitMB: number;
+        fileUploadMultiplierMB: number;
     };
     private static _devmode: boolean = DEFAULT_CONFIG.devmode;
     private static _authBypass: boolean = DEFAULT_CONFIG.authBypass;
@@ -129,6 +133,7 @@ export class Config {
         enableDBHealthCheck: boolean;
         enableGithubPAT: boolean;
         enableMigrations: boolean;
+        enableUnlimitedLogs: boolean;
     };
     // #endregion
     // #region Public Static Properties
@@ -493,7 +498,13 @@ export class Config {
             }
 
             if (process.env.SERVER_FILE_UPLOAD_LIMIT_MB) {
-                Config._server.fileUploadLimitMB = parseInt(process.env.SERVER_FILE_UPLOAD_LIMIT_MB);
+                Config._server.fileUploadLimitMB = parseInt(process.env.SERVER_FILE_UPLOAD_LIMIT_MB, 10);
+            } else {
+                failedToLoad.push(`server.fileUploadLimitMB`);
+            }
+
+            if (process.env.SERVER_FILE_UPLOAD_MULTIPLIER_MB) {
+                Config._server.fileUploadMultiplierMB = parseFloat(process.env.SERVER_FILE_UPLOAD_MULTIPLIER_MB);
             } else {
                 failedToLoad.push(`server.fileUploadLimitMB`);
             }
@@ -607,6 +618,12 @@ export class Config {
                 Config._flags.enableMigrations = process.env.FLAGS_ENABLEMIGRATIONS === `true`;
             } else {
                 failedToLoad.push(`flags.enableMigrations`);
+            }
+
+            if (process.env.FLAGS_ENABLEUNLIMITEDLOGS) {
+                Config._flags.enableUnlimitedLogs = process.env.FLAGS_ENABLEUNLIMITEDLOGS === `true`;
+            } else {
+                failedToLoad.push(`flags.enableUnlimitedLogs`);
             }
             // #endregion
 

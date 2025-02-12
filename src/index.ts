@@ -34,9 +34,10 @@ import { StatusRoutes } from './api/routes/status';
 import { BulkActionsRoutes } from './api/routes/bulkActions';
 
 import swaggerDocument from './api/swagger.json';
-
+// eslint-disable-next-line no-console
 console.log(`Starting setup...`);
 new Config();
+new Logger();
 const app = express();
 const memstore = MemoryStore(session);
 const port = Config.server.port;
@@ -51,10 +52,13 @@ app.use(cors({
 }));
 app.use(fileUpload({
     limits: {
-        fileSize: Config.server.fileUploadLimitMB * 1024 * 1024, // here you go kaitlyn
+        fileSize: Math.floor(Config.server.fileUploadLimitMB * Config.server.fileUploadMultiplierMB * 1024 * 1024), // here you go kaitlyn
         files: 1
     },
     abortOnLimit: true,
+    limitHandler: (req, res, next) => {
+        return res.status(413).send({ message: `File size limit has been reached.` });
+    },
 }));
 
 const sessionConfigData: SessionOptions = {
@@ -213,7 +217,7 @@ import(`@octokit/rest`).then((Octokit) => {
                         return done(null, user);
                     }
                 }).catch((err) => {
-                    Logger.error(`Error finding user: ${err}`, `Auth`);
+                    Logger.error(`Error finding user: ${err}`);
                     return done(err, null);
                 });
             }).catch((err) => {
@@ -221,7 +225,7 @@ import(`@octokit/rest`).then((Octokit) => {
                     invalidAttempts.push(token ? token : `unknown`);
                     return done(null, false);
                 }
-                Logger.warn(`Error getting user: ${err}`, `Auth`);
+                Logger.warn(`Error getting user: ${err}`);
                 return done(err, null);
             });
         }
@@ -253,7 +257,7 @@ app.use((req, res, next) => {
             req.session.goodMorning47YourTargetIsThisSession = true;
         }
         if (!req.url.includes(`hashlookup`)) {
-            console.log(req.url);
+            Logger.winston.log(`http`, `${req.method} ${req.url}`);
         }
     }
     next();
@@ -274,12 +278,12 @@ cdnRouter.use((req, res, next) => {
 });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 apiRouter.use((err:any, req:any, res:any, next:any) => {
-    console.error(err.stack);
+    Logger.error(err.stack);
     return res.status(500).send({message: `Server error`});
 });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 cdnRouter.use((err:any, req:any, res:any, next:any) => {
-    console.error(err.stack);
+    Logger.error(err.stack);
     return res.status(500).send({message: `Server error`});
 });
 
@@ -288,7 +292,7 @@ app.use((req, res, next) => {
     if (req.session.goodMorning47YourTargetIsThisSession) {
         req.session.destroy((err) => {
             if (err) {
-                Logger.error(`Error destroying session: ${err}`, `Session`);
+                Logger.error(`Error destroying session: ${err}`);
             }
         });
     }
@@ -319,23 +323,23 @@ process.on(`SIGQUIT`, () => {
 
 process.on(`unhandledRejection`, (reason: Error | any, promise: Promise<any>) => {
     if (reason instanceof Error) {
-        Logger.error(`Unhandled promise rejection:${reason.name}\n${reason.message}\n${reason.stack}`, `node.js`);
+        Logger.error(`Unhandled promise rejection:${reason.name}\n${reason.message}\n${reason.stack}`);
     } else {
-        Logger.error(`Unhandled promise rejection:${reason}\n`, `node.js`);
+        Logger.error(`Unhandled promise rejection:${reason}\n`);
     }
     process.exit(1);
 });
 
-console.log(`Setup complete.`);
+Logger.debug(`Setup complete.`);
 
 async function startServer() {
     await database.init();
-    console.log(`Starting server.`);
+    Logger.debug(`Starting server.`);
     app.listen(port, () => {
-        console.log(`Server listening on port ${port} - Expected to be available at ${Config.server.url}`);
+        Logger.log(`Server listening on port ${port} - Expected to be available at ${Config.server.url}`, ``, true);
         Config.devmode ? Logger.warn(`Development mode is enabled!`) : null;
         Config.authBypass ? Logger.warn(`Authentication bypass is enabled!`) : null;
-        Config.devmode ? console.log(`API docs @ http://localhost:${port}/api/docs`) : null;
+        Logger.debug(`API docs @ http://localhost:${port}/api/docs`);
         Logger.log(`Server started.`);
     });
     

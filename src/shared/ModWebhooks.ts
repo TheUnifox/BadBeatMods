@@ -255,6 +255,13 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
                 if (editProp.every((v) => v === originalProp.find((o) => o === v)) && originalProp.every((v) => v === editProp.find((o) => o === v))) {
                     continue;
                 } else {
+                    if (key === `authorIds`) {
+                        let originalAuthors = DatabaseHelper.cache.users.filter((v) => originalProp.find((o) => o === v.id));
+                        let editAuthors = DatabaseHelper.cache.users.filter((v) => editProp.find((o) => o === v.id));
+
+                        description += `**Authors**: ${originalAuthors.map((v) => v.username).join(`, `)} -> ${editAuthors.map((v) => v.username).join(`, `)}\n`;
+                    }
+
                     description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
                 }
                 continue;
@@ -277,7 +284,13 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
                 if (editProp.every((v) => v === originalProp.find((o) => o === v)) && originalProp.every((v) => v === editProp.find((o) => o === v))) {
                     continue;
                 } else {
-                    description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n\n`;
+                    if (key === `supportedGameVersionIds`) {
+                        let originalGameVersions = DatabaseHelper.cache.gameVersions.filter((v) => originalProp.find((o) => o === v.id));
+                        let editGameVersions = DatabaseHelper.cache.gameVersions.filter((v) => editProp.find((o) => o === v.id));
+
+                        description += `**Game Versions**: ${originalGameVersions.map((v) => v.version).join(`, `)} -> ${editGameVersions.map((v) => v.version).join(`, `)}\n`;
+                    }
+                    description += `**${key}**: ${originalProp.join(`, `)} -> ${editProp.join(`, `)}\n`;
                 }
                 continue;
             }
