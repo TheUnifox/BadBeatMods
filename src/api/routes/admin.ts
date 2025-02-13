@@ -262,7 +262,9 @@ export class AdminRoutes {
                         return gvB.version.localeCompare(gvA.version);
                     }
                 });
-                await modVersion.save();
+                await modVersion.save().catch((err) => {
+                    Logger.error(`Error saving modVersion ${modVersion.id}: ${err}`);
+                });
 
                 Logger.debug(`Sorted ${modVersion.id}`);
             }
