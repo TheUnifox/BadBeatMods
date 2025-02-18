@@ -177,13 +177,21 @@ export class BulkActionsRoutes {
                 return;
             }
 
+            let modIdsToIgnore: number[] = []; // mod versions that are in the exclude list
             let modVersions = await DatabaseHelper.database.ModVersions.findAll();
             modVersions = modVersions.filter((mv) => {
-                return mv.supportedGameVersionIds.includes(gameVersion1.id) && mv.status == Status.Verified && !modVersionIds.data.includes(mv.id);
+                if (modVersionIds.data.includes(mv.id)) {
+                    modIdsToIgnore.push(mv.modId); // do not process these mod ids further on down the line
+                    return false;
+                }
+                return mv.supportedGameVersionIds.includes(gameVersion1.id) && mv.status == Status.Verified;
             });
 
             let modVersionFiltered:{modId:number, modVersion:ModVersion}[] = [];
             for (let modVersion of modVersions) {
+                if (modIdsToIgnore.includes(modVersion.modId)) {
+                    continue; // skip mod versions that are in the exclude list
+                }
                 let existing = modVersionFiltered.find((mv) => mv.modId === modVersion.modId);
                 if (existing) {
                     if (modVersion.modVersion.compare(existing.modVersion.modVersion) == 1) {
