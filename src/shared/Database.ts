@@ -1648,10 +1648,15 @@ export class DatabaseHelper {
         return validateEnumValue(value, Categories);
     }
 
-    public static isValidGameName(name: string): name is SupportedGames {
+    public static isValidGameName(name: any): name is SupportedGames {
         if (!name) {
             return false;
         }
+
+        if (typeof name !== `string` && typeof name !== `number`) {
+            return false;
+        }
+        
         return validateEnumValue(name, SupportedGames);
     }
 

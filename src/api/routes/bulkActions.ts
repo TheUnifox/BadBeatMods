@@ -276,7 +276,7 @@ export class BulkActionsRoutes {
                 }
             }
             */
-            let session = await validateSession(req, res, UserRoles.Approver); // todo: make this per game
+            let session = await validateSession(req, res, UserRoles.Approver, true); // todo: make this per game
             if (!session.user) {
                 return;
             }
@@ -324,12 +324,18 @@ export class BulkActionsRoutes {
                     });
 
                     if (!modId) {
-                        return res.status(404).send({ message: `Mod not found.` });
+                        results.errorIds.push(edit.id);
+                        continue;
                     }
             
                     let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
                     if (!mod) {
-                        return res.status(404).send({ message: `Mod not found.` });
+                        results.errorIds.push(edit.id);
+                        continue;
+                    }
+
+                    if (!session.user.roles.perGame[mod.gameName]?.includes(UserRoles.Approver) && !session.user.roles.perGame[mod.gameName]?.includes(UserRoles.AllPermissions)) {
+                        return res.status(403).send({ message: `You do not have permission to approve this edit.` });
                     }
 
                     if (approve.data === true) {
