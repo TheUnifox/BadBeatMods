@@ -269,7 +269,17 @@ export async function sendEditLog(edit:EditQueue, userMakingChanges:User, action
 
             if (editProp != originalProp) {
                 if (key === `description`) {
-                    description += `**${key}**: ${(originalProp as string).substring(0, 100)} -> ${(editProp as string).substring(0, 100)}\n`;
+                    let originalDescription = originalProp as string;
+                    let editDescription = editProp as string;
+                    if (originalDescription.length > 100) {
+                        originalDescription = originalDescription.substring(0, 100) + `...`;
+                    }
+                    if (editDescription.length > 100) {
+                        editDescription = editDescription.substring(0, 100) + `...`;
+                    }
+                    originalDescription = originalDescription.replaceAll(/#/, `\\#`);
+                    editDescription = editDescription.replaceAll(/#/, `\\#`);
+                    description += `**${key}**: ${originalDescription} -> ${editDescription}\n`;
                     continue;
                 }
                 description += `**${key}**: ${originalProp} -> ${editProp}\n`;
