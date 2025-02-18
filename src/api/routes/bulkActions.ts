@@ -54,11 +54,6 @@ export class BulkActionsRoutes {
                 }
             }
             */
-            let session = await validateSession(req, res, true);
-            if (!session.user) {
-                return;
-            }
-
             let gameVersionId = Validator.zDBID.safeParse(req.body.gameVersionId);
             if (!gameVersionId.success) {
                 res.status(400).send({ message: `Invalid game version ID`});
@@ -68,6 +63,11 @@ export class BulkActionsRoutes {
             let gameVersion = await DatabaseHelper.database.GameVersions.findByPk(gameVersionId.data);
             if (!gameVersion) {
                 res.status(404).send({ message: `Game version not found`});
+                return;
+            }
+
+            let session = await validateSession(req, res, UserRoles.Approver, gameVersion.gameName);
+            if (!session.user) {
                 return;
             }
 
@@ -260,7 +260,7 @@ export class BulkActionsRoutes {
                 }
             }
             */
-            let session = await validateSession(req, res, true);
+            let session = await validateSession(req, res, UserRoles.Approver); // todo: make this per game
             if (!session.user) {
                 return;
             }
