@@ -1,22 +1,23 @@
 # syntax=docker/dockerfile:1
 FROM node:22-alpine AS base
-FROM base AS builder
 
+FROM base AS basebuilder
+RUN apk add --no-cache python3 make g++ py3-pip
+
+FROM basebuilder AS builder
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci
-
 COPY src/ src/
 RUN npm run build
 
-FROM base AS deps
+FROM basebuilder AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 FROM base
 WORKDIR /app
-
 RUN \
   addgroup --system --gid 1001 nodejs && \
   adduser --system --uid 1001 nodejs
