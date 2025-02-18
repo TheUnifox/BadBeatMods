@@ -54,11 +54,6 @@ export class BulkActionsRoutes {
                 }
             }
             */
-            let session = await validateSession(req, res, true);
-            if (!session.user) {
-                return;
-            }
-
             let gameVersionId = Validator.zDBID.safeParse(req.body.gameVersionId);
             if (!gameVersionId.success) {
                 res.status(400).send({ message: `Invalid game version ID`});
@@ -68,6 +63,11 @@ export class BulkActionsRoutes {
             let gameVersion = await DatabaseHelper.database.GameVersions.findByPk(gameVersionId.data);
             if (!gameVersion) {
                 res.status(404).send({ message: `Game version not found`});
+                return;
+            }
+
+            let session = await validateSession(req, res, UserRoles.Approver, gameVersion.gameName);
+            if (!session.user) {
                 return;
             }
 
@@ -91,7 +91,11 @@ export class BulkActionsRoutes {
             };
 
             for (let modVersion of modVersions) {
-                let outObj = await modVersion.addGameVersionId(gameVersion.id, session.user.id);
+                let outObj = await modVersion.addGameVersionId(gameVersion.id, session.user.id).catch((err) => {
+                    Logger.error(`Error adding game version ${gameVersion.id} to mod version ${modVersion.id}: ${err}`);
+                    //results.errorIds.push(modVersion.id);
+                    return null;
+                });
                 if (outObj) {
                     if (outObj instanceof EditQueue) {
                         results.editIds.push(outObj.id);
@@ -177,13 +181,21 @@ export class BulkActionsRoutes {
                 return;
             }
 
+            let modIdsToIgnore: number[] = []; // mod versions that are in the exclude list
             let modVersions = await DatabaseHelper.database.ModVersions.findAll();
             modVersions = modVersions.filter((mv) => {
-                return mv.supportedGameVersionIds.includes(gameVersion1.id) && mv.status == Status.Verified && !modVersionIds.data.includes(mv.id);
+                if (modVersionIds.data.includes(mv.id)) {
+                    modIdsToIgnore.push(mv.modId); // do not process these mod ids further on down the line
+                    return false;
+                }
+                return mv.supportedGameVersionIds.includes(gameVersion1.id) && mv.status == Status.Verified;
             });
 
             let modVersionFiltered:{modId:number, modVersion:ModVersion}[] = [];
             for (let modVersion of modVersions) {
+                if (modIdsToIgnore.includes(modVersion.modId)) {
+                    continue; // skip mod versions that are in the exclude list
+                }
                 let existing = modVersionFiltered.find((mv) => mv.modId === modVersion.modId);
                 if (existing) {
                     if (modVersion.modVersion.compare(existing.modVersion.modVersion) == 1) {
@@ -204,7 +216,11 @@ export class BulkActionsRoutes {
             };
 
             for (let modVersion of modVersionFiltered) {
-                let outObj = await modVersion.modVersion.addGameVersionId(gameVersion2.id, session.user.id);
+                let outObj = await modVersion.modVersion.addGameVersionId(gameVersion2.id, session.user.id).catch((err) => {
+                    Logger.error(`Error adding game version ${gameVersion2.id} to mod version ${modVersion.modVersion.id}: ${err}`);
+                    //results.errorIds.push(modVersion.modVersion.id);
+                    return null;
+                });
                 if (outObj) {
                     if (outObj instanceof EditQueue) {
                         results.editIds.push(outObj.id);
@@ -260,7 +276,7 @@ export class BulkActionsRoutes {
                 }
             }
             */
-            let session = await validateSession(req, res, true);
+            let session = await validateSession(req, res, UserRoles.Approver, true); // todo: make this per game
             if (!session.user) {
                 return;
             }
@@ -308,12 +324,18 @@ export class BulkActionsRoutes {
                     });
 
                     if (!modId) {
-                        return res.status(404).send({ message: `Mod not found.` });
+                        results.errorIds.push(edit.id);
+                        continue;
                     }
             
                     let mod = await DatabaseHelper.database.Mods.findOne({ where: { id: modId } });
                     if (!mod) {
-                        return res.status(404).send({ message: `Mod not found.` });
+                        results.errorIds.push(edit.id);
+                        continue;
+                    }
+
+                    if (!session.user.roles.perGame[mod.gameName]?.includes(UserRoles.Approver) && !session.user.roles.perGame[mod.gameName]?.includes(UserRoles.AllPermissions)) {
+                        return res.status(403).send({ message: `You do not have permission to approve this edit.` });
                     }
 
                     if (approve.data === true) {

@@ -1123,7 +1123,7 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
         return this;
     }
 
-    public addGameVersionId(gameVersionId: number, submitterId: number) {
+    public async addGameVersionId(gameVersionId: number, submitterId: number) {
         if (this.supportedGameVersionIds.includes(gameVersionId)) {
             return Promise.resolve(null);
         }
@@ -1132,6 +1132,12 @@ export class ModVersion extends Model<InferAttributes<ModVersion>, InferCreation
             this.supportedGameVersionIds = [...this.supportedGameVersionIds, gameVersionId];
             return this.save();
         } else {
+            let existingEdit = await DatabaseHelper.database.EditApprovalQueue.findOne({ where: { objectId: this.id, objectTableName: `modVersions`, submitterId: submitterId, approved: null } });
+
+            if (existingEdit) {
+                throw new Error(`Edit already exists for this mod version.`);
+            }
+
             return DatabaseHelper.database.EditApprovalQueue.create({
                 submitterId: submitterId,
                 objectId: this.id,
@@ -1642,10 +1648,15 @@ export class DatabaseHelper {
         return validateEnumValue(value, Categories);
     }
 
-    public static isValidGameName(name: string): name is SupportedGames {
+    public static isValidGameName(name: any): name is SupportedGames {
         if (!name) {
             return false;
         }
+
+        if (typeof name !== `string` && typeof name !== `number`) {
+            return false;
+        }
+        
         return validateEnumValue(name, SupportedGames);
     }
 
