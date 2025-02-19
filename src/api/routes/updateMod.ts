@@ -396,5 +396,73 @@ export class UpdateModRoutes {
             });
             // #endregion Submit
         });
+
+        this.router.get(`/edits`, async (req, res) => {
+            // #swagger.tags = ['Mods']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
+            // #swagger.description = `Get all edits.`
+            let session = await validateSession(req, res, true);
+            if (!session.user) {
+                return;
+            }
+
+            let usersMods = await DatabaseHelper.cache.mods.filter((mod) => {
+                return mod.authorIds.includes(session.user.id);
+            });
+
+            let edits = DatabaseHelper.cache.editApprovalQueue.filter((edit) => {
+                if (edit.isMod()) {
+                    return edit.submitterId == session.user.id || usersMods.some((mod) => edit.objectId == mod.id);
+                } else {
+                    let modVersion = DatabaseHelper.cache.modVersions.find((mod) => mod.id == edit.objectId);
+                    if (!modVersion) {
+                        return false;
+                    }
+                    return edit.submitterId == session.user.id || usersMods.some((mod) => mod.id == modVersion.modId);
+                }
+            });
+
+            res.status(200).send({ message: `Found ${edits.length} edits.`, edits: edits });
+        });
+
+        this.router.get(`/edits/:editIdParam`, async (req, res) => {
+            // #swagger.tags = ['Mods']
+            /* #swagger.security = [{
+                "bearerAuth": [],
+                "cookieAuth": []
+            }] */
+            // #swagger.description = `Get an edit.`
+            // #swagger.parameters['editIdParam'] = { description: 'Edit ID', type: 'integer' }
+            let editId = Validator.zDBID.safeParse(req.params.editIdParam);
+            if (!editId.success) {
+                return res.status(400).send({ message: `Invalid editId.` });
+            }
+
+            let session = await validateSession(req, res, true);
+            if (!session.user) {
+                return;
+            }
+
+            let edit = DatabaseHelper.cache.editApprovalQueue.find((edit) => edit.id == editId.data);
+            if (!edit) {
+                return res.status(404).send({ message: `Edit not found.` });
+            }
+
+            let parentObj = edit.isMod() ? DatabaseHelper.cache.mods.find((mod) => mod.id == edit.objectId) : DatabaseHelper.cache.modVersions.find((modVersion) => modVersion.id == edit.objectId);
+            if (!parentObj) {
+                return res.status(404).send({ message: `Parent object not found.` });
+            }
+
+            let isAllowedToView = parentObj?.isAllowedToView(session.user);
+
+            if (!isAllowedToView) {
+                return res.status(401).send({ message: `You cannot view this edit.` });
+            }
+
+            return res.status(200).send({ message: `Edit found.`, edit });
+        });
     }
 }
